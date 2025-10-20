@@ -1,9 +1,17 @@
+import DashboardLayout from "./dashboard/layout";
+import DashboardPage from "./dashboard/page";
+import PermissonPages from "./dashboard/permission/page";
 
 export default function Home() {
   return (
     <div>
-      <h1>This is Edu master</h1>
-      
+     
+      <DashboardLayout>
+             {/* <DashboardPage>
+        
+      </DashboardPage> */}
+      <PermissonPages></PermissonPages>
+      </DashboardLayout>
     </div>
   )
 }
