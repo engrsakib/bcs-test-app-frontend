@@ -41,6 +41,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import Script from "next/script";
 
 // ✅ 1️⃣ Import Poppins font
 const poppins = Poppins({
@@ -63,11 +64,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+     
+        <Script
+          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+          strategy="afterInteractive"
+        />
+    
       <body
         className={`${poppins.variable} font-poppins antialiased bg-gray-50 text-gray-800`}
       >
         {children}
       </body>
+      
     </html>
   );
 }
