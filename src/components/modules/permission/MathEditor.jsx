@@ -1,17 +1,15 @@
 
+// 'use client';
+
+// import React, { useEffect, useRef } from 'react';
 
 
+// export default function MathEditor({ value, onChange }) {
+//   const mathEditorRef = useRef(null);
 
-// "use client";
-
-// import React, { useRef, useState, useEffect } from "react";
-
-
-// export default function MathEditor() {
-//   // 1️⃣ স্ক্রিপ্ট লোড করার জন্য useEffect
+//   // 1️⃣ MathLive স্ক্রিপ্টটি লোড করুন (আপনার কোড)
 //   useEffect(() => {
 //     const scriptId = "mathlive-script";
-
 //     if (document.getElementById(scriptId)) return;
 
 //     const script = document.createElement("script");
@@ -22,60 +20,45 @@
 //     document.head.appendChild(script);
 //   }, []);
 
-//   // 2️⃣ Output state
-//   const [latexValue, setLatexValue] = useState("...বাটনে ক্লিক করুন...");
+//   // 2️⃣ Event listener যোগ করুন
+//   useEffect(() => {
+//     const currentEditor = mathEditorRef.current;
 
-//   // 3️⃣ MathField ধরার জন্য ref
-//   const mathEditorRef = useRef(null);
+//     if (currentEditor) {
+//       // যখনই ইউজার MathEditor-এ টাইপ করবে, এই ফাংশনটি কল হবে
+//       const handleInput = (event) => {
+//         // onChange(event.target.value) কল করার মাধ্যমে
+//         // এটি CreateQuestionForm-এর 'setMathFormula'-কে কল করবে।
+//         onChange(event.target.value);
+//       };
 
-//   // 4️⃣ বাটনে ক্লিক করলে value console-এ দেখানো হবে
-//   const handleSubmit = async () => {
-//     const current = mathEditorRef.current;
-//     if (current) {
-//       const latexData = current.value;
-//       console.log("🎯 Latex Output:", latexData);
-//       setLatexValue(latexData);
-//     } else {
-//       console.warn("⚠️ Math field এখনো লোড হয়নি!");
+//       // সরাসরি DOM এলিমেন্টে 'input' ইভেন্ট যোগ করা হলো
+//       currentEditor.addEventListener('input', handleInput);
+
+//       // কম্পোনেন্টটি destroy হওয়ার আগে event listener মুছে ফেলা হলো
+//       return () => {
+//         currentEditor.removeEventListener('input', handleInput);
+//       };
 //     }
-//   };
+//   }, [onChange]); // onChange ফাংশন পরিবর্তন হলে এটি আবার রান হবে
+
+//   // 3️⃣ ফর্ম রিসেট হলে বা ভ্যালু বাইরে থেকে পরিবর্তন হলে এডিটর আপডেট করুন
+//   useEffect(() => {
+//     if (mathEditorRef.current && mathEditorRef.current.value !== value) {
+//       mathEditorRef.current.value = value;
+//     }
+//   }, [value]);
 
 //   return (
 //     <>
-//       <div className="w-full max-w-2xl bg-white shadow-lg rounded-2xl p-8">
-//         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-//           গণিত এডিটর (React + TypeScript)
-//         </h1>
+//       {/* ref ব্যবহার করে DOM এলিমেন্টটি ধরা হয়েছে।
+//         প্রাথমিক ভ্যালুটি চাইল্ড হিসেবে পাস করা হয়েছে।
+//       */}
+//       <math-field ref={mathEditorRef}>
+//         {value}
+//       </math-field>
 
-//         <p className="text-gray-600 mb-4 text-center">
-//           নিচের ফিল্ডে গণিতের সমীকরণ লিখুন। এটি স্বয়ংক্রিয়ভাবে LaTeX কোডে রূপান্তরিত হবে।
-//         </p>
-
-//         {/* ✅ MathLive Editor */}
-//         <math-field ref={mathEditorRef}>
-//           f(x) = \sin(x) + \frac{1}{2}
-//         </math-field>
-
-//         {/* ✅ Submit Button */}
-//         <button
-//           onClick={handleSubmit}
-//           className="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
-//         >
-//           ব্যাকএন্ডে পাঠানোর জন্য ডেটা দেখুন
-//         </button>
-
-//         {/* ✅ Output Preview */}
-//         <div className="mt-6">
-//           <h2 className="text-xl font-semibold text-gray-700 mb-2">
-//             ব্যাকএন্ডে এই ডেটা সেভ হবে (LaTeX ফরম্যাট):
-//           </h2>
-//           <pre className="bg-gray-900 text-white p-4 rounded-lg overflow-x-auto text-sm">
-//             {latexValue}
-//           </pre>
-//         </div>
-//       </div>
-
-//       {/* ✅ Custom CSS */}
+//       {/* --- আপনার দেওয়া কাস্টম CSS --- */}
 //       <style jsx global>{`
 //         math-field {
 //           display: block;
@@ -107,100 +90,78 @@
 
 
 
-"use client";
 
-import React, { useRef, useState, useEffect } from "react";
 
-export default function MathEditor() {
-  // 1️⃣ স্ক্রিপ্ট লোড করার জন্য useEffect
+
+
+
+
+'use client';
+import React, { useEffect, useRef } from 'react';
+
+export default function MathEditor({ value, onChange, readOnly = false }) {
+  const mathEditorRef = useRef(null);
+
+
   useEffect(() => {
-    const scriptId = "mathlive-script";
-
+    const scriptId = 'mathlive-script';
     if (document.getElementById(scriptId)) return;
 
-    const script = document.createElement("script");
+    const script = document.createElement('script');
     script.id = scriptId;
-    script.src = "https://unpkg.com/mathlive?module";
-    script.type = "module";
+    script.src = 'https://unpkg.com/mathlive?module';
+    script.type = 'module';
     script.async = true;
+    script.onload = () => console.log('✅ MathLive loaded');
     document.head.appendChild(script);
   }, []);
 
-  // 2️⃣ Output state (ডিফল্ট ভ্যালু দিয়ে শুরু করা হলো)
-  const [latexValue, setLatexValue] = useState("f(x) = \\sin(x) + \\frac{1}{2}");
+  // 2️⃣ Wait until <math-field> is defined
+  useEffect(() => {
+    const checkReady = setInterval(() => {
+      if (window.MathfieldElement && mathEditorRef.current) {
+        clearInterval(checkReady);
 
-  // 3️⃣ MathField ধরার জন্য ref
-  const mathEditorRef = useRef(null);
+        const mathField = mathEditorRef.current;
 
-  // 4️⃣ বাটনে ক্লিক করলে state আপডেট হবে
-  const handleSubmit = async () => {
-    // ref object-er 'current' property-r moddhe DOM element-ti thake
-    const current = mathEditorRef.current;
-    if (current) {
-      // .value property diye LaTeX data ber kora hocche
-      const latexData = current.value;
-      console.log("🎯 Latex Output:", latexData);
-      setLatexValue(latexData);
-    } else {
-      console.warn("⚠️ Math field এখনো লোড হয়নি!");
+        // Proper listener for MathLive
+        const handleChange = (evt) => {
+          const newValue = evt.target.getValue
+            ? evt.target.getValue()
+            : evt.target.value;
+          onChange(newValue);
+        };
+
+        mathField.addEventListener('input', handleChange);
+        mathField.addEventListener('change', handleChange);
+
+        return () => {
+          mathField.removeEventListener('input', handleChange);
+          mathField.removeEventListener('change', handleChange);
+        };
+      }
+    }, 200);
+
+    return () => clearInterval(checkReady);
+  }, [onChange]);
+
+  // 3️⃣ External value update
+  useEffect(() => {
+    if (mathEditorRef.current && mathEditorRef.current.getValue) {
+      const currentVal = mathEditorRef.current.getValue();
+      if (currentVal !== value) {
+        mathEditorRef.current.setValue(value);
+      }
     }
-  };
+  }, [value]);
 
   return (
     <>
-      <div className="w-full max-w-2xl bg-white shadow-lg rounded-2xl p-8">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          গণিত এডিটর (React + JSX)
-        </h1>
+      <math-field ref={mathEditorRef} readOnly={readOnly}>
+        {value}
+      </math-field>
 
-        <p className="text-gray-600 mb-4 text-center">
-          নিচের ফিল্ডে গণিতের সমীকরণ লিখুন।
-        </p>
-
-        {/* ✅ MathLive Editor (ইনপুট) */}
-        {/* 'ref' attribute diye ref-ti connect kora hocche */}
-        <math-field ref={mathEditorRef}>
-          {latexValue}
-        </math-field>
-
-        {/* ✅ Submit Button */}
-        <button
-          onClick={handleSubmit}
-          className="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
-        >
-          আপডেট করে দেখুন
-        </button>
-
-        {/* ✅ Output Preview (LaTeX) */}
-        <div className="mt-6">
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">
-            ব্যাকএন্ডে এই ডেটা সেভ হবে (LaTeX ফরম্যাট):
-          </h2>
-          <pre className="bg-gray-900 text-white p-4 rounded-lg overflow-x-auto text-sm">
-            {latexValue}
-          </pre>
-        </div>
-
-        {/* --- নতুন সেকশন: LaTeX থেকে আসল ফরম্যাট দেখানো --- */}
-        <div className="mt-6">
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">
-            LaTeX থেকে অরিজিনাল ফরম্যাট:
-          </h2>
-          {/* ✅ 'read-only' এট্রিবিউট এটিকে এডিট করা থেকে বিরত রাখে। */}
-          <math-field 
-            read-only 
-            className="static-math-display"
-          >
-            {latexValue}
-          </math-field>
-        </div>
-        {/* --- শেষ --- */}
-
-      </div>
-
-      {/* ✅ Custom CSS */}
       <style jsx global>{`
-        /* ইনপুট এডিটরের স্টাইল */
         math-field {
           display: block;
           border: 1px solid #ccc;
@@ -216,24 +177,7 @@ export default function MathEditor() {
           box-shadow: 0 0 0 2px #bfdbfe;
           outline: none;
         }
-
-        /* শুধু দেখানোর জন্য (read-only) ফিল্ডের স্টাইল */
-        math-field.static-math-display[read-only] {
-          border: 1px solid #e5e7eb; /* হালকা বর্ডার */
-          background-color: #f9fafb; /* হালকা ব্যাকগ্রাউন্ড */
-          box-shadow: none;
-          padding: 0.5rem 1rem;
-          font-size: 1.25rem;
-        }
       `}</style>
     </>
   );
 }
-
-
-
-
-
-
-
-

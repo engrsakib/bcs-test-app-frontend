@@ -1,10 +1,17 @@
 @import "tailwindcss";
 
 
-:root {
-  --font-poppins: "Poppins", sans-serif;
-}
 
+/* bg-[#a71a16] */
+/* text-[#FFFFFF] */
+
+
+
+
+:root {
+
+     --font-poppins: "Poppins", sans-serif;
+}
 
 body {
   font-family: var(--font-poppins);
