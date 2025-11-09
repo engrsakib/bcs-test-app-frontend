@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/components/modules/permission/MathEditor.jsx", "src/components/modules/AddQuestion/AddQuestion.jsx", "src/app/dashboard/rokomari/page.jsx", "tailwind.config.js", "src/app/dashboard/exam/view-question/page.jsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/components/modules/permission/MathEditor.jsx", "src/components/modules/AddQuestion/AddQuestion.jsx", "src/app/dashboard/rokomari/page.jsx", "tailwind.config.js", "src/app/dashboard/exam/view-question/page.jsx", "src/components/modules/guidelineCompo/ViewAllGuideline.jsx"],
   "exclude": ["node_modules"]
 }
