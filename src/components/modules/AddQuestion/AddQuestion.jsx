@@ -267,7 +267,7 @@ export default function CreateQuestionForm() {
             <button
               type="button"
               onClick={addBlank}
-              className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md shadow-sm hover:bg-green-700"
+              className="mt-4 px-4 py-2 bg-[#2B6A5B] text-white rounded-md shadow-sm hover:bg-green-700"
             >
               + Add Another Blank
             </button>
@@ -278,7 +278,7 @@ export default function CreateQuestionForm() {
         <div className="pt-5">
           <button
             type="submit"
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-[#2B6A5B] hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-800"
           >
             Confirm & Add Question
           </button>

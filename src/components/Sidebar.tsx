@@ -35,7 +35,25 @@ const links = [
       { name: "View All Exam", href: "/dashboard/exam/view-exam" },
     ],
   },
-  { name: "User", href: "/dashboard/user", icon: FileText },
+  // { name: "Team Plan", href: "/dashboard/user", icon: FileText },
+
+
+
+  {
+    name: "Team plan",
+    icon: Video,
+    basePath: "/dashboard/user",
+    subLinks: [
+      { name: "Create Admin ", href: "/dashboard/user/create-admin" },
+      // { name: "View All Videos", href: "/dashboard/youtube/view-video" },
+    ],
+  },
+
+
+
+
+
+
   { name: "Result", href: "/dashboard/result", icon: Trophy },
 
 
@@ -52,9 +70,29 @@ const links = [
   },
 
 
+  {
+    name: "Youtube",
+    icon: Video,
+    basePath: "/dashboard/youtube",
+    subLinks: [
+      { name: "Create Video", href: "/dashboard/youtube/create-video" },
+      { name: "View All Videos", href: "/dashboard/youtube/view-video" },
+    ],
+  },
+  {
+    name: "My Book",
+    icon: Book,
+    basePath: "/dashboard/my-book",
+    subLinks: [
+      { name: "Create Book", href: "/dashboard/my-book/create-book" },
+      { name: "View Books", href: "/dashboard/my-book/view-book" },
+    ],
+  },
 
-  { name: "YouTube", href: "/dashboard/youtube", icon: Video },
-  { name: "Rokomari", href: "/dashboard/rokomari", icon: Link2 },
+
+
+  // { name: "YouTube", href: "/dashboard/youtube", icon: Video },
+  // { name: "My Book", href: "/dashboard/rokomari", icon: Link2 },
   { name: "Manage-Permission", href: "/dashboard/permission", icon: Link2 },
 ];
 
