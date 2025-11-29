@@ -167,7 +167,7 @@ const links = [
     ],
   },
 
-  { name: "Manage-Permission", href: "/dashboard/permission", icon: Link2 },
+  { name: "Profile", href: "/dashboard/profile", icon: Link2 },
 ];
 
 

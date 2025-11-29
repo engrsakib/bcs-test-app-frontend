@@ -1,6 +1,6 @@
 import DashboardLayout from "./dashboard/layout";
 
-import PermissonPages from "./dashboard/permission/page";
+import PermissonPages from "./dashboard/profile/page";
 
 export default function Home() {
   return (

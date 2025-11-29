@@ -507,6 +507,227 @@
 
 // export default Login;
 
+
+
+
+// "use client";
+
+// import React, { useState } from "react";
+// import { useRouter } from "next/navigation";
+// import {
+//   Phone,
+//   Lock,
+//   Eye,
+//   EyeOff,
+//   LogIn,
+//   AlertCircle,
+//   Home,
+// } from "lucide-react";
+// import Link from "next/link";
+// import Swal from "sweetalert2";
+
+// const Login: React.FC = () => {
+//   const router = useRouter();
+//   const [showPassword, setShowPassword] = useState(false);
+
+//   const [formData, setFormData] = useState({
+//     phone_number: "",
+//     password: "",
+//   });
+
+//   const [errors, setErrors] = useState<{
+//     phone_number?: string;
+//     password?: string;
+//   }>({});
+
+//   // ONLY NUMBER
+//   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+//     const value = e.target.value.replace(/\D/g, "");
+//     setFormData((prev) => ({ ...prev, phone_number: value }));
+//   };
+
+//   // INPUT HANDLER
+//   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+//     const { name, value } = e.target;
+//     setFormData((prev) => ({ ...prev, [name]: value }));
+//   };
+
+//   // VALIDATION
+//   const validateForm = () => {
+//     const newErrors: { phone_number?: string; password?: string } = {};
+
+//     if (!formData.phone_number)
+//       newErrors.phone_number = "Phone number is required";
+//     else if (formData.phone_number.length < 10)
+//       newErrors.phone_number = "Invalid phone number";
+
+//     if (!formData.password) newErrors.password = "Password is required";
+//     else if (formData.password.length < 6)
+//       newErrors.password = "Minimum 6 characters";
+
+//     setErrors(newErrors);
+//     return Object.keys(newErrors).length === 0;
+//   };
+
+//   // LOGIN HANDLER (FINAL)
+//   const handleSubmit = async () => {
+//     if (!validateForm()) {
+//       Swal.fire("Error", "Please fix the errors!", "error");
+//       return;
+//     }
+
+//     try {
+//       // const res = await fetch(
+//       //   "https://mcq-analysis.vercel.app/api/v1/admin/login",
+//       //   {
+//       //     method: "POST",
+//       //     headers: { "Content-Type": "application/json" },
+//       //     credentials: "include", // REQUIRED for cookies
+//       //     body: JSON.stringify(formData),
+//       //   }
+//       // );
+
+//       const res:any =await await fetch("/api/v1/admin/login", {
+//   method: "POST",
+//   headers: { "Content-Type": "application/json" },
+//   credentials: "include",
+//   body: JSON.stringify(formData),
+// });
+//       const result = await res.json();
+
+//       console.log("Login Response:", result);
+
+//       if (result.success) {
+//         Swal.fire("Success", "Login successful!", "success");
+
+//         setTimeout(() => {
+//           router.push("/dashboard");
+//         }, 800);
+//       } else {
+//         Swal.fire("Failed", result.message || "Login failed", "error");
+//       }
+//     } catch (error) {
+//       Swal.fire("Error", "Unable to connect to server!", "error");
+//     }
+//   };
+
+//   // GO HOME
+//   const handleBackToHome = () => router.push("/");
+
+//   return (
+//     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-4">
+//       <button
+//         onClick={handleBackToHome}
+//         className="fixed top-6 left-6 flex items-center gap-2 bg-white hover:bg-green-50 text-green-700 font-semibold px-4 py-2.5 rounded-xl shadow-lg"
+//       >
+//         <Home className="w-5 h-5" /> <span>Home</span>
+//       </button>
+
+//       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl">
+//         <div className="h-32 bg-gradient-to-br from-green-600 via-green-700 to-emerald-700 flex flex-col items-center justify-center text-white">
+//           <LogIn className="w-12 h-12 mb-2" />
+//           <h2 className="text-2xl font-bold">Login</h2>
+//           <p className="text-green-100 text-sm">MCQ Analysis Admin</p>
+//         </div>
+
+//         <div className="p-8 space-y-5">
+//           {/* Phone Input */}
+//           <div>
+//             <label className="block mb-2 font-semibold text-gray-700">
+//               Phone Number
+//             </label>
+//             <div className="relative">
+//               <Phone className="absolute left-3 top-3 text-gray-400" />
+//               <input
+//                 type="text"
+//                 name="phone_number"
+//                 value={formData.phone_number}
+//                 onChange={handlePhoneChange}
+//                 placeholder="01XXXXXXXXX"
+//                 className="w-full pl-12 pr-4 py-3 border-2 rounded-xl focus:border-green-500"
+//               />
+//             </div>
+//             {errors.phone_number && (
+//               <p className="text-red-600 text-sm flex items-center gap-1 mt-1">
+//                 <AlertCircle className="w-4 h-4" /> {errors.phone_number}
+//               </p>
+//             )}
+//           </div>
+
+//           {/* Password */}
+//           <div>
+//             <label className="block mb-2 font-semibold text-gray-700">
+//               Password
+//             </label>
+//             <div className="relative">
+//               <Lock className="absolute left-3 top-3 text-gray-400" />
+//               <input
+//                 type={showPassword ? "text" : "password"}
+//                 name="password"
+//                 value={formData.password}
+//                 onChange={handleInputChange}
+//                 placeholder="Enter your password"
+//                 className="w-full pl-12 pr-12 py-3 border-2 rounded-xl"
+//               />
+//               <button
+//                 type="button"
+//                 className="absolute right-3 top-3 text-gray-400"
+//                 onClick={() => setShowPassword(!showPassword)}
+//               >
+//                 {showPassword ? <EyeOff /> : <Eye />}
+//               </button>
+//             </div>
+
+//             {errors.password && (
+//               <p className="text-red-600 text-sm flex items-center gap-1 mt-1">
+//                 <AlertCircle className="w-4 h-4" /> {errors.password}
+//               </p>
+//             )}
+//           </div>
+
+//           {/* Login Button */}
+//           <button
+//             onClick={handleSubmit}
+//             className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3.5 rounded-xl shadow-lg hover:opacity-90 flex items-center justify-center gap-2"
+//           >
+//             <LogIn className="w-5 h-5" /> Login
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default Login;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 
 import React, { useState } from "react";
@@ -574,27 +795,34 @@ const Login: React.FC = () => {
     }
 
     try {
-      // const res = await fetch(
-      //   "https://mcq-analysis.vercel.app/api/v1/admin/login",
-      //   {
-      //     method: "POST",
-      //     headers: { "Content-Type": "application/json" },
-      //     credentials: "include", // REQUIRED for cookies
-      //     body: JSON.stringify(formData),
-      //   }
-      // );
+      const res = await fetch("/api/v1/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(formData),
+      });
 
-      const res:any =await await fetch("/api/v1/admin/login", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  credentials: "include",
-  body: JSON.stringify(formData),
-});
       const result = await res.json();
 
       console.log("Login Response:", result);
 
       if (result.success) {
+        // Store access token in localStorage
+        if (result.data?.access_token) {
+          localStorage.setItem("access_token", result.data.access_token);
+          console.log("Access token stored successfully");
+        }
+
+        // Store refresh token if available
+        if (result.data?.refresh_token) {
+          localStorage.setItem("refresh_token", result.data.refresh_token);
+        }
+
+        // Store user data if needed
+        if (result.data?.user) {
+          localStorage.setItem("user_data", JSON.stringify(result.data.user));
+        }
+
         Swal.fire("Success", "Login successful!", "success");
 
         setTimeout(() => {
@@ -604,6 +832,7 @@ const Login: React.FC = () => {
         Swal.fire("Failed", result.message || "Login failed", "error");
       }
     } catch (error) {
+      console.error("Login error:", error);
       Swal.fire("Error", "Unable to connect to server!", "error");
     }
   };

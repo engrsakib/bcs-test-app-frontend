@@ -1,9 +1,10 @@
+import CreateStudent from '@/components/modules/student/CreateStudent'
 import React from 'react'
 
 export default function CreateStudentPage() {
   return (
     <div>
-      <h1>This is CreateStudentPages</h1>
+         <CreateStudent></CreateStudent>
     </div>
   )
 }

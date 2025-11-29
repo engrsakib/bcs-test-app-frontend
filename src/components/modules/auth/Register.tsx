@@ -444,15 +444,23 @@ NEXT_PUBLIC_BASE_URL!;
       image: formData.image
     };
 
-    console.log("Sending Payload:", payload);
 
-    const res = await fetch(`${BASE_URL}/admin/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+
+    // const res = await fetch(`${BASE_URL}/admin/create`, {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   credentials:"include",
+    //   body: JSON.stringify(payload),
+    // });
+
+    const res = await fetch("/api/admin/create", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload),
+});
 
     const data = await res.json();
+    console.log("Register Form", data)
 
     if (data.success) {
       alert("Admin created successfully!");
@@ -461,6 +469,13 @@ NEXT_PUBLIC_BASE_URL!;
       alert("Something went wrong");
     }
   };
+
+
+
+
+
+
+
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-green-50">

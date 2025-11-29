@@ -79,57 +79,153 @@
 
 
 
+// import { NextRequest, NextResponse } from "next/server";
+
+// const BACKEND_URL = "https://mcq-analysis.vercel.app";
+
+// export async function middleware(req: NextRequest) {
+//   const { pathname, search } = req.nextUrl;
+//   const accessToken = req.cookies.get("cbd_atkn_91f2a")?.value;
+//   const refreshToken = req.cookies.get("cbd_rtkn_7c4d1")?.value;
+
+  
+//   console.log("Access Token in Middleware:", accessToken);
+//   console.log("Refresh Token in Middleware:", refreshToken);
+
+//   // 🔒 Protect dashboard pages
+//   if (pathname.startsWith("/dashboard") && !accessToken) {
+//     return NextResponse.redirect(new URL("/login", req.url));
+//   }
+
+//   // 🚫 Prevent logged-in user from visiting login
+//   if (pathname === "/login" && accessToken) {
+//     return NextResponse.redirect(new URL("/dashboard", req.url));
+//   }
+
+//   // 🟢 Proxy APIs `/api/**`
+//   if (pathname.startsWith("/api/")) {
+//     const backendPath = pathname.replace("/api", "/api/v1"); // adjust as needed
+//     const backendURL = `${BACKEND_URL}${backendPath}${search}`;
+
+//     // ⬇ Forward request to backend with tokens
+//     const fetchRes = await fetch(backendURL, {
+//       method: req.method,
+//       headers: {
+//         "Content-Type": req.headers.get("Content-Type") || "",
+//         Cookie: `cbd_atkn_91f2a=${accessToken}; cbd_rtkn_7c4d1=${refreshToken}`,
+//       },
+//       body: req.method !== "GET" && req.method !== "HEAD" ? await req.text() : undefined,
+//       credentials: "include",
+//     });
+
+//     // Create new response
+//     const res = new NextResponse(fetchRes.body, {
+//       status: fetchRes.status,
+//       headers: fetchRes.headers,
+//     });
+
+//     return res;
+//   }
+
+//   return NextResponse.next();
+// }
+
+// export const config = {
+//   matcher: [
+//     "/dashboard/:path*",
+//     "/login",
+//     "/api/:path*", 
+//   ],
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = "https://mcq-analysis.vercel.app";
 
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
+
+  // Read cookies
   const accessToken = req.cookies.get("cbd_atkn_91f2a")?.value;
   const refreshToken = req.cookies.get("cbd_rtkn_7c4d1")?.value;
 
-  // 🔒 Protect dashboard pages
+  const  accessData = {
+    accessToken
+  }
+
+  console.log("AccessToken", accessToken)
+  console.log("RefreshToken", refreshToken)
+
+  // Debug token log
+  console.log("🔐 Access Token:", accessToken);
+
+  // 🔒 Protect dashboard routes
   if (pathname.startsWith("/dashboard") && !accessToken) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // 🚫 Prevent logged-in user from visiting login
+  // 🚫 Prevent logged-in users from visiting /login
   if (pathname === "/login" && accessToken) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // 🟢 Proxy APIs `/api/**`
+  // 🟢 PROXY API REQUESTS
   if (pathname.startsWith("/api/")) {
-    const backendPath = pathname.replace("/api", "/api/v1"); // adjust as needed
+    const backendPath = pathname.replace("/api", "/api/v1"); // Adjust backend path
     const backendURL = `${BACKEND_URL}${backendPath}${search}`;
 
-    // ⬇ Forward request to backend with tokens
+    // Forward request to backend with token
     const fetchRes = await fetch(backendURL, {
       method: req.method,
       headers: {
         "Content-Type": req.headers.get("Content-Type") || "",
-        Cookie: `cbd_atkn_91f2a=${accessToken}; cbd_rtkn_7c4d1=${refreshToken}`,
+        Authorization: accessToken ? `Bearer ${accessToken}` : "",
+        "x-refresh-token": refreshToken || "",
       },
-      body: req.method !== "GET" && req.method !== "HEAD" ? await req.text() : undefined,
-      credentials: "include",
+      body:
+        req.method !== "GET" && req.method !== "HEAD"
+          ? await req.text()
+          : undefined,
     });
 
-    // Create new response
-    const res = new NextResponse(fetchRes.body, {
+    // Return backend response to frontend
+    return new NextResponse(fetchRes.body, {
       status: fetchRes.status,
       headers: fetchRes.headers,
     });
-
-    return res;
   }
 
   return NextResponse.next();
 }
 
+// Which routes middleware will run on
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/login",
-    "/api/:path*", // our proxy layer
+    "/dashboard/:path*", 
+    "/login",            
+    "/api/:path*",      
   ],
 };
+
+
+
+
+
+
+
+
+
+
