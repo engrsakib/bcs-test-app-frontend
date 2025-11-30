@@ -93,8 +93,8 @@ import { cookies } from "next/headers";
 
 export async function GET(req: Request) {
   try {
-    const cookieStore = cookies();
-    const token = cookieStore.get("cbd_atkn_91f2a")?.value;
+    const cookieStore = await cookies();
+    const token =await cookieStore.get("cbd_atkn_91f2a")?.value;
 
     if (!token) {
       return NextResponse.json(

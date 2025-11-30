@@ -179,11 +179,237 @@
 
 
 
+// "use client";
+
+// import { useForm } from "react-hook-form";
+// import { Phone, User2, Lock, ShieldCheck } from "lucide-react";
+// import Swal from "sweetalert2";
+
+// // Roles Enum
+// export const ROLES = {
+//   FOUNDER: "founder",
+//   SUPER_ADMIN: "super_admin",
+//   ADMIN: "admin",
+//   MODERATOR: "moderator",
+// };
+
+// const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
+
+// export default function CreateAdminForm() {
+//   const {
+//     register,
+//     handleSubmit,
+//     reset,
+//     formState: { errors, isSubmitting },
+//   } = useForm();
+
+//   const onSubmit = async (data: any) => {
+//     try {
+//       const res = await fetch(
+//         `${BASE_URL}/admin/create`,
+//         {
+//           method: "POST",
+//           headers: { "Content-Type": "application/json" },
+//           body: JSON.stringify(data),
+//         }
+//       );
+
+//       const result = await res.json();
+//       console.log("CreateAdmin from", result)
+
+//       if (result.success) {
+//         Swal.fire(
+//           "Success!",
+//           "Admin Created Successfully. Verification OTP Sent.",
+//           "success"
+//         );
+//         reset();
+//       } else {
+//         Swal.fire("Error", result.message || "Failed to create admin.", "error");
+//       }
+//     } catch (error) {
+//       Swal.fire("Server Error", "Something went wrong!", "error");
+//     }
+//   };
+
+//   return (
+//     <div className="w-full flex flex-col items-center px-4 py-10">
+      
+//       {/* Title Section */}
+//       <div className="w-full max-w-4xl mb-8">
+//         <h1 className="text-3xl font-bold text-green-800">Create Admin</h1>
+//         <p className="text-gray-600">
+//           Add a new admin to the Smart Learning – MCQ Analysis system.
+//         </p>
+//       </div>
+
+//       {/* Form Card */}
+//       <div className="w-full max-w-4xl bg-white shadow-xl rounded-2xl p-8 border border-green-200">
+//         <form
+//           onSubmit={handleSubmit(onSubmit)}
+//           className="grid grid-cols-1 md:grid-cols-2 gap-6"
+//         >
+          
+//           {/* Full Name */}
+//           <div className="flex flex-col">
+//             <label className="font-semibold text-gray-700 mb-2">
+//               Full Name
+//             </label>
+//             <div className="relative">
+//               <User2 className="absolute left-3 top-3 text-gray-400" />
+//               <input
+//                 type="text"
+//                 placeholder="Enter full name"
+//                 {...register("name", { required: "Name is required" })}
+//                 className={`w-full pl-10 p-3 rounded-xl border-2 ${
+//                   errors.name
+//                     ? "border-red-300 focus:border-red-500"
+//                     : "border-gray-200 focus:border-green-500"
+//                 }`}
+//               />
+//             </div>
+//             {errors.name && (
+//               <span className="text-red-500 text-sm mt-1">
+//                 {errors?.name?.message as string}
+//               </span>
+//             )}
+//           </div>
+
+//           {/* Phone Number */}
+//           <div className="flex flex-col">
+//             <label className="font-semibold text-gray-700 mb-2">
+//               Phone Number
+//             </label>
+//             <div className="relative">
+//               <Phone className="absolute left-3 top-3 text-gray-400" />
+//               <input
+//                 type="text"
+//                 placeholder="01XXXXXXXXX"
+//                 {...register("phone_number", {
+//                   required: "Phone number is required",
+//                   minLength: { value: 11, message: "Invalid phone number" },
+//                 })}
+//                 className={`w-full pl-10 p-3 rounded-xl border-2 ${
+//                   errors.phone_number
+//                     ? "border-red-300 focus:border-red-500"
+//                     : "border-gray-200 focus:border-green-500"
+//                 }`}
+//               />
+//             </div>
+//             {errors.phone_number && (
+//               <span className="text-red-500 text-sm mt-1">
+//                 {errors.phone_number.message as string}
+//               </span>
+//             )}
+//           </div>
+
+//           {/* Password */}
+//           <div className="flex flex-col">
+//             <label className="font-semibold text-gray-700 mb-2">
+//               Password
+//             </label>
+//             <div className="relative">
+//               <Lock className="absolute left-3 top-3 text-gray-400" />
+//               <input
+//                 type="password"
+//                 placeholder="Enter password"
+//                 {...register("password", {
+//                   required: "Password is required",
+//                   minLength: { value: 6, message: "Minimum 6 characters" },
+//                 })}
+//                 className={`w-full pl-10 p-3 rounded-xl border-2 ${
+//                   errors.password
+//                     ? "border-red-300 focus:border-red-500"
+//                     : "border-gray-200 focus:border-green-500"
+//                 }`}
+//               />
+//             </div>
+//             {errors.password && (
+//               <span className="text-red-500 text-sm mt-1">
+//                 {errors.password.message as string}
+//               </span>
+//             )}
+//           </div>
+
+//           {/* Role Dropdown */}
+//           <div className="flex flex-col">
+//             <label className="font-semibold text-gray-700 mb-2">
+//               Select Role
+//             </label>
+//             <div className="relative">
+//               <ShieldCheck className="absolute left-3 top-3 text-gray-400" />
+
+//               <select
+//                 {...register("role", { required: "Role is required" })}
+//                 className={`w-full pl-10 p-3 rounded-xl border-2 appearance-none ${
+//                   errors.role
+//                     ? "border-red-300 focus:border-red-500"
+//                     : "border-gray-200 focus:border-green-500"
+//                 }`}
+//               >
+//                 <option value="">Choose role</option>
+//                 <option value={ROLES.FOUNDER}>Founder</option>
+//                 <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
+//                 <option value={ROLES.ADMIN}>Admin</option>
+//                 <option value={ROLES.MODERATOR}>Moderator</option>
+//               </select>
+//             </div>
+
+//             {errors.role && (
+//               <span className="text-red-500 text-sm mt-1">
+//                 {errors.role.message as string}
+//               </span>
+//             )}
+//           </div>
+
+//           {/* Submit Button */}
+//           <div className="md:col-span-2 mt-4">
+//             <button
+//               disabled={isSubmitting}
+//               className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white 
+//               font-semibold py-3.5 rounded-xl shadow-lg hover:from-green-700 hover:to-emerald-700 
+//               transition-all"
+//             >
+//               {isSubmitting ? "Creating..." : "Create Admin"}
+//             </button>
+//           </div>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 
 import { useForm } from "react-hook-form";
 import { Phone, User2, Lock, ShieldCheck } from "lucide-react";
 import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
 
 // Roles Enum
 export const ROLES = {
@@ -193,9 +419,22 @@ export const ROLES = {
   MODERATOR: "moderator",
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
+// // Helper function to get cookie value
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  
+  if (parts.length === 2) {
+    return parts.pop()?.split(";").shift() || null;
+  }
+  return null;
+}
 
 export default function CreateAdminForm() {
+  const router = useRouter();
+  
   const {
     register,
     handleSubmit,
@@ -205,30 +444,71 @@ export default function CreateAdminForm() {
 
   const onSubmit = async (data: any) => {
     try {
+      // Get access token from cookie
+      const accessToken = getCookie("access_token");
+
+      if (!accessToken) {
+        Swal.fire({
+          title: "Unauthorized",
+          text: "Please login first",
+          icon: "warning",
+        });
+        router.push("/login");
+        return;
+      }
+
+      // Call backend API with Authorization header
       const res = await fetch(
-        `${BASE_URL}/admin/create`,
+        "https://mcq-analysis.vercel.app/api/v1/admin/create",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": accessToken,
+          },
+          credentials: "include", // Important for cookies
           body: JSON.stringify(data),
         }
       );
 
       const result = await res.json();
-      console.log("CreateAdmin from", result)
+      console.log("CreateAdmin response:", result);
 
       if (result.success) {
-        Swal.fire(
-          "Success!",
-          "Admin Created Successfully. Verification OTP Sent.",
-          "success"
-        );
-        reset();
+        Swal.fire({
+          title: "Success!",
+          text: "Admin Created Successfully. Verification OTP Sent.",
+          icon: "success",
+          confirmButtonColor: "#16a34a",
+        });
+        reset(); // Clear form
       } else {
-        Swal.fire("Error", result.message || "Failed to create admin.", "error");
+        // Handle different error cases
+        if (res.status === 401) {
+          Swal.fire({
+            title: "Session Expired",
+            text: "Please login again",
+            icon: "warning",
+          });
+          // Clear cookies
+          document.cookie = "access_token=; path=/; max-age=0";
+          document.cookie = "refresh_token=; path=/; max-age=0";
+          router.push("/login");
+        } else {
+          Swal.fire({
+            title: "Error",
+            text: result.message || "Failed to create admin.",
+            icon: "error",
+          });
+        }
       }
     } catch (error) {
-      Swal.fire("Server Error", "Something went wrong!", "error");
+      console.error("Create admin error:", error);
+      Swal.fire({
+        title: "Server Error",
+        text: "Something went wrong!",
+        icon: "error",
+      });
     }
   };
 
@@ -261,7 +541,7 @@ export default function CreateAdminForm() {
                 type="text"
                 placeholder="Enter full name"
                 {...register("name", { required: "Name is required" })}
-                className={`w-full pl-10 p-3 rounded-xl border-2 ${
+                className={`w-full pl-10 p-3 rounded-xl border-2 focus:outline-none transition-colors ${
                   errors.name
                     ? "border-red-300 focus:border-red-500"
                     : "border-gray-200 focus:border-green-500"
@@ -287,9 +567,15 @@ export default function CreateAdminForm() {
                 placeholder="01XXXXXXXXX"
                 {...register("phone_number", {
                   required: "Phone number is required",
-                  minLength: { value: 11, message: "Invalid phone number" },
+                  pattern: {
+                    value: /^01[0-9]{9}$/,
+                    message: "Invalid phone number format"
+                  },
+                  minLength: { value: 11, message: "Must be 11 digits" },
+                  maxLength: { value: 11, message: "Must be 11 digits" },
                 })}
-                className={`w-full pl-10 p-3 rounded-xl border-2 ${
+                maxLength={11}
+                className={`w-full pl-10 p-3 rounded-xl border-2 focus:outline-none transition-colors ${
                   errors.phone_number
                     ? "border-red-300 focus:border-red-500"
                     : "border-gray-200 focus:border-green-500"
@@ -317,7 +603,7 @@ export default function CreateAdminForm() {
                   required: "Password is required",
                   minLength: { value: 6, message: "Minimum 6 characters" },
                 })}
-                className={`w-full pl-10 p-3 rounded-xl border-2 ${
+                className={`w-full pl-10 p-3 rounded-xl border-2 focus:outline-none transition-colors ${
                   errors.password
                     ? "border-red-300 focus:border-red-500"
                     : "border-gray-200 focus:border-green-500"
@@ -337,11 +623,11 @@ export default function CreateAdminForm() {
               Select Role
             </label>
             <div className="relative">
-              <ShieldCheck className="absolute left-3 top-3 text-gray-400" />
+              <ShieldCheck className="absolute left-3 top-3 text-gray-400 pointer-events-none z-10" />
 
               <select
                 {...register("role", { required: "Role is required" })}
-                className={`w-full pl-10 p-3 rounded-xl border-2 appearance-none ${
+                className={`w-full pl-10 p-3 rounded-xl border-2 appearance-none focus:outline-none transition-colors bg-white ${
                   errors.role
                     ? "border-red-300 focus:border-red-500"
                     : "border-gray-200 focus:border-green-500"
@@ -365,12 +651,20 @@ export default function CreateAdminForm() {
           {/* Submit Button */}
           <div className="md:col-span-2 mt-4">
             <button
+              type="submit"
               disabled={isSubmitting}
               className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white 
               font-semibold py-3.5 rounded-xl shadow-lg hover:from-green-700 hover:to-emerald-700 
-              transition-all"
+              transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSubmitting ? "Creating..." : "Create Admin"}
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Admin"
+              )}
             </button>
           </div>
         </form>

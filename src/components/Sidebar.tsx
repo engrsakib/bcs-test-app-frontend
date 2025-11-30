@@ -190,7 +190,7 @@ export const Sidebar = () => {
     <aside className="w-64 bg-[#2B6A5B] border-r border-green-700/30 hidden md:flex flex-col shadow-lg">
       
 
-   <Link href="/">
+   <Link href="/dashboard">
       <div className="p-4 border-b border-green-700/50">
         {/* White background card for logo */}
         <div className="bg-white rounded-lg shadow-lg w-[150px] flex items-center justify-center py-2 

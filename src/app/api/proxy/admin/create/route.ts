@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // ⭐ auto token send
+        Authorization: token, // ⭐ auto token send
       },
       body: JSON.stringify(body),
     });
