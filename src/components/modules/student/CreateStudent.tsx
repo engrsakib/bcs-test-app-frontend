@@ -11,6 +11,10 @@ type FormType = {
   password: string;
 };
 
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+
+
 export default function CreateStudent() {
   const router = useRouter();
 
@@ -28,7 +32,7 @@ export default function CreateStudent() {
         role: "customer",
       };
 
-      const res = await fetch("https://mcq-analysis.vercel.app/api/v1/user/create-user-by-admin", {
+      const res = await fetch(`${BASE_URL}/user/create-user-by-admin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
