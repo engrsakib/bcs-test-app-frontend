@@ -1,9 +1,10 @@
+import UserManagementTable from '@/components/modules/_student/UserManagement'
 import React from 'react'
 
 export default function ViewStudentPage() {
   return (
     <div>
-      <h1>View Students Pages</h1>
+      <UserManagementTable></UserManagementTable>
     </div>
   )
 }
