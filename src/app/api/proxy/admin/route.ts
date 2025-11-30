@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 export async function GET(req: Request) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = await cookieStore.get("cbd_atkn_91f2a")?.value;
     console.log("Token", token)
 
