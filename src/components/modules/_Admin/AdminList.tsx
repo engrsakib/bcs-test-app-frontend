@@ -21,6 +21,7 @@ import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import UpdateAdminModal from "./UpdateModal";
 import ProfileModal from "./ProfileModal";
+import { ENV } from "@/config/env";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -191,7 +192,7 @@ export default function AdminList() {
       }).toString();
 
       const res = await fetch(
-        `https://mcq-analysis.vercel.app/api/v1/admin?${query}`,
+        `${ENV.BASE_URL}/admin?${query}`,
         {
           method: "GET",
           headers: {
@@ -199,6 +200,7 @@ export default function AdminList() {
             Authorization: accessToken,
           },
           credentials: "include",
+          cache:"force-cache",
         }
       );
 
@@ -285,7 +287,7 @@ export default function AdminList() {
       }
 
       const res = await fetch(
-        `https://mcq-analysis.vercel.app/api/v1/admin/${adminId}`,
+        `${ENV.BASE_URL}/admin/${adminId}`,
         {
           method: "DELETE",
           headers: {
