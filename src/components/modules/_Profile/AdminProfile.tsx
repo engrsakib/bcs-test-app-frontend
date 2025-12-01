@@ -31,6 +31,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { User, Edit2, Phone, Briefcase, FileText, Shield, Calendar, X } from 'lucide-react';
+import { ENV } from '@/config/env';
 
 interface AdminData {
   _id: string;
@@ -79,7 +80,7 @@ export default function AdminProfile() {
     try {
       const accessToken = localStorage.getItem('access_token');
       
-      const response = await fetch('https://mcq-analysis.vercel.app/api/v1/admin/auth', {
+      const response = await fetch(`${ENV.BASE_URL}/admin/auth`, {
         credentials: "include",
         headers: {
           'Authorization': accessToken || '',
