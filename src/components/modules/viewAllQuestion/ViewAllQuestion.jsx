@@ -4306,7 +4306,7 @@ import Link from "next/link";
 import Swal from "sweetalert2";
 import { ENV } from "@/config/env";
 
-// Declare math-field as a valid JSX element
+
 
 
 function getCookie(name) {
@@ -4861,7 +4861,7 @@ export default function ViewAllQuestions() {
 
         {/* ===================== PAGINATION ===================== */}
         <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-gray-600">
+          <p className="text-green-900">
             Showing page {meta.page} of {Math.ceil(meta.total / meta.limit)} ({meta.total} total questions)
           </p>
 
