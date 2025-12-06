@@ -1,3 +1,12 @@
+
+
+
+
+
+
+
+
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,17 +19,14 @@ function getCookie(name: string): string | null {
   
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  
+
   if (parts.length === 2) {
     return parts.pop()?.split(";").shift() || null;
   }
   return null;
 }
 
-
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-
-
 
 interface AdminProfile {
   _id: string;
@@ -33,7 +39,6 @@ interface AdminProfile {
   biography?: string;
   createdAt?: string;
   permissions?: string[];
-
 }
 
 interface ProfileModalProps {
@@ -43,38 +48,8 @@ interface ProfileModalProps {
 
 export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
-  console.log("AdminModal", admin)
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-
-  // Default permissions if not provided by API
-  const defaultPermissions = [
-    "create student",
-    "view student", 
-    "update student",
-    "delete student",
-    "view question",
-    "update question",
-    "delete question",
-    "create book",
-    "view book",
-    "update book",
-    "delete book",
-    "create guideline",
-    "view guideline",
-    "update guideline",
-    "delete guideline",
-    "view staff",
-    "update staff",
-    "delete staff",
-    "manage permissions",
-    "create question",
-    "create staff",
-    "create exam",
-    "view exam",
-    "update exam",
-    "delete exam"
-  ];
 
   const fetchAdminProfile = async () => {
     try {
@@ -91,17 +66,14 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
         return;
       }
 
-      const res = await fetch(
-        `${BASE_URL}/admin/${adminId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": accessToken,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${BASE_URL}/admin/${adminId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": accessToken,
+        },
+        credentials: "include",
+      });
 
       if (res.status === 401) {
         Swal.fire({
@@ -114,10 +86,8 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
       }
 
       const json = await res.json();
-      console.log("Profile Response:", json);
 
       if (!json.success) {
-        console.error(json);
         Swal.fire({
           title: "Error",
           text: json.message || "Failed to fetch profile",
@@ -129,7 +99,6 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
 
       setAdmin(json.data);
     } catch (e) {
-      console.log(e);
       Swal.fire({
         title: "Error",
         text: "Failed to fetch admin profile",
@@ -159,9 +128,9 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-white bg-opacity-50 transition-opacity"
+      {/* Backdrop with blur and dark overlay */}
+      <div
+        className="fixed inset-0 backdrop-blur-sm bg-black/40 transition-opacity"
         onClick={onClose}
       ></div>
 
@@ -183,12 +152,11 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
             </div>
           ) : admin ? (
             <>
-              {/* Header with Green Background */}
+              {/* Header */}
               <div className="h-32 bg-gradient-to-r from-green-700 to-green-900"></div>
 
               {/* Profile Content */}
               <div className="px-6 pb-6">
-                {/* Profile Picture and Name */}
                 <div className="flex flex-col sm:flex-row translate-y-7 items-center sm:items-end gap-4 -mt-16 mb-6">
                   <div className="relative">
                     <img
@@ -215,7 +183,7 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Contact Information */}
+                  {/* Contact Info */}
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">
                       Contact Information
@@ -252,7 +220,7 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
                         <div>
                           <p className="text-sm text-gray-500">Joined</p>
                           <p className="text-gray-900 font-medium">
-                            {formatDate(admin?.createdAt )}
+                            {formatDate(admin?.createdAt)}
                           </p>
                         </div>
                       </div>
@@ -277,22 +245,24 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
                   </div>
                 </div>
 
-                {/* Permissions Section */}
-                <div className="mt-8">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    Permissions
-                  </h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {(admin.permissions || defaultPermissions).map((permission, index) => (
-                      <div
-                        key={index}
-                        className="px-4 py-2 bg-green-50 text-green-800 text-sm text-center rounded-lg border border-green-100"
-                      >
-                        {permission.replace(/_/g, " ")}
-                      </div>
-                    ))}
+                {/* Conditionally Render Permissions */}
+                {admin.permissions && admin.permissions.length > 0 && (
+                  <div className="mt-8">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                      Permissions
+                    </h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {admin.permissions.map((permission, index) => (
+                        <div
+                          key={index}
+                          className="px-4 py-2 bg-green-50 text-green-800 text-sm text-center rounded-lg border border-green-100"
+                        >
+                          {permission.replace(/_/g, " ")}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </>
           ) : (

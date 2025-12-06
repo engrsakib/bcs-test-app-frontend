@@ -199,10 +199,12 @@ export default function AdminList() {
             "Content-Type": "application/json",
             Authorization: accessToken,
           },
-          credentials: "include",
+          // credentials: "include",
           cache:"force-cache",
         }
       );
+
+      console.log("From Admin List", res)
 
       if (res.status === 401) {
         Swal.fire({

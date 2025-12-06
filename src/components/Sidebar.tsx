@@ -15,87 +15,6 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import Image from "next/image";
 
-// const links = [
-//   { name: "Dashboard", href: "/dashboard", icon: Trophy },
-//   {
-//     name: "Questions",
-//     icon: GraduationCap,
-//     basePath: "/dashboard/question", // Path update kora holo
-//     subLinks: [
-//       { name: "Create Question", href: "/dashboard/question/create-question" },
-//       { name: "View All Question", href: "/dashboard/question/view-question" },
-//     ],
-//   },
-//   {
-//     name: "Exam",
-//     icon: GraduationCap,
-//     basePath: "/dashboard/exam",
-//     subLinks: [
-//       { name: "Create Exam", href: "/dashboard/exam/create-exam" },
-//       { name: "View All Exam", href: "/dashboard/exam/view-exam" },
-//     ],
-//   },
-//   // { name: "Team Plan", href: "/dashboard/user", icon: FileText },
-
-
-
-//   {
-//     name: "Team plan",
-//     icon: Video,
-//     basePath: "/dashboard/user",
-//     subLinks: [
-//       { name: "Create Admin ", href: "/dashboard/user/create-admin" },
-//       { name: "View All Videos", href: "/dashboard/youtube/view-video" },
-//     ],
-//   },
-
-
-
-
-
-
-//   { name: "Result", href: "/dashboard/result", icon: Trophy },
-
-
-//   // guideline link add kora holo
-
-//   {
-//     name: "Guideline",
-//     icon: Book,
-//     basePath: "/dashboard/guideline",
-//     subLinks: [
-//       { name: "Create Guideline", href: "/dashboard/guideline/add-guideline" },
-//       { name: "View All Guideline", href: "/dashboard/guideline/view-guideline" },
-//     ],
-//   },
-
-
-//   {
-//     name: "Youtube",
-//     icon: Video,
-//     basePath: "/dashboard/youtube",
-//     subLinks: [
-//       { name: "Create Video", href: "/dashboard/youtube/create-video" },
-//       { name: "View All Videos", href: "/dashboard/youtube/view-video" },
-//     ],
-//   },
-//   {
-//     name: "My Book",
-//     icon: Book,
-//     basePath: "/dashboard/my-book",
-//     subLinks: [
-//       { name: "Create Book", href: "/dashboard/my-book/create-book" },
-//       { name: "View Books", href: "/dashboard/my-book/view-book" },
-//     ],
-//   },
-
-
-
-//   // { name: "YouTube", href: "/dashboard/youtube", icon: Video },
-//   // { name: "My Book", href: "/dashboard/rokomari", icon: Link2 },
-//   { name: "Manage-Permission", href: "/dashboard/permission", icon: Link2 },
-// ];
-
 
 const links = [
   { name: "Dashboard", href: "/dashboard", icon: Trophy },
@@ -121,7 +40,7 @@ const links = [
   },
 
   {
-    name: "Team Plan",
+    name: "Our Team",
     icon: Video,
     basePath: "/dashboard/team",
     subLinks: [
