@@ -127,15 +127,20 @@ export default function AdminProfile() {
       return;
     }
 
+
+       const cloud_name_key = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+       const upload_preset_key =process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
     setUploadingImage(true);
     try {
       const formDataUpload = new FormData();
       formDataUpload.append('file', file);
-      formDataUpload.append('upload_preset', 'yt_new');
-      formDataUpload.append('cloud_name', 'drbq8i19k');
-
+      formDataUpload.append('upload_preset', upload_preset_key!);
+      formDataUpload.append('cloud_name', cloud_name_key!);
+      
       const response = await fetch(
-        `https://api.cloudinary.com/v1_1/drbq8i19k/image/upload`,
+        `https://api.cloudinary.com/v1_1/${cloud_name_key}/image/upload`,
         {
           method: 'POST',
           body: formDataUpload,

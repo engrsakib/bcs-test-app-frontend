@@ -1,4 +1,168 @@
 
+// "use client";
+
+// import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List, ListOrdered, Type, FileText, Calendar, Clock, Tag } from 'lucide-react';
+// import React from 'react'
+
+// export default function CreateGuideline() {
+//   return (
+//   <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 p-4 sm:p-6 lg:p-8">
+//   <div className="max-w-4xl mx-auto">
+
+//     {/* Header */}
+//     <div className="bg-gradient-to-r from-teal-600 to-emerald-600 rounded-t-2xl p-6 sm:p-8 shadow-lg">
+//       <div className="flex items-center gap-3">
+//         <div className="bg-white bg-opacity-20 p-3 rounded-full">
+//           <FileText className="w-8 h-8 text-white" />
+//         </div>
+//         <div>
+//           <h1 className="text-2xl sm:text-3xl font-bold text-white">Create Guideline</h1>
+//           <p className="text-teal-50 text-sm sm:text-base mt-1">MCQ Application Guidelines Setup</p>
+//         </div>
+//       </div>
+//     </div>
+
+//     {/* Form Content */}
+//     <div className="bg-white rounded-b-2xl shadow-xl p-6 sm:p-8 space-y-6">
+
+//       {/* Title */}
+//       <div className="space-y-2">
+//         <label className="flex items-center gap-2 text-gray-700 font-semibold text-sm sm:text-base">
+//           <Type className="w-5 h-5 text-teal-600" />
+//           Title
+//         </label>
+//         <input
+//           type="text"
+//           placeholder="Enter guideline title"
+//           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
+//         />
+//       </div>
+
+//       {/* Date + Time */}
+//       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//         <div className="space-y-2">
+//           <label className="flex items-center gap-2 text-gray-700 font-semibold text-sm sm:text-base">
+//             <Calendar className="w-5 h-5 text-teal-600" />
+//             Date
+//           </label>
+//           <input
+//             type="date"
+//             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
+//           />
+//         </div>
+
+//         <div className="space-y-2">
+//           <label className="flex items-center gap-2 text-gray-700 font-semibold text-sm sm:text-base">
+//             <Clock className="w-5 h-5 text-teal-600" />
+//             Time
+//           </label>
+//           <input
+//             type="time"
+//             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
+//           />
+//         </div>
+//       </div>
+
+//       {/* Category + Status */}
+//       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//         <div className="space-y-2">
+//           <label className="flex items-center gap-2 text-gray-700 font-semibold text-sm sm:text-base">
+//             <Tag className="w-5 h-5 text-teal-600" />
+//             Category
+//           </label>
+//           <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 bg-white transition-all">
+//             <option>Select category</option>
+//             <option>General Guidelines</option>
+//             <option>Exam Guidelines</option>
+//             <option>MCQ Guidelines</option>
+//             <option>Rules & Regulations</option>
+//             <option>Instructions</option>
+//           </select>
+//         </div>
+
+//         <div className="space-y-2">
+//           <label className="flex items-center gap-2 text-gray-700 font-semibold text-sm sm:text-base">
+//             <FileText className="w-5 h-5 text-teal-600" />
+//             Status
+//           </label>
+//           <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 bg-white transition-all">
+//             <option>Published</option>
+//             <option>Unpublished</option>
+//           </select>
+//         </div>
+//       </div>
+
+//       {/* Text Editor */}
+//       <div className="space-y-2">
+//         <label className="flex items-center gap-2 text-gray-700 font-semibold text-sm sm:text-base">
+//           <AlignLeft className="w-5 h-5 text-teal-600" />
+//           Description
+//         </label>
+
+//         {/* Toolbar */}
+//         <div className="bg-gray-50 border-2 border-gray-200 rounded-t-xl p-3 flex flex-wrap gap-2">
+//           <button className="p-2 rounded-lg bg-white text-gray-600 hover:bg-gray-100"><Bold className="w-5 h-5" /></button>
+//           <button className="p-2 rounded-lg bg-white text-gray-600 hover:bg-gray-100"><Italic className="w-5 h-5" /></button>
+//           <button className="p-2 rounded-lg bg-white text-gray-600 hover:bg-gray-100"><Underline className="w-5 h-5" /></button>
+//           <div className="w-px bg-gray-300 mx-2"></div>
+//           <button className="p-2 rounded-lg bg-white text-gray-600 hover:bg-gray-100"><List className="w-5 h-5" /></button>
+//           <button className="p-2 rounded-lg bg-white text-gray-600 hover:bg-gray-100"><ListOrdered className="w-5 h-5" /></button>
+//         </div>
+
+//         {/* Description Box */}
+//         <textarea
+//           rows={8}
+//           placeholder="Write your guideline description here..."
+//           className="w-full px-4 py-3 border-2 border-t-0 border-gray-200 rounded-b-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all resize-none"
+//         ></textarea>
+//       </div>
+
+//       {/* Buttons */}
+//       <div className="flex flex-col sm:flex-row gap-3 pt-4">
+//         <button className="flex-1 bg-gradient-to-r from-teal-600 to-emerald-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-teal-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+//           Create Guideline
+//         </button>
+//         <button className="sm:w-32 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-200 transition-all">
+//           Reset
+//         </button>
+//       </div>
+//     </div>
+
+//     {/* Info Card */}
+//     <div className="mt-6 bg-teal-50 border-2 border-teal-200 rounded-xl p-4 sm:p-6">
+//       <div className="flex gap-3">
+//         <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
+//           <FileText className="w-5 h-5 text-white" />
+//         </div>
+//         <div>
+//           <h3 className="font-semibold text-teal-900 mb-1">Guideline Status</h3>
+//           <p className="text-sm text-teal-700">
+//             <strong>Published:</strong> Visible immediately.<br />
+//             <strong>Unpublished:</strong> Saved as draft.
+//           </p>
+//         </div>
+//       </div>
+//     </div>
+
+//   </div>
+// </div>
+
+//   )
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 "use client";
 
@@ -359,3 +523,6 @@ const CreateGuideline = () => {
 };
 
 export default CreateGuideline;
+
+
+
