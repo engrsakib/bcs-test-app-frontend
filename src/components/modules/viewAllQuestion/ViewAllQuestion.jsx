@@ -3895,7 +3895,10 @@ export default function ViewAllQuestions() {
         headers: {
           Authorization: accessToken || "",
         },
-        cache:"force-cache",
+        // cache:"force-cache",
+        next:{
+          revalidate:10
+        }
       });
 
       const result = await res.json();
