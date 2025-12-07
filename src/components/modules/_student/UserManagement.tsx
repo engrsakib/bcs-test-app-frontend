@@ -3815,7 +3815,7 @@ export default function UserManagementTable() {
               <Loader2 className="w-10 h-10 animate-spin text-green-800" />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto min-h-screen">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
