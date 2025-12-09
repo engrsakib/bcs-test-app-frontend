@@ -38,7 +38,7 @@
     "src/app/dashboard/my-book/page.jsx",
     "tailwind.config.js",
     "src/app/dashboard/exam/view-question/page.jsx",
-    "src/components/modules/guidelineCompo/ViewAllGuideline.jsx",
+    "src/components/modules/guidelineCompo/ViewAllGuideline.tsx",
     "src/components/modules/_Admin/UpdateModal.jsx",
     "src/components/modules/_student/UserManagement.tsx",
     "src/components/modules/viewAllQuestion/ViewAllQuestion.jsx",

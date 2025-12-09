@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Edit2, Phone, Briefcase, FileText, Shield, Calendar, X } from 'lucide-react';
 import { ENV } from '@/config/env';
+import getCookie from '@/util/GetCookie';
 
 interface AdminData {
   _id: string;
@@ -37,6 +38,9 @@ export default function AdminProfile() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [updating, setUpdating] = useState<boolean>(false);
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
+
+
+  console.log("Admin Profile ", adminData)
   const [formData, setFormData] = useState<FormData>({
     name: '',
     designation: '',
@@ -52,10 +56,10 @@ export default function AdminProfile() {
 
   const fetchAdminData = async (): Promise<void> => {
     try {
-      const accessToken = localStorage.getItem('access_token');
+      const accessToken = getCookie('access_token');
       
       const response = await fetch(`${ENV.BASE_URL}/admin/auth`, {
-        credentials: "include",
+        // credentials: "include",
         headers: {
           'Authorization': accessToken || '',
           'Content-Type': 'application/json'
@@ -86,9 +90,10 @@ export default function AdminProfile() {
   const handleUpdateProfile = async (): Promise<void> => {
     setUpdating(true);
     try {
-      const accessToken = localStorage.getItem('access_token');
+    
       
-      const response = await fetch(`https://mcq-analysis.vercel.app/api/v1/admin/update-staff/${adminData?._id}`, {
+      const accessToken = getCookie('access_token');
+      const response = await fetch(`${ENV.BASE_URL}/admin/update-staff/${adminData?._id}`, {
         method: 'PATCH',
         credentials: "include",
         headers: {

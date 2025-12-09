@@ -1,9 +1,10 @@
+import CreateBook from '@/components/modules/_Book/CreateBook'
 import React from 'react'
 
 export default function CreateBookPage() {
   return (
     <div>
-      <h1>This is Create book pages</h1>
+        <CreateBook></CreateBook>
     </div>
   )
 }

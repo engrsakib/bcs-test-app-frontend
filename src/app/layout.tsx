@@ -6,7 +6,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 
-// ✅ 1️⃣ Import Poppins font
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"], 
