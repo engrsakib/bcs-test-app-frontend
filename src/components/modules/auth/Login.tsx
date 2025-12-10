@@ -16,14 +16,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Swal from "sweetalert2";
+import { ENV } from "@/config/env";
 
 const Login: React.FC = () => {
   const router = useRouter();
 
-  // ❌ Removed useSearchParams()
+
   const [redirectUrl, setRedirectUrl] = useState("/dashboard");
 
-  // ✅ Safe Alternative — No Suspense Needed
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -88,7 +88,7 @@ const Login: React.FC = () => {
 
     try {
       const res = await fetch(
-        "https://mcq-analysis.vercel.app/api/v1/admin/login",
+        `${ENV.BASE_URL}/admin/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

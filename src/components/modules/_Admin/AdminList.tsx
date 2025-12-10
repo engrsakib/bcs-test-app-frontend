@@ -159,10 +159,12 @@ export default function AdminList() {
         return;
       }
 
+      const BASE_URL =  process.env.NEXT_PUBLIC_BASE_URL ;
+
       // Fetch current logged-in user info
       try {
         const currentUserRes = await fetch(
-          `https://mcq-analysis.vercel.app/api/v1/admin/auth`,
+          `${BASE_URL}/admin/auth`,
           {
             method: "GET",
             headers: {
@@ -170,7 +172,9 @@ export default function AdminList() {
               Authorization: accessToken,
             },
             credentials: "include",
+            cache:"force-cache",
           }
+          
         );
 
         if (currentUserRes.ok) {

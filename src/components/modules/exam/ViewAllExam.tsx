@@ -300,13 +300,13 @@ export default function ExamListPage() {
               {/* PAGINATION */}
               <div className="flex justify-between p-4 bg-gray-50 border-t">
                 <button onClick={() => handlePageChange(page - 1)} disabled={page === 1} className="px-4 py-2 border rounded disabled:opacity-50">
-                  <FaChevronLeft /> Prev
+            Prev
                 </button>
 
                 <span className="text-gray-700">Page {page} of {totalPages}</span>
 
                 <button onClick={() => handlePageChange(page + 1)} disabled={page === totalPages} className="px-4 py-2 border rounded disabled:opacity-50">
-                  Next <FaChevronRight />
+                  Next
                 </button>
               </div>
 

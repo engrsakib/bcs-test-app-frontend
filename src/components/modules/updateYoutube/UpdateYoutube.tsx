@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import getCookie from "@/util/GetCookie";
+import { ENV } from "@/config/env";
 
 const BASE_URL = "https://mcq-analysis.vercel.app/api/v1";
 
@@ -144,7 +145,7 @@ export default function UpdateYouTube() {
     setSubmitting(true);
 
     try {
-      const res = await fetch(`${BASE_URL}/youtube/${video_number}`, {
+      const res = await fetch(`${ENV.BASE_URL}/youtube/${video_number}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

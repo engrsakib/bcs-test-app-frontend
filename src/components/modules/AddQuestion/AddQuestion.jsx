@@ -391,7 +391,7 @@ export default function CreateQuestionForm() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Create New Question</h1>
           <span className="text-sm text-gray-500 bg-green-50 px-3 py-1 rounded-full">
-            🟢 API Active
+            🟢  Active
           </span>
         </div>
 

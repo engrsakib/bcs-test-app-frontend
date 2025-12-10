@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { X, Loader2, Phone, Briefcase, Calendar, FileText } from "lucide-react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
+import { ENV } from "@/config/env";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -66,7 +67,7 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
         return;
       }
 
-      const res = await fetch(`${BASE_URL}/admin/${adminId}`, {
+      const res = await fetch(`${ENV.BASE_URL}/admin/${adminId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

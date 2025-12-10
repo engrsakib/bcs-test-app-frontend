@@ -230,7 +230,7 @@ export default function UpdateGuideline() {
             </select>
           </div>
 
-          {/* STATUS */}
+     
           <div>
             <label className="flex gap-2 text-gray-700 font-semibold">
               <FileText className="text-teal-600" /> Status

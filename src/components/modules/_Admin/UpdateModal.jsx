@@ -1,178 +1,3 @@
-// "use client";
-
-// import { useState } from "react";
-// import Swal from "sweetalert2";
-
-// export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
-//   const [form, setForm] = useState({
-//     name: admin?.name || "",
-//     designation: admin?.designation || "",
-//     phone_number: admin?.phone_number || "",
-//     role: admin?.role || "",
-//     bio: admin?.bio || "",
-//     image: admin?.image || "",
-//     password: "",
-//   });
-
-//   const [uploading, setUploading] = useState(false);
-
-//   const cloudinary_preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-//   const cloudinary_name =process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-
-//   // 📌 Cloudinary Image Upload
-//   const handleImageUpload = async (e) => {
-//     const file = e.target.files[0];
-//     if (!file) return;
-
-//     setUploading(true);
-
-//     const data = new FormData();
-//     data.append("file", file);
-//     data.append("upload_preset", cloudinary_preset); 
-//     data.append("cloud_name", cloudinary_name);
-
-//     const res = await fetch(
-//       `https://api.cloudinary.com/v1_1/${cloudinary_name}/image/upload`,
-//       {
-//         method: "POST",
-//         body: data,
-//       }
-//     );
-
-//     const uploaded = await res.json();
-//     setForm({ ...form, image: uploaded.secure_url });
-
-//     setUploading(false);
-//   };
-
-//   // 📌 Update Staff API Call
-//   const handleUpdate = async () => {
-//     try {
-//       const accessToken = document.cookie
-//         .split("; ")
-//         .find((row) => row.startsWith("access_token="))
-//         ?.split("=")[1];
-
-//       const res = await fetch(
-//         `https://mcq-analysis.vercel.app/api/v1/admin/update-staff/${admin._id}`,
-//         {
-//           method: "PATCH",
-//           headers: {
-//             "Content-Type": "application/json",
-//             Authorization: accessToken,
-//           },
-//           body: JSON.stringify(form),
-//         }
-//       );
-
-//       const json = await res.json();
-
-//       if (!json.success) {
-//         return Swal.fire("Error", json.message, "error");
-//       }
-
-//       Swal.fire("Updated!", "Admin info updated successfully", "success");
-//       onUpdated();
-//       onClose();
-//     } catch (error) {
-//       Swal.fire("Error", "Something went wrong!", "error");
-//     }
-//   };
-
-//   return (
-//     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
-//       <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6">
-//         <h2 className="text-xl font-semibold mb-4">Update Admin</h2>
-
-//         {/* Name */}
-//         <input
-//           className="w-full border rounded p-2 mb-3"
-//           value={form.name}
-//           onChange={(e) => setForm({ ...form, name: e.target.value })}
-//           placeholder="Name"
-//         />
-
-//         {/* Phone */}
-//         <input
-//           className="w-full border rounded p-2 mb-3"
-//           value={form.phone_number}
-//           onChange={(e) =>
-//             setForm({ ...form, phone_number: e.target.value })
-//           }
-//           placeholder="Phone Number"
-//         />
-
-//         {/* Role */}
-//         <select
-//           className="w-full border rounded p-2 mb-3"
-//           value={form.role}
-//           onChange={(e) => setForm({ ...form, role: e.target.value })}
-//         >
-//           <option value="">Select Role</option>
-//           <option value="admin">Admin</option>
-//           <option value="super_admin">Super Admin</option>
-//           <option value="moderator">Moderator</option>
-//           <option value="content_manager">Content Manager</option>
-//         </select>
-
-//         {/* Bio */}
-//         <textarea
-//           className="w-full border rounded p-2 mb-3"
-//           value={form.bio}
-//           onChange={(e) => setForm({ ...form, bio: e.target.value })}
-//           placeholder="Bio"
-//         ></textarea>
-
-//         {/* Password */}
-//         <input
-//           className="w-full border rounded p-2 mb-3"
-//           value={form.password}
-//           onChange={(e) => setForm({ ...form, password: e.target.value })}
-//           placeholder="Password (optional)"
-//           type="password"
-//         />
-
-//         {/* Image Upload */}
-//         <label className="text-sm text-gray-700">Profile Image</label>
-//         <input
-//           type="file"
-//           accept="image/*"
-//           onChange={handleImageUpload}
-//           className="w-full mt-1 mb-3"
-//         />
-
-//         {uploading ? (
-//           <p className="text-blue-600 mb-3">Uploading...</p>
-//         ) : (
-//           form.image && (
-//             <img
-//               src={form.image}
-//               className="w-20 h-20 rounded-full object-cover border mb-3"
-//             />
-//           )
-//         )}
-
-//         <div className="flex justify-end gap-3 pt-2">
-//           <button
-//             onClick={onClose}
-//             className="px-4 py-2 bg-gray-200 rounded"
-//           >
-//             Cancel
-//           </button>
-
-//           <button
-//             onClick={handleUpdate}
-//             className="px-4 py-2 bg-green-700 text-white rounded"
-//           >
-//             Update
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
 
 
 
@@ -200,12 +25,11 @@ export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
   const cloudinary_preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
   const cloudinary_name = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
-  // 📌 Cloudinary Image Upload
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // File validation
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
@@ -269,8 +93,10 @@ export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
         .find((row) => row.startsWith("access_token="))
         ?.split("=")[1];
 
+        const BASE_URL =  process.env.NEXT_PUBLIC_BASE_URL;
+
       const res = await fetch(
-        `https://mcq-analysis.vercel.app/api/v1/admin/update-staff/${admin._id}`,
+        `${BASE_URL}/admin/update-staff/${admin._id}`,
         {
           method: "PATCH",
           headers: {

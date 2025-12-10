@@ -250,8 +250,10 @@ export default function ManagePermissions() {
         return;
       }
 
+      const base_ur = process.env.NEXT_PUBLIC_BASE_URL;
+
       const res = await fetch(
-        `https://mcq-analysis.vercel.app/api/v1/permissions`,
+        `${base_ur}/permissions`,
         {
           method: "PATCH",
           headers: {

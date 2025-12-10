@@ -18,7 +18,6 @@ import { ENV } from "@/config/env";
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
-const BASE_URL = "https://mcq-analysis.vercel.app/api/v1/books";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -58,51 +57,6 @@ export default function CreateBook() {
     setTextStyle((prev) => ({ ...prev, [style]: !prev[style] }));
   };
 
-  // ========= Cloudinary Upload Handler ==========
-//   const handleThumbnailUpload = async (event: any) => {
-//     const file = event.target.files[0];
-//     if (!file) return;
-
-//     setUploading(true);
-
-//     const form = new FormData();
-//     form.append("file", file);
-//     form.append("upload_preset", UPLOAD_PRESET);
-
-//     try {
-//       const res = await fetch(
-//         `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-//         {
-//           method: "POST",
-//           body: form,
-//         }
-//       );
-
-//       const data = await res.json();
-//       if (data.secure_url) {
-//         setFormData((prev) => ({
-//           ...prev,
-//           thumbnail_url: data.secure_url,
-//         }));
-
-//         Swal.fire({
-//           icon: "success",
-//           title: "Thumbnail Uploaded!",
-//           text: "Your thumbnail has been uploaded successfully.",
-//           confirmButtonColor: "#0d9488",
-//         });
-//       }
-//     } catch (error) {
-//       Swal.fire({
-//         icon: "error",
-//         title: "Upload Failed",
-//         text: "Thumbnail upload failed!",
-//         confirmButtonColor: "#dc2626",
-//       });
-//     } finally {
-//       setUploading(false);
-//     }
-//   };
 
 
 

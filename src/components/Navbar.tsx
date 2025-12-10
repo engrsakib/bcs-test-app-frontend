@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
 import { ENV } from "@/config/env";
 
-// Dummy notification data
+
 const notificationsData = [
   {
     id: 1,
