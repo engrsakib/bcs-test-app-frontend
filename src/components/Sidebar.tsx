@@ -14,6 +14,7 @@ import {
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import Image from "next/image";
+import { MdOutlineLeaderboard } from "react-icons/md";
 
 
 const links = [
@@ -54,7 +55,17 @@ const links = [
     ],
   },
 
-  { name: "Result", href: "/dashboard/result", icon: Trophy },
+  // { name: "Leaderboard", href: "/dashboard/result", icon: Trophy },
+
+    {
+    name: "Leaderboard",
+    icon: MdOutlineLeaderboard,
+    basePath: "/dashboard/result",
+    subLinks: [
+    
+      { name: "View All Result", href: "/dashboard/result/view-result" },
+    ],
+  },
 
   {
     name: "Guideline",

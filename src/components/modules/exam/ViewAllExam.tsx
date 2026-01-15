@@ -1,9 +1,12 @@
 
 
+
+
 "use client";
 
 import { ENV } from "@/config/env";
 import getCookie from "@/util/GetCookie";
+import { ChevronLeft, ChevronRight, ToggleRight } from "lucide-react";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import {
@@ -14,13 +17,21 @@ import {
   FaPlus,
   FaChevronLeft,
   FaChevronRight,
+  FaArrowLeft,
+  FaArrowRight,
 } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 // -----------------------------------------------------
 // Toggle Component
 // -----------------------------------------------------
-const Toggle = ({ enabled, onChange }:{enabled: boolean, onChange: (value: boolean) => void}) => (
+const Toggle = ({
+  enabled,
+  onChange,
+}: {
+  enabled: boolean;
+  onChange: (value: boolean) => void;
+}) => (
   <div
     onClick={() => onChange(!enabled)}
     className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition ${
@@ -41,6 +52,8 @@ export default function ExamListPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // console.log("SearchTerm",searchTerm)
 
   const limit = 10;
 
@@ -129,13 +142,13 @@ export default function ExamListPage() {
     }
   };
 
-  // MODAL OPEN
+  // OPEN MODAL
   const openStatusModal = (exam: any) => {
     setSelectedExam(exam);
     setShowModal(true);
   };
 
-  // UPDATE STATUS
+  // UPDATE STATUS API
   const updateStatus = async () => {
     if (!selectedExam) return;
 
@@ -185,18 +198,19 @@ export default function ExamListPage() {
       minute: "2-digit",
     });
 
-  // -----------------------------------------------------
+  // ============================================================
   // UI
-  // -----------------------------------------------------
+  // ============================================================
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        
+      <div className="max-w-full mx-auto">
         {/* HEADER */}
         <div className="bg-white p-6 rounded-xl shadow mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Exam Management</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Exam Management
+              </h1>
               <p className="text-gray-600">Manage all your exams</p>
             </div>
 
@@ -240,34 +254,47 @@ export default function ExamListPage() {
                 <tbody>
                   {exams.map((exam) => (
                     <tr key={exam._id} className="border-b hover:bg-gray-50">
-                      
                       <td className="px-6 py-4">{exam.exam_number}</td>
-                      <td className="px-6 py-4 font-semibold">{exam.exam_name}</td>
-                      <td className="px-6 py-4">{formatDate(exam.exam_date_time)}</td>
-                      <td className="px-6 py-4">{exam.duration_minutes} min</td>
+                      <td className="px-6 py-4 font-semibold">
+                        {exam.exam_name}
+                      </td>
+                      <td className="px-6 py-4">
+                        {formatDate(exam.exam_date_time)}
+                      </td>
+                      <td className="px-6 py-4">
+                        {exam.duration_minutes} min
+                      </td>
                       <td className="px-6 py-4">{exam.total_marks}</td>
 
-                      {/* FIXED STATUS PRIORITY */}
+                      {/* Status Logic */}
                       <td className="px-6 py-4">
                         {exam.is_completed ? (
-                          <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-full">Completed</span>
+                          <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-full">
+                            Completed
+                          </span>
                         ) : exam.is_started ? (
-                          <span className="px-3 py-1 bg-yellow-500 text-white text-xs rounded-full">Started</span>
+                          <span className="px-3 py-1 bg-yellow-500 text-white text-xs rounded-full">
+                            Started
+                          </span>
                         ) : exam.is_published ? (
-                          <span className="px-3 py-1 bg-blue-600 text-white text-xs rounded-full">Published</span>
+                          <span className="px-3 py-1 bg-blue-600 text-white text-xs rounded-full">
+                            Published
+                          </span>
                         ) : (
-                          <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-full">Draft</span>
+                          <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-full">
+                            Draft
+                          </span>
                         )}
                       </td>
 
-                      {/* ACTIONS */}
+                      {/* ACTION BUTTONS */}
                       <td className="px-6 py-4 text-center flex gap-3 justify-center">
-
                         <button
                           className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
                           onClick={() =>
                             (window.location.href = `/dashboard/exam/details?exam=${exam.exam_number}`)
-                          }>
+                          }
+                        >
                           <FaEye />
                         </button>
 
@@ -275,23 +302,25 @@ export default function ExamListPage() {
                           className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"
                           onClick={() =>
                             (window.location.href = `/dashboard/exam/edit?exam=${exam.exam_number}`)
-                          }>
+                          }
+                        >
                           <FaEdit />
                         </button>
 
                         <button
                           className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
-                          onClick={() => handleDelete(exam.exam_number)}>
+                          onClick={() => handleDelete(exam.exam_number)}
+                        >
                           <FaTrash />
                         </button>
 
                         <button
                           onClick={() => openStatusModal(exam)}
-                          className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                          ⋮
+                          className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                        >
+                          <ToggleRight />
                         </button>
                       </td>
-
                     </tr>
                   ))}
                 </tbody>
@@ -299,17 +328,26 @@ export default function ExamListPage() {
 
               {/* PAGINATION */}
               <div className="flex justify-between p-4 bg-gray-50 border-t">
-                <button onClick={() => handlePageChange(page - 1)} disabled={page === 1} className="px-4 py-2 border rounded disabled:opacity-50">
-            Prev
+                <button
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 1}
+                  className="px-7 text-white  bg-green-600 py-2 border rounded disabled:opacity-50"
+                >
+                         <ChevronLeft />
                 </button>
 
-                <span className="text-gray-700">Page {page} of {totalPages}</span>
+                <span className="text-gray-700">
+                  Page {page} of {totalPages}
+                </span>
 
-                <button onClick={() => handlePageChange(page + 1)} disabled={page === totalPages} className="px-4 py-2 border rounded disabled:opacity-50">
-                  Next
+                <button
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-7 bg-green-600 text-white py-2  border rounded disabled:opacity-50"
+                >
+                      <ChevronRight />
                 </button>
               </div>
-
             </>
           ) : (
             <div className="h-40 flex items-center justify-center">
@@ -323,22 +361,18 @@ export default function ExamListPage() {
       {showModal && selectedExam && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl">
-
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Update Exam Status</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+              Update Exam Status
+            </h2>
 
             <div className="space-y-6">
-
+              {/* FIXED INDEPENDENT TOGGLE LOGIC */}
               <div className="flex items-center justify-between">
                 <span className="text-lg font-medium">Published</span>
                 <Toggle
                   enabled={selectedExam.is_published}
                   onChange={(v) =>
-                    setSelectedExam({
-                      ...selectedExam,
-                      is_published: v,
-                      is_started: false,
-                      is_completed: false,
-                    })
+                    setSelectedExam({ ...selectedExam, is_published: v })
                   }
                 />
               </div>
@@ -348,12 +382,7 @@ export default function ExamListPage() {
                 <Toggle
                   enabled={selectedExam.is_started}
                   onChange={(v) =>
-                    setSelectedExam({
-                      ...selectedExam,
-                      is_started: v,
-                      is_published: false,
-                      is_completed: false,
-                    })
+                    setSelectedExam({ ...selectedExam, is_started: v })
                   }
                 />
               </div>
@@ -363,32 +392,30 @@ export default function ExamListPage() {
                 <Toggle
                   enabled={selectedExam.is_completed}
                   onChange={(v) =>
-                    setSelectedExam({
-                      ...selectedExam,
-                      is_completed: v,
-                      is_started: false,
-                      is_published: false,
-                    })
+                    setSelectedExam({ ...selectedExam, is_completed: v })
                   }
                 />
               </div>
-
             </div>
 
             <div className="mt-8 flex justify-end gap-3">
-              <button onClick={() => setShowModal(false)} className="px-5 py-2 rounded-lg border">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-5 py-2 rounded-lg border"
+              >
                 Cancel
               </button>
 
-              <button onClick={updateStatus} className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow">
+              <button
+                onClick={updateStatus}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow"
+              >
                 Save Changes
               </button>
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }

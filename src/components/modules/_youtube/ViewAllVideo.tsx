@@ -176,7 +176,7 @@ export default function ViewAllYouTubeVideos() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-full mx-auto">
 
         {/* HEADER */}
         <div className="bg-gradient-to-r from-teal-600 to-emerald-600 p-6 rounded-2xl text-white mb-6 shadow-lg flex justify-between items-center">

@@ -3,7 +3,7 @@
 
 "use client";
 import React, { useState, useEffect } from 'react';
-import { User, Edit2, Phone, Briefcase, FileText, Shield, Calendar, X } from 'lucide-react';
+import { User, Edit2, Phone, Briefcase, FileText, Shield, Calendar, X, Upload, Loader2 } from 'lucide-react';
 import { ENV } from '@/config/env';
 import getCookie from '@/util/GetCookie';
 
@@ -31,7 +31,6 @@ interface FormData {
   image: string;
 }
 
-// profile
 export default function AdminProfile() {
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -39,8 +38,6 @@ export default function AdminProfile() {
   const [updating, setUpdating] = useState<boolean>(false);
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
 
-
-  console.log("Admin Profile ", adminData)
   const [formData, setFormData] = useState<FormData>({
     name: '',
     designation: '',
@@ -59,7 +56,6 @@ export default function AdminProfile() {
       const accessToken = getCookie('access_token');
       
       const response = await fetch(`${ENV.BASE_URL}/admin/auth`, {
-        // credentials: "include",
         headers: {
           'Authorization': accessToken || '',
           'Content-Type': 'application/json'
@@ -90,8 +86,6 @@ export default function AdminProfile() {
   const handleUpdateProfile = async (): Promise<void> => {
     setUpdating(true);
     try {
-    
-      
       const accessToken = getCookie('access_token');
       const response = await fetch(`${ENV.BASE_URL}/admin/update-staff/${adminData?._id}`, {
         method: 'PATCH',
@@ -120,22 +114,18 @@ export default function AdminProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Please upload an image file');
       return;
     }
 
-    // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       alert('Image size should be less than 5MB');
       return;
     }
 
-
-       const cloud_name_key = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-
-       const upload_preset_key =process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    const cloud_name_key = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const upload_preset_key = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
     setUploadingImage(true);
     try {
@@ -176,50 +166,48 @@ export default function AdminProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-800"></div>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center">
+        <div className="relative">
+          <Loader2 className="w-16 h-16 text-green-600 animate-spin" />
+          <div className="absolute inset-0 w-16 h-16 border-4 border-green-100 rounded-full"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Admin Profile</h1>
-          <p className="text-gray-600 mt-2">Manage your account information and settings</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Profile</h1>
+          <p className="text-gray-600 text-lg">Manage your account information and settings</p>
         </div>
 
-        {/* Main Profile Card */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Cover Section */}
-          <div className="h-32 sm:h-40 bg-gradient-to-r from-green-800 to-green-600"></div>
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          <div className="relative h-48 bg-gradient-to-br from-green-600 via-green-700 to-emerald-800 overflow-hidden">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+          </div>
           
-          {/* Profile Info Section */}
-          <div className="relative px-6 sm:px-8 pb-8">
-            {/* Profile Image */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-end -mt-16 sm:-mt-20 mb-6">
-              <div className="relative">
+          <div className="px-6 sm:px-10 pb-10">
+            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 -mt-20 mb-8">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full blur-xl opacity-30 group-hover:opacity-50 transition-opacity"></div>
                 <img
-                  src={adminData?.image || 'https://via.placeholder.com/150'}
+                  src={adminData?.image || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}
                   alt={adminData?.name}
-                  className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-white shadow-lg object-cover"
+                  className="relative w-36 h-36 rounded-full object-cover border-4 border-white shadow-2xl ring-4 ring-green-100"
                 />
-                <div className="absolute bottom-2 right-2 bg-green-800 text-white p-2 rounded-full shadow-lg">
-                  <Shield className="w-5 h-5" />
-                </div>
+                <div className="absolute bottom-3 right-3 w-7 h-7 bg-green-500 rounded-full border-4 border-white shadow-lg"></div>
               </div>
               
-              <div className="mt-4 sm:mt-0 sm:ml-6 flex-1 text-center sm:text-left translate-y-6">
-                <h2 className="text-2xl   sm:text-3xl font-bold text-gray-900">{adminData?.name}</h2>
-                <p className="text-green-800 font-medium text-lg capitalize">{adminData?.role?.replace('_', ' ')}</p>
-                <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    adminData?.status === 'active' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
+              <div className="text-center sm:text-left flex-1 mt-16">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 translate-y-6">{adminData?.name}</h2>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 font-semibold text-sm rounded-full border border-green-200">
+                    <Shield className="w-4 h-4" />
+                    {adminData?.role?.replace(/_/g, ' ')}
+                  </span>
+                  <span className="inline-flex items-center px-4 py-1.5 bg-green-600 text-white font-medium text-sm rounded-full shadow-md">
                     {adminData?.status}
                   </span>
                 </div>
@@ -227,74 +215,95 @@ export default function AdminProfile() {
 
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="mt-4 sm:mt-0 bg-green-800 hover:bg-green-900 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-md"
+                className="group bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-xl hover:scale-105"
               >
-                <Edit2 className="w-4 h-4" />
-                <span className="font-medium">Edit Profile</span>
+                <Edit2 className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                <span className="font-semibold">Edit Profile</span>
               </button>
             </div>
 
-            {/* Info Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-              {/* Contact Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Contact Information</h3>
-                
-                <div className="flex items-start gap-3">
-                  <Phone className="w-5 h-5 text-green-800 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600">Phone Number</p>
-                    <p className="text-gray-900 font-medium">{adminData?.phone_number}</p>
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                    <div className="w-1 h-6 bg-gradient-to-b from-green-600 to-emerald-600 rounded-full"></div>
+                    Contact Information
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-200">
+                      <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-md">
+                        <Phone className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Phone Number</p>
+                        <p className="text-gray-900 font-semibold text-lg">{adminData?.phone_number}</p>
+                      </div>
+                    </div>
 
-                <div className="flex items-start gap-3">
-                  <Briefcase className="w-5 h-5 text-green-800 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600">Designation</p>
-                    <p className="text-gray-900 font-medium">{adminData?.designation || 'Not specified'}</p>
-                  </div>
-                </div>
+                    <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-200">
+                      <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-md">
+                        <Briefcase className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Designation</p>
+                        <p className="text-gray-900 font-semibold text-lg">{adminData?.designation || 'Not specified'}</p>
+                      </div>
+                    </div>
 
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-green-800 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-600">Joined</p>
-                    <p className="text-gray-900 font-medium">{adminData?.createdAt ? formatDate(adminData.createdAt) : 'N/A'}</p>
+                    <div className="flex items-start gap-4 p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-200">
+                      <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-md">
+                        <Calendar className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Member Since</p>
+                        <p className="text-gray-900 font-semibold text-lg">
+                          {adminData?.createdAt ? formatDate(adminData.createdAt) : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Bio Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Biography</h3>
-                
-                <div className="flex items-start gap-3">
-                  <FileText className="w-5 h-5 text-green-800 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-gray-700 leading-relaxed">
-                      {adminData?.bio || 'No biography provided yet.'}
-                    </p>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                    <div className="w-1 h-6 bg-gradient-to-b from-green-600 to-emerald-600 rounded-full"></div>
+                    Biography
+                  </h3>
+                  <div className="p-6 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-200">
+                    <div className="flex gap-4">
+                      <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-md h-fit">
+                        <FileText className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-gray-700 leading-relaxed text-base">
+                          {adminData?.bio || 'No biography provided yet.'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Permissions Section */}
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4">Permissions</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            <div className="mt-10">
+              <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                <div className="w-1 h-6 bg-gradient-to-b from-green-600 to-emerald-600 rounded-full"></div>
+                Permissions & Access
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {adminData?.permissions && Array.isArray(adminData.permissions) && adminData.permissions.length > 0 ? (
                   adminData.permissions.map((permission: string, index: number) => (
                     <div
                       key={index}
-                      className="bg-green-50 border border-green-200 text-green-800 px-3 py-2 rounded-lg text-sm font-medium text-center"
+                      className="group px-4 py-3 bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 text-green-800 text-sm font-medium text-center rounded-xl border border-green-200 hover:border-green-300 hover:shadow-md transition-all duration-200 cursor-default"
                     >
-                      {permission.replace(/_/g, ' ')}
+                      <span className="capitalize">{permission.replace(/_/g, ' ')}</span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 col-span-full text-center py-4">No permissions available</p>
+                  <p className="text-gray-500 col-span-full text-center py-8">No permissions available</p>
                 )}
               </div>
             </div>
@@ -302,57 +311,61 @@ export default function AdminProfile() {
         </div>
       </div>
 
-      {/* Update Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-2xl font-bold text-gray-900">Update Profile</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-md transition-all duration-300"
+            onClick={() => setIsModalOpen(false)}
+          ></div>
+
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6 flex items-center justify-between z-10">
+              <h3 className="text-2xl font-bold text-white">Update Profile</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 bg-white/20 backdrop-blur-sm rounded-xl hover:bg-white/30 transition-all group"
               >
-                <X className="w-6 h-6" />
+                <X className="w-6 h-6 text-white group-hover:rotate-90 transition-transform" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="overflow-y-auto max-h-[calc(90vh-88px)] p-8 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2  ">Name</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
                 <input
                   type="text"
                   value={formData.phone_number}
                   onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Designation</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Designation</label>
                 <input
                   type="text"
                   value={formData.designation}
                   onChange={(e) => setFormData({...formData, designation: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({...formData, role: e.target.value})}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
                 >
                   <option value="admin">Admin</option>
                   <option value="content_manager">Content Manager</option>
@@ -361,74 +374,75 @@ export default function AdminProfile() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Biography</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Biography</label>
                 <textarea
                   value={formData.bio}
                   onChange={(e) => setFormData({...formData, bio: e.target.value})}
                   rows={4}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent outline-none transition-all resize-none"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Profile Image</label>
                 
-                {/* Image Preview */}
                 {formData.image && (
-                  <div className="mb-3">
-                    <img 
-                      src={formData.image} 
-                      alt="Preview" 
-                      className="w-32 h-32 rounded-full object-cover border-2 border-green-200"
-                    />
+                  <div className="mb-4 flex justify-center">
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full blur-lg opacity-30"></div>
+                      <img 
+                        src={formData.image} 
+                        alt="Preview" 
+                        className="relative w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl ring-4 ring-green-100"
+                      />
+                    </div>
                   </div>
                 )}
 
-                {/* File Upload */}
-                <div className="flex items-center gap-3">
-                  <label className="flex-1 cursor-pointer">
-                    <div className="flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 transition-colors">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-sm text-gray-600">
-                        {uploadingImage ? 'Uploading...' : 'Choose Image'}
-                      </span>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploadingImage}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
+                <label className="block cursor-pointer">
+                  <div className="flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all">
+                    {uploadingImage ? (
+                      <Loader2 className="w-5 h-5 text-green-600 animate-spin" />
+                    ) : (
+                      <Upload className="w-5 h-5 text-gray-500" />
+                    )}
+                    <span className="text-sm font-medium text-gray-600">
+                      {uploadingImage ? 'Uploading...' : 'Choose Image'}
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
+                    className="hidden"
+                  />
+                </label>
                 
-                {/* Manual URL Input */}
                 <div className="mt-3">
                   <input
                     type="text"
                     value={formData.image}
                     onChange={(e) => setFormData({...formData, image: e.target.value})}
                     placeholder="Or paste image URL"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent outline-none transition-all text-sm"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-sm"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-4 pt-6">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpdateProfile}
                   disabled={updating}
-                  className="flex-1 px-6 py-2.5 bg-green-800 text-white rounded-lg hover:bg-green-900 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
+                  {updating && <Loader2 className="w-5 h-5 animate-spin" />}
                   {updating ? 'Updating...' : 'Update Profile'}
                 </button>
               </div>
@@ -439,9 +453,3 @@ export default function AdminProfile() {
     </div>
   );
 }
-
-
-
-
-
-

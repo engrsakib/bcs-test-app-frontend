@@ -300,7 +300,6 @@ export default function UpdateGuideline() {
             />
           </div>
 
-          {/* UPDATE BUTTON */}
           <button
             onClick={handleUpdate}
             disabled={updating}

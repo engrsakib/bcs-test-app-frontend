@@ -23,6 +23,7 @@ import {
   Calendar,
   User,
   Shield,
+  UserCheck,
 } from "lucide-react";
 
 import Swal from "sweetalert2";
@@ -228,8 +229,8 @@ export default function UserManagementTable() {
   // VIEW PAGE
   if (currentView === "view" && selectedUser) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-gray-50 ">
+        <div className="max-w-full mx-auto">
           {/* Back Button */}
           <button
             onClick={() => setCurrentView("table")}
@@ -248,7 +249,7 @@ export default function UserManagementTable() {
             <div className="px-8 pb-8">
               <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-16">
                 <img
-                  src={selectedUser.image || "/avatar.png"}
+                  src={selectedUser.image ? selectedUser.image : "N/A" } 
                   className="w-32 h-32 rounded-xl border-4 border-white shadow-lg object-cover"
                   alt={selectedUser.name}
                 />
@@ -290,7 +291,7 @@ export default function UserManagementTable() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 font-medium">Email Address</p>
-                    <p className="text-gray-900 font-semibold mt-1">{selectedUser.email}</p>
+                    <p className="text-gray-900 font-semibold mt-1">{selectedUser.email || "N/A"}</p>
                   </div>
                 </div>
 
@@ -368,7 +369,7 @@ export default function UserManagementTable() {
                 </label>
                 <div className="flex items-center gap-6">
                   <img
-                    src={updateFormData.image || "/avatar.png"}
+                    src={updateFormData.image || "/"}
                     className="w-24 h-24 rounded-xl border-2 border-gray-200 object-cover shadow-sm"
                     alt="Profile"
                   />
@@ -614,11 +615,24 @@ export default function UserManagementTable() {
                     <tr key={u._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <img
+                          {/* <img
                             src={u.image || "/avatar.png"}
                             className="h-10 w-10 rounded-full object-cover"
                             alt={u.name}
-                          />
+                          /> */}
+
+                          {u.image && u.image.trim() !== "" ? (
+  <img
+    src={u.image}
+    className="h-10 w-10 rounded-full object-cover"
+    alt={u.name}
+  />
+) : (
+  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+    <User className="w-5 h-5 text-gray-500" />
+  </div>
+)}
+
                           <div>
                             <p className="font-semibold text-gray-900">{u.name}</p>
                             <p className="text-xs text-gray-500">{u._id}</p>
@@ -627,7 +641,7 @@ export default function UserManagementTable() {
                       </td>
 
                       <td className="px-6 py-4 text-gray-700">{u.phone_number}</td>
-                      <td className="px-6 py-4 text-gray-700">{u.email}</td>
+                      <td className="px-6 py-4 text-gray-700">{u.email && u.email ? u.email : "N/A"}</td>
                       <td className="px-6 py-4">
                         <span
                           className={`px-3 py-1 rounded-full text-white font-medium text-sm ${
@@ -779,3 +793,6 @@ export default function UserManagementTable() {
     </div>
   );
 }
+
+
+
