@@ -1,19 +1,34 @@
 
 
-
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
 import React, { useEffect, useState, useRef } from "react";
-import { 
-  AlignLeft, Bold, Italic, Underline, List, ListOrdered, 
-  Type, FileText, Upload, X, Loader2, CheckCircle 
+import {
+  AlignLeft,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Type,
+  FileText,
+  Upload,
+  X,
+  Loader2,
+  CheckCircle,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import getCookie from "@/util/GetCookie";
 import { ENV } from "@/config/env";
 
-const BASE_URL = "https://mcq-analysis.vercel.app/api/v1";
+import dynamic from "next/dynamic";
+
+const QuillEditor = dynamic(() => import("@/editor/QuilEditor"), {
+  ssr: false,
+});
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 
 export default function UpdateYouTube() {
   const params = useSearchParams();
@@ -21,7 +36,6 @@ export default function UpdateYouTube() {
   const video_number = params.get("video");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<HTMLDivElement>(null);
 
   const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
   const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
@@ -38,7 +52,7 @@ export default function UpdateYouTube() {
     video_url: "",
     thumbnail_url: "",
     description: "",
-    is_published: true
+    is_published: true,
   });
 
   // ==============================
@@ -49,8 +63,8 @@ export default function UpdateYouTube() {
 
     fetch(`${BASE_URL}/youtube/${video_number}`, {
       headers: {
-        "authorization": getCookie("access_token") || ""
-      }
+        authorization: getCookie("access_token") || "",
+      },
     })
       .then((res) => res.json())
       .then((data) => {
@@ -59,47 +73,29 @@ export default function UpdateYouTube() {
           video_url: data.data.video_url,
           thumbnail_url: data.data.thumbnail_url,
           description: data.data.description,
-          is_published: data.data.is_published
+          is_published: data.data.is_published,
         });
 
         setThumbnailPreview(data.data.thumbnail_url);
 
-        if (editorRef.current) {
-          editorRef.current.innerHTML = data.data.description;
-        }
-
         setLoading(false);
       });
   }, [video_number]);
-
 
   // ==============================
   // INPUT HANDLER
   // ==============================
   const handleInputChange = (e: any) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   // ==============================
   // RICH TEXT EDITOR HEADER BUTTONS
   // ==============================
-  const applyTextFormat = (command: any) => {
-    document.execCommand(command, false);
-    editorRef.current?.focus();
-  };
-
-  const handleEditorInput = () => {
-    if (editorRef.current) {
-      setFormData(prev => ({
-        ...prev,
-        description: editorRef.current?.innerHTML || ""
-      }));
-    }
-  };
 
   // ==============================
   // THUMBNAIL UPLOAD
@@ -115,16 +111,18 @@ export default function UpdateYouTube() {
       uploadData.append("file", file);
       uploadData.append("upload_preset", UPLOAD_PRESET);
 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-        method: "POST",
-        body: uploadData
-      });
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: uploadData,
+        },
+      );
 
       const data = await res.json();
 
-      setFormData(prev => ({ ...prev, thumbnail_url: data.secure_url }));
+      setFormData((prev) => ({ ...prev, thumbnail_url: data.secure_url }));
       setThumbnailPreview(data.secure_url);
-
     } catch {
       Swal.fire("Error", "Thumbnail upload failed", "error");
     }
@@ -134,9 +132,8 @@ export default function UpdateYouTube() {
 
   const removeThumbnail = () => {
     setThumbnailPreview("");
-    setFormData(prev => ({ ...prev, thumbnail_url: "" }));
+    setFormData((prev) => ({ ...prev, thumbnail_url: "" }));
   };
-
 
   // ==============================
   // SUBMIT UPDATE
@@ -149,20 +146,33 @@ export default function UpdateYouTube() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "authorization": getCookie("access_token") || ""
+          authorization: getCookie("access_token") || "",
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message);
 
+      const isEmptyDescription =
+        !formData.description ||
+        formData.description === "<p><br></p>" ||
+        formData.description.trim() === "";
+
+      if (isEmptyDescription) {
+        return Swal.fire(
+          "Missing Description",
+          "Please enter description",
+          "warning",
+        );
+      }
+
       Swal.fire({
         icon: "success",
         title: "Updated!",
         text: "YouTube video updated successfully",
-        confirmButtonColor: "#0d9488"
+        confirmButtonColor: "#0d9488",
       });
 
       router.push("/dashboard/youtube/view-video");
@@ -173,7 +183,6 @@ export default function UpdateYouTube() {
     }
   };
 
-
   if (loading)
     return (
       <div className="text-center py-20 text-teal-600 text-xl">
@@ -183,9 +192,7 @@ export default function UpdateYouTube() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 p-6">
-      
       <div className="max-w-4xl mx-auto">
-
         {/* HEADER */}
         <div className="bg-gradient-to-r from-teal-600 to-emerald-600 rounded-t-2xl p-8 shadow-lg">
           <div className="flex items-center gap-3">
@@ -194,16 +201,18 @@ export default function UpdateYouTube() {
             </div>
 
             <div>
-              <h1 className="text-3xl font-bold text-white">Update YouTube Video</h1>
-              <p className="text-teal-50 text-base mt-1">Modify video information</p>
+              <h1 className="text-3xl font-bold text-white">
+                Update YouTube Video
+              </h1>
+              <p className="text-teal-50 text-base mt-1">
+                Modify video information
+              </p>
             </div>
           </div>
         </div>
 
-
         {/* BODY */}
         <div className="bg-white rounded-b-2xl shadow-xl p-8 space-y-6">
-
           {/* Title */}
           <div>
             <label className="font-semibold flex items-center gap-2 mb-1">
@@ -255,14 +264,19 @@ export default function UpdateYouTube() {
                   ) : (
                     <>
                       <Upload className="w-10 h-10 text-gray-500" />
-                      <span className="text-gray-600 text-sm mt-2">Click to upload</span>
+                      <span className="text-gray-600 text-sm mt-2">
+                        Click to upload
+                      </span>
                     </>
                   )}
                 </label>
               </div>
             ) : (
               <div className="relative inline-block">
-                <img src={thumbnailPreview} className="w-full max-w-md rounded-xl" />
+                <img
+                  src={thumbnailPreview}
+                  className="w-full max-w-md rounded-xl"
+                />
                 <button
                   onClick={removeThumbnail}
                   className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full"
@@ -274,27 +288,19 @@ export default function UpdateYouTube() {
           </div>
 
           {/* Description Editor */}
+
+          {/* Description Editor */}
           <div>
             <label className="font-semibold flex items-center gap-2 mb-2">
               <AlignLeft className="w-5 h-5 text-teal-600" /> Description
             </label>
 
-            {/* Toolbar */}
-            <div className="bg-gray-50 border-2 rounded-t-xl p-3 flex gap-2">
-              <button onClick={() => applyTextFormat("bold")}><Bold /></button>
-              <button onClick={() => applyTextFormat("italic")}><Italic /></button>
-              <button onClick={() => applyTextFormat("underline")}><Underline /></button>
-              <button onClick={() => applyTextFormat("insertUnorderedList")}><List /></button>
-              <button onClick={() => applyTextFormat("insertOrderedList")}><ListOrdered /></button>
-            </div>
-
-            {/* Editable Box */}
-            <div
-              ref={editorRef}
-              contentEditable
-              onInput={handleEditorInput}
-              className="border-2 border-t-0 rounded-b-xl px-4 py-3 min-h-[150px]"
-            ></div>
+            <QuillEditor
+              value={formData.description}
+              onChange={(html) =>
+                setFormData((prev) => ({ ...prev, description: html }))
+              }
+            />
           </div>
 
           {/* Publish */}
@@ -303,12 +309,14 @@ export default function UpdateYouTube() {
               type="checkbox"
               checked={formData.is_published}
               onChange={() =>
-                setFormData(prev => ({ ...prev, is_published: !prev.is_published }))
+                setFormData((prev) => ({
+                  ...prev,
+                  is_published: !prev.is_published,
+                }))
               }
             />
             <span className="font-semibold">Published</span>
           </label>
-
 
           {/* BUTTONS */}
           <div className="flex gap-4">
@@ -327,10 +335,8 @@ export default function UpdateYouTube() {
               Cancel
             </button>
           </div>
-
         </div>
       </div>
-
     </div>
   );
 }

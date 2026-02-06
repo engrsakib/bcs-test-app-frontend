@@ -1,8 +1,3 @@
-
-
-
-
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -22,6 +17,7 @@ import Swal from "sweetalert2";
 import { ENV } from "@/config/env";
 import getCookie from "@/util/GetCookie";
 import { useRouter } from "next/navigation";
+import DOMPurify from "dompurify";
 
 export default function ViewAllGuideline() {
   const router = useRouter();
@@ -40,7 +36,6 @@ export default function ViewAllGuideline() {
   // Collapse filter section
   const [showFilters, setShowFilters] = useState(false);
 
-  // FETCH FUNCTION
   const fetchGuidelines = async () => {
     setLoading(true);
 
@@ -121,7 +116,6 @@ export default function ViewAllGuideline() {
 
   return (
     <div className="p-6 min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50">
-      
       {/* HEADER */}
       <div className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white p-6 rounded-2xl shadow-lg mb-6">
         <h1 className="text-3xl font-bold">All Guidelines</h1>
@@ -130,10 +124,8 @@ export default function ViewAllGuideline() {
 
       {/* SEARCH BAR */}
       <div className="bg-white rounded-xl shadow-md p-5 space-y-4">
-
         {/* Search Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-
           {/* SEARCH INPUT */}
           <div className="flex items-center gap-2 border rounded-xl px-3">
             <Search />
@@ -161,7 +153,7 @@ export default function ViewAllGuideline() {
             className="flex items-center justify-center gap-2 border rounded-xl px-4 py-3 text-teal-700 font-semibold"
           >
             <Filter size={18} />
-           Pagination
+            Pagination
             {showFilters ? <ChevronUp /> : <ChevronDown />}
           </button>
         </div>
@@ -169,7 +161,6 @@ export default function ViewAllGuideline() {
         {/* COLLAPSIBLE FILTER SECTION */}
         {showFilters && (
           <div className="border rounded-xl p-4 bg-gray-50 grid grid-cols-1 md:grid-cols-3 gap-4">
-
             {/* PAGE Selector */}
             <div>
               <label className="font-semibold">Page</label>
@@ -209,10 +200,8 @@ export default function ViewAllGuideline() {
                 Apply Filters
               </button>
             </div>
-
           </div>
         )}
-
       </div>
 
       {/* TABLE */}
@@ -250,7 +239,12 @@ export default function ViewAllGuideline() {
 
                   <td className="py-4">
                     <div className="font-bold">{item.title}</div>
-                    <div className="text-gray-500 text-sm">{item.description}</div>
+                    <div
+                      className="text-gray-500 text-sm prose max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(item.description),
+                      }}
+                    />
                   </td>
 
                   <td className="text-center">
@@ -273,10 +267,11 @@ export default function ViewAllGuideline() {
 
                   <td className="text-center">
                     <div className="flex justify-center gap-2">
-
                       <button
                         onClick={() =>
-                          router.push(`/dashboard/guideline/view-guideline/${item.guideline_number}`)
+                          router.push(
+                            `/dashboard/guideline/view-guideline/${item.guideline_number}`,
+                          )
                         }
                         className="p-2 bg-blue-100 text-blue-600 rounded-lg"
                       >
@@ -285,7 +280,9 @@ export default function ViewAllGuideline() {
 
                       <button
                         onClick={() =>
-                          router.push(`/dashboard/guideline/edit/${item.guideline_number}`)
+                          router.push(
+                            `/dashboard/guideline/edit/${item.guideline_number}`,
+                          )
                         }
                         className="p-2 bg-green-100 text-green-600 rounded-lg"
                       >
@@ -305,7 +302,6 @@ export default function ViewAllGuideline() {
                       >
                         <Trash2 size={18} />
                       </button>
-
                     </div>
                   </td>
                 </tr>
@@ -346,9 +342,3 @@ export default function ViewAllGuideline() {
     </div>
   );
 }
-
-
-
-
-
-

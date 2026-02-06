@@ -18,6 +18,12 @@ import Swal from "sweetalert2";
 import { ENV } from "@/config/env";
 import getCookie from "@/util/GetCookie";
 
+import dynamic from "next/dynamic";
+
+const QuillEditor = dynamic(() => import("@/editor/QuilEditor"), {
+  ssr: false,
+});
+
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
 
@@ -36,12 +42,6 @@ export default function UpdateGuideline() {
     status: "",
     description: "",
     thumbnail_url: "",
-  });
-
-  const [textStyle, setTextStyle] = useState({
-    bold: false,
-    italic: false,
-    underline: false,
   });
 
   // -----------------------------------
@@ -82,14 +82,6 @@ export default function UpdateGuideline() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleDescriptionChange = (e: any) => {
-    setFormData((prev) => ({ ...prev, description: e.target.value }));
-  };
-
-  const applyTextStyle = (style: "bold" | "italic" | "underline") => {
-    setTextStyle((prev) => ({ ...prev, [style]: !prev[style] }));
-  };
-
   // -----------------------------------
   // IMAGE UPLOADER (CLOUDINARY)
   // -----------------------------------
@@ -106,7 +98,7 @@ export default function UpdateGuideline() {
     try {
       const res = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: "POST", body: fd }
+        { method: "POST", body: fd },
       );
 
       const data = await res.json();
@@ -184,7 +176,6 @@ export default function UpdateGuideline() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 p-6">
       <div className="max-w-4xl mx-auto">
-
         {/* HEADER */}
         <div className="bg-gradient-to-r from-teal-600 to-emerald-600 p-6 rounded-t-2xl mb-6">
           <h1 className="text-3xl font-bold text-white">Update Guideline</h1>
@@ -192,7 +183,6 @@ export default function UpdateGuideline() {
         </div>
 
         <div className="bg-white p-8 rounded-b-2xl shadow-xl space-y-6">
-
           {/* TITLE */}
           <div>
             <label className="flex gap-2 text-gray-700 font-semibold">
@@ -223,14 +213,15 @@ export default function UpdateGuideline() {
               <option value="technical">Technical</option>
               <option value="exam">Exam</option>
               <option value="bcs_preparation">BCS Preparation</option>
-              <option value="primary_teacher_preparation">Primary Teacher</option>
+              <option value="primary_teacher_preparation">
+                Primary Teacher
+              </option>
               <option value="teacher_nibondhon_preparation">
                 Teacher Nibondhon
               </option>
             </select>
           </div>
 
-     
           <div>
             <label className="flex gap-2 text-gray-700 font-semibold">
               <FileText className="text-teal-600" /> Status
@@ -255,7 +246,12 @@ export default function UpdateGuideline() {
             <div className="mt-2 flex items-center gap-4">
               <label className="cursor-pointer bg-teal-600 hover:bg-teal-700 text-white px-5 py-3 rounded-xl font-semibold flex items-center gap-2">
                 <Upload size={18} /> Upload New
-                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
               </label>
 
               {uploading && (
@@ -276,28 +272,21 @@ export default function UpdateGuideline() {
           </div>
 
           {/* DESCRIPTION */}
+
+          {/* DESCRIPTION */}
           <div>
             <label className="flex gap-2 text-gray-700 font-semibold">
               <AlignLeft className="text-teal-600" /> Description
             </label>
 
-            <div className="flex gap-2 bg-gray-100 p-3 rounded-t-xl border">
-              <button onClick={() => applyTextStyle("bold")}><Bold /></button>
-              <button onClick={() => applyTextStyle("italic")}><Italic /></button>
-              <button onClick={() => applyTextStyle("underline")}><Underline /></button>
+            <div className="mt-2">
+              <QuillEditor
+                value={formData.description}
+                onChange={(html) =>
+                  setFormData((prev) => ({ ...prev, description: html }))
+                }
+              />
             </div>
-
-            <textarea
-              name="description"
-              rows={6}
-              value={formData.description}
-              onChange={handleDescriptionChange}
-              className={`w-full border rounded-b-xl p-4 mt-0
-                ${textStyle.bold ? "font-bold" : ""}
-                ${textStyle.italic ? "italic" : ""}
-                ${textStyle.underline ? "underline" : ""}
-              `}
-            />
           </div>
 
           <button
@@ -315,7 +304,6 @@ export default function UpdateGuideline() {
               "Update Guideline"
             )}
           </button>
-
         </div>
       </div>
     </div>

@@ -1,20 +1,30 @@
+
+
+
 "use client";
 
 import React, { useState } from "react";
 import {
   FileText,
-  Calendar,
+
   Tag,
-  AlignLeft,
+
   Type,
-  Bold,
-  Italic,
-  Underline,
+
   Upload,
   Image as ImageIcon,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { ENV } from "@/config/env";
+
+
+
+  import dynamic from "next/dynamic";
+
+const QuillEditor = dynamic(() => import("@/editor/QuilEditor"), {
+  ssr: false,
+});
+
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
@@ -47,56 +57,47 @@ export default function CreateBook() {
     description: "",
   });
 
-  const [textStyle, setTextStyle] = useState({
-    bold: false,
-    italic: false,
-    underline: false,
-  });
-
-  const applyTextStyle = (style: "bold" | "italic" | "underline") => {
-    setTextStyle((prev) => ({ ...prev, [style]: !prev[style] }));
-  };
 
 
 
+  const handleThumbnailUpload = async (event: any) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-const handleThumbnailUpload = async (event: any) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
+    setUploading(true);
 
-  setUploading(true);
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", UPLOAD_PRESET);
 
-  const data = new FormData();
-  data.append("file", file);
-  data.append("upload_preset", UPLOAD_PRESET);
 
-  try {
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-      {
-        method: "POST",
-        body: data,
+
+   
+
+    try {
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: data,
+        },
+      );
+
+      const cloudData = await res.json();
+
+      if (cloudData?.secure_url) {
+        setFormData((prev) => ({
+          ...prev,
+          thumbnail_url: cloudData.secure_url, // ONLY URL
+        }));
       }
-    );
-
-    const cloudData = await res.json();
-
-    if (cloudData?.secure_url) {
-      setFormData((prev) => ({
-        ...prev,
-        thumbnail_url: cloudData.secure_url, // ONLY URL
-      }));
+    } finally {
+      setUploading(false);
     }
-  } finally {
-    setUploading(false);
-  }
 
-  // Clear browser file input to prevent re-reading file → base64
-  event.target.value = "";
-};
-
-
-
+    // Clear browser file input to prevent re-reading file → base64
+    event.target.value = "";
+  };
 
   // ========= Input Change Handler ==========
   const handleChange = (e: any) => {
@@ -104,13 +105,19 @@ const handleThumbnailUpload = async (event: any) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ========= Submit Book API ==========
+
+
+
   const handleSubmit = async () => {
     if (!formData.title.trim())
       return Swal.fire("Title Missing!", "Please enter a title.", "warning");
 
     if (!formData.thumbnail_url)
-      return Swal.fire("Thumbnail Required!", "Please upload a thumbnail.", "warning");
+      return Swal.fire(
+        "Thumbnail Required!",
+        "Please upload a thumbnail.",
+        "warning",
+      );
 
     if (!formData.sold_platform)
       return Swal.fire("Platform Missing!", "Select a platform.", "warning");
@@ -138,11 +145,9 @@ const handleThumbnailUpload = async (event: any) => {
         }),
       });
 
-
-
       const data = await res.json();
 
-    //   console.log("CreateBook CheckData", data)
+        console.log("CreateBook CheckData", data)
 
       if (res.ok) {
         Swal.fire({
@@ -173,7 +178,6 @@ const handleThumbnailUpload = async (event: any) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 p-6">
       <div className="max-w-4xl mx-auto">
-
         {/* Header */}
         <div className="bg-gradient-to-r from-teal-600 to-emerald-600 p-6 rounded-t-2xl shadow-lg">
           <h1 className="text-white text-3xl font-bold flex items-center gap-3">
@@ -183,7 +187,6 @@ const handleThumbnailUpload = async (event: any) => {
 
         {/* BODY */}
         <div className="bg-white p-6 rounded-b-2xl shadow-xl space-y-6">
-
           {/* Title */}
           <div>
             <label className="font-semibold text-gray-700 flex gap-2">
@@ -205,7 +208,13 @@ const handleThumbnailUpload = async (event: any) => {
             </label>
 
             <div className="mt-2 flex items-center gap-3">
-              <input type="file" accept="image/*" onChange={handleThumbnailUpload} className="hidden" id="thumbUpload" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleThumbnailUpload}
+                className="hidden"
+                id="thumbUpload"
+              />
               <label
                 htmlFor="thumbUpload"
                 className="cursor-pointer bg-teal-600 text-white px-4 py-2 rounded-xl shadow hover:bg-teal-700 flex items-center gap-2"
@@ -284,36 +293,24 @@ const handleThumbnailUpload = async (event: any) => {
           </div>
 
           {/* Description */}
-          <div>
-            <label className="font-semibold text-gray-700 flex gap-2">
-              <AlignLeft className="w-5 h-5 text-teal-600" /> Description
-            </label>
+{/* Description */}
+<div>
+  <label className="font-semibold text-gray-700">
+    Description
+  </label>
 
-            {/* Toolbar */}
-            <div className="flex gap-2 mt-2">
-              <button onClick={() => applyTextStyle("bold")} className={`p-2 rounded ${textStyle.bold ? "bg-teal-600 text-white" : "bg-gray-100"}`}>
-                <Bold />
-              </button>
-              <button onClick={() => applyTextStyle("italic")} className={`p-2 rounded ${textStyle.italic ? "bg-teal-600 text-white" : "bg-gray-100"}`}>
-                <Italic />
-              </button>
-              <button onClick={() => applyTextStyle("underline")} className={`p-2 rounded ${textStyle.underline ? "bg-teal-600 text-white" : "bg-gray-100"}`}>
-                <Underline />
-              </button>
-            </div>
+  <div className="mt-2">
+    <QuillEditor
+      value={formData.description}
+      onChange={(html) =>
+        setFormData((prev) => ({ ...prev, description: html }))
+      }
+    />
+  </div>
+</div>
 
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={6}
-              placeholder="Enter description..."
-              className={`w-full px-4 py-3 border rounded-xl mt-2 
-              ${textStyle.bold ? "font-bold" : ""}
-              ${textStyle.italic ? "italic" : ""}
-              ${textStyle.underline ? "underline" : ""}`}
-            />
-          </div>
+
+    
 
           {/* Submit */}
           <button
@@ -327,3 +324,5 @@ const handleThumbnailUpload = async (event: any) => {
     </div>
   );
 }
+
+
