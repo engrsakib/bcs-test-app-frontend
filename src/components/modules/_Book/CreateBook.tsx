@@ -1,30 +1,15 @@
-
-
-
 "use client";
 
 import React, { useState } from "react";
-import {
-  FileText,
-
-  Tag,
-
-  Type,
-
-  Upload,
-  Image as ImageIcon,
-} from "lucide-react";
+import { FileText, Tag, Type, Upload, Image as ImageIcon } from "lucide-react";
 import Swal from "sweetalert2";
 import { ENV } from "@/config/env";
 
+import dynamic from "next/dynamic";
 
-
-  import dynamic from "next/dynamic";
-
-const QuillEditor = dynamic(() => import("@/editor/QuilEditor"), {
+const ReusableQuillEditor = dynamic(() => import("@/editor/ReactQuilEditor"), {
   ssr: false,
 });
-
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
@@ -57,9 +42,6 @@ export default function CreateBook() {
     description: "",
   });
 
-
-
-
   const handleThumbnailUpload = async (event: any) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -69,10 +51,6 @@ export default function CreateBook() {
     const data = new FormData();
     data.append("file", file);
     data.append("upload_preset", UPLOAD_PRESET);
-
-
-
-   
 
     try {
       const res = await fetch(
@@ -104,9 +82,6 @@ export default function CreateBook() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
-
-
 
   const handleSubmit = async () => {
     if (!formData.title.trim())
@@ -147,7 +122,7 @@ export default function CreateBook() {
 
       const data = await res.json();
 
-        console.log("CreateBook CheckData", data)
+      console.log("CreateBook CheckData", data);
 
       if (res.ok) {
         Swal.fire({
@@ -293,8 +268,8 @@ export default function CreateBook() {
           </div>
 
           {/* Description */}
-{/* Description */}
-<div>
+          {/* Description */}
+          {/* <div>
   <label className="font-semibold text-gray-700">
     Description
   </label>
@@ -307,10 +282,21 @@ export default function CreateBook() {
       }
     />
   </div>
-</div>
+</div> */}
 
-
-    
+          <div>
+            <label className="font-semibold text-gray-700">Description</label>
+            <div className="mt-2">
+              <ReusableQuillEditor
+                value={formData.description}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, description: value }))
+                }
+                placeholder="Enter book description..."
+                height={220}
+              />
+            </div>
+          </div>
 
           {/* Submit */}
           <button
@@ -324,5 +310,3 @@ export default function CreateBook() {
     </div>
   );
 }
-
-

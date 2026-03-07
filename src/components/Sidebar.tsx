@@ -10,6 +10,7 @@ import {
   FileText,
   Link2,
   ChevronDown,
+  Plane,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -94,6 +95,15 @@ const links = [
     subLinks: [
       { name: "Create Book", href: "/dashboard/my-book/create-book" },
       { name: "View Books", href: "/dashboard/my-book/view-book" },
+    ],
+  },
+  {
+    name: "Sturdy Plan",
+    icon: Plane,
+    basePath: "/dashboard/sturdy-plan",
+    subLinks: [
+      { name: "Create Plan", href: "/dashboard/sturdy-plan/create-plan" },
+      { name: "View Plans", href: "/dashboard/sturdy-plan/view-plan" },
     ],
   },
 
