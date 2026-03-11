@@ -1,162 +1,295 @@
+"use client";
 
-
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import { 
-  FaSearch, 
-  FaPlus, 
-  FaMinus, 
-  FaTimes, 
+import { ENV } from "@/config/env";
+import getCookie from "@/util/GetCookie";
+import React, { useState, useEffect } from "react";
+import {
+  FaSearch,
+  FaPlus,
+  FaTimes,
   FaListUl,
+  FaTrash,
   FaCalendarAlt,
   FaClock,
   FaCheckDouble,
-  FaUserFriends,
-  FaChevronRight // Import kora holo
-} from 'react-icons/fa';
+  FaChevronLeft,
+  FaChevronRight,
+} from "react-icons/fa";
+import { NegativeMark } from "./negativeMark";
 
-// LocalStorage Keys
-const QUESTIONS_STORAGE_KEY = 'allQuestions';
-const SELECTED_QUESTIONS_KEY = 'selectedExamQuestions';
-const ALL_EXAMS_KEY = 'allExams';
 
-// --- Sample Data (Seed Data) ---
-const sampleData = [
-  { id: 1, title: 'Math Problem 1: Algebra', mark: '5', answerType: 'MCQ', questionType: 'Math', description: 'Solve for x: 2x + 5 = 15', mathFormula: "2x + 5 = 15", blanks: [{ id: 101, options: ['3', '4', '5', '6'], correctAnswer: '3' }], updatedAt: '2025-10-30T10:00:00Z' },
-  { id: 2, title: 'General Knowledge: Capitals', mark: '2', answerType: 'Written', questionType: 'General', description: 'What is the capital of Japan?', mathFormula: "", blanks: [], updatedAt: '2025-10-29T11:00:00Z' },
-  { id: 3, title: 'Physics: Newtons Law', mark: '10', answerType: 'MCQ', questionType: 'Math', description: 'What is Newtons second law?', mathFormula: "F = ma", blanks: [{ id: 102, options: ['F=ma', 'E=mc^2', 'P=IV', 'V=IR'], correctAnswer: '1' }], updatedAt: '2025-10-28T12:00:00Z' },
-  // ... (baki data)
+const negativeMarkOptions = [
+  { label: "ZERO", value: 0 },
+  { label: "QUARTER", value: 0.25 },
+  { label: "HALF", value: 0.5 },
+  { label: "FULL", value: 1 },
 ];
 
-// Reusable Input Component (✅ Dark mode bad deya hoyeche)
+
+
+// --------------------
+// Reusable Input
+// --------------------
 const Input = ({ label, id, icon, ...props }) => {
   const Icon = icon;
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+      <label
+        htmlFor={id}
+        className="block text-sm font-medium text-gray-700 mb-1"
+      >
         {label}
       </label>
       <div className="relative">
-        {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />}
+        {Icon && (
+          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        )}
         <input
           id={id}
           {...props}
           className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
                      focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
-                     bg-white text-gray-900 ${Icon ? 'pl-10' : ''}`}
+                     bg-white text-gray-900 ${Icon ? "pl-10" : ""}`}
         />
       </div>
     </div>
   );
 };
 
-// --- Question Card Component (✅ Dark mode bad deya hoyeche) ---
-const QuestionCard = ({ question, onAdd, isAdded }) => (
-  <div 
-    className={`p-4 border rounded-lg flex flex-col justify-between transition-all 
-               ${isAdded ? 'bg-green-50 border-green-300' 
-                         : 'bg-white border-gray-200 hover:shadow-md'}`}
-  >
-    <div>
-      <h4 
-        className={`font-semibold text-sm truncate ${isAdded ? 'text-green-800' : 'text-gray-800'}`} 
-        title={question.title}
-      >
-        {question.title}
-      </h4>
-      <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-        <span 
-          className={`px-2 py-0.5 rounded-full text-xs font-medium 
-                     ${question.questionType === 'Math' ? 'bg-blue-100 text-blue-800' 
-                                                        : 'bg-purple-100 text-purple-800'}`}
+// --------------------
+// Question Card UI
+// --------------------
+const QuestionCard = ({ question, isSelected, onToggle }) => {
+  const typeColors = {
+    math: "bg-purple-100 text-purple-800",
+    general: "bg-blue-100 text-blue-800",
+    science: "bg-green-100 text-green-800",
+  };
+
+  const answerColors = {
+    mcq: "bg-indigo-100 text-indigo-800",
+    written: "bg-orange-100 text-orange-800",
+  };
+
+  return (
+    <div
+      className={`p-4 border rounded-lg transition-all cursor-pointer ${
+        isSelected
+          ? "bg-green-50 border-green-500 shadow-md"
+          : "bg-white border-gray-200 hover:shadow-md"
+      }`}
+    >
+      <div className="flex justify-between items-start">
+        <h4 className="font-semibold text-sm text-gray-800 flex-1 line-clamp-2">
+          {question.title}
+        </h4>
+        <button
+          type="button"
+          onClick={() => onToggle(question)}
+          className={`ml-2 p-1.5 rounded-full transition-colors ${
+            isSelected
+              ? "bg-red-600 hover:bg-red-700 text-white"
+              : "bg-green-600 hover:bg-green-700 text-white"
+          }`}
         >
-          {question.questionType}
+          {isSelected ? <FaTimes size={12} /> : <FaPlus size={12} />}
+        </button>
+      </div>
+
+      <p className="text-xs text-gray-500 mt-2 line-clamp-2">
+        {question.description}
+      </p>
+
+      <div className="flex items-center gap-2 mt-3 flex-wrap">
+        <span
+          className={`px-2 py-0.5 text-xs rounded-full capitalize ${typeColors[question.type] || "bg-gray-100 text-gray-800"}`}
+        >
+          {question.type}
         </span>
-        <span 
-          className={`px-2 py-0.5 rounded-full text-xs font-medium 
-                     ${question.answerType === 'MCQ' ? 'bg-yellow-100 text-yellow-800' 
-                                                      : 'bg-indigo-100 text-indigo-800'}`}
+        <span
+          className={`px-2 py-0.5 text-xs rounded-full capitalize ${answerColors[question.answerType] || "bg-gray-100 text-gray-800"}`}
         >
           {question.answerType}
         </span>
+        <span className="ml-auto text-sm font-bold text-gray-700">
+          {question.marks} Marks
+        </span>
       </div>
     </div>
-    <div className="flex justify-between items-center mt-3">
-      <span className="text-sm font-bold text-gray-700">{question.mark} Mark</span>
-      <button
-        type="button"
-        onClick={onAdd}
-        disabled={isAdded}
-        className={`p-1.5 rounded-full transition-all 
-                   ${isAdded ? 'bg-green-500 text-white cursor-not-allowed' 
-                             : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-        title={isAdded ? 'Added' : 'Add Question'}
-      >
-        {isAdded ? <FaCheckDouble size={12} /> : <FaPlus size={12} />}
-      </button>
-    </div>
-  </div>
-);
+  );
+};
 
-// --- Question Selector Modal (✅ Dark mode bad deya hoyeche) ---
-const QuestionSelectorModal = ({ isOpen, onClose, allQuestions, selectedIds, onAdd, onRemove, onSearch }) => {
+// --------------------
+// Modal UI
+// --------------------
+const QuestionSelectorModal = ({
+  isOpen,
+  onClose,
+  selectedQuestions,
+  onSelectQuestions,
+}) => {
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [localSelected, setLocalSelected] = useState([]);
+  const limit = 9;
+
+  useEffect(() => {
+    if (isOpen) {
+      setLocalSelected([...selectedQuestions]);
+      fetchQuestions(1, "");
+    }
+  }, [isOpen]);
+
+  const fetchQuestions = async (currentPage, search) => {
+    setLoading(true);
+    try {
+      const url = `https://mcq-analysis.vercel.app/api/v1/question/?page=${currentPage}&limit=${limit}${search ? `&searchTerm=${search}` : ""}`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: getCookie("access_token") || "",
+        },
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        setQuestions(result.data.data);
+        setTotalPages(Math.ceil(result.data.meta.total / limit));
+      }
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setPage(1);
+    fetchQuestions(1, value);
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    fetchQuestions(newPage, searchQuery);
+  };
+
+  const handleToggleQuestion = (question) => {
+    const isAlreadySelected = localSelected.some((q) => q._id === question._id);
+    if (isAlreadySelected) {
+      setLocalSelected(localSelected.filter((q) => q._id !== question._id));
+    } else {
+      setLocalSelected([...localSelected, question]);
+    }
+  };
+
+  const handleDone = () => {
+    onSelectQuestions(localSelected);
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-75">
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        {/* Modal Header */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-semibold text-gray-900">Add Questions to Exam</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <FaTimes size={20} />
+    <div className="fixed inset-0 bg-white bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-6xl rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="p-5 border-b flex justify-between items-center bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-xl">
+          <div>
+            <h2 className="text-2xl font-bold">Select Questions</h2>
+            <p className="text-sm text-green-100 mt-1">
+              {localSelected.length} questions selected
+            </p>
+          </div>
+          <button
+            className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
+            onClick={onClose}
+          >
+            <FaTimes size={24} />
           </button>
         </div>
-        
-        {/* Search Bar (Inside Modal) */}
-        <div className="p-4 border-b border-gray-200 sticky top-[73px] bg-white z-10">
+
+        {/* Search */}
+        <div className="p-4 border-b bg-gray-50">
           <div className="relative">
             <input
               type="text"
-              onChange={(e) => onSearch(e.target.value)}
-              placeholder="Search questions by title..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Search questions by title or description..."
+              value={searchQuery}
+              onChange={handleSearch}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
-            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <FaSearch
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              size={18}
+            />
           </div>
         </div>
 
-        {/* Question Cards Grid */}
-        <div className="p-4 overflow-y-auto">
-          {allQuestions.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {allQuestions.map((q) => {
-                const isAdded = selectedIds.includes(q.id);
-                return (
-                  <QuestionCard 
-                    key={q.id} 
-                    question={q} 
-                    isAdded={isAdded}
-                    onAdd={() => isAdded ? onRemove(q.id) : onAdd(q.id)}
-                  />
-                );
-              })}
+        {/* Cards */}
+        <div className="p-6 overflow-y-auto flex-1">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            </div>
+          ) : questions.length === 0 ? (
+            <div className="text-center text-gray-500 py-12">
+              <p className="text-lg">No questions found</p>
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-10">No questions found matching your search.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {questions.map((q) => (
+                <QuestionCard
+                  key={q._id}
+                  question={q}
+                  isSelected={localSelected.some(
+                    (selected) => selected._id === q._id,
+                  )}
+                  onToggle={handleToggleQuestion}
+                />
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="p-4 border-t border-gray-200 sticky bottom-0 bg-gray-50 z-10">
-           <button 
-             type="button" 
-             onClick={onClose} 
-             className="w-full px-4 py-2 bg-[#2B6A5B] text-white font-semibold rounded-lg hover:bg-green-700"
-           >
-             Done
-           </button>
+        {/* Pagination */}
+        {!loading && questions.length > 0 && (
+          <div className="px-6 py-3 border-t bg-gray-50 flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              Page {page} of {totalPages}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page === 1}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <FaChevronLeft size={12} /> Previous
+              </button>
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page === totalPages}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                Next <FaChevronRight size={12} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="p-5 border-t bg-gray-50 rounded-b-xl">
+          <button
+            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 rounded-lg transition-all shadow-md hover:shadow-lg"
+            onClick={handleDone}
+          >
+            Done - Add {localSelected.length} Question
+            {localSelected.length !== 1 ? "s" : ""}
+          </button>
         </div>
       </div>
     </div>
@@ -164,236 +297,293 @@ const QuestionSelectorModal = ({ isOpen, onClose, allQuestions, selectedIds, onA
 };
 
 
-// --- Main Create Exam Form Component ---
+
+// --------------------
+// Main Component
+// --------------------
 export default function CreateExamForm() {
-  // --- States ---
-  const [allQuestions, setAllQuestions] = useState([]);
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedQuestions, setSelectedQuestions] = useState([]);
+  const [formData, setFormData] = useState({
+    exam_name: "",
+    exam_date_time: "",
+    duration_minutes: "",
+   negative_mark: NegativeMark[0],
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null);
 
-  // Form fields states
-  const [examName, setExamName] = useState('');
-  const [examDate, setExamDate] = useState('');
-  const [examTime, setExamTime] = useState(''); // in minutes
-  const [examMark, setExamMark] = useState('');
-  const [examinee, setExaminee] = useState('');
+  const totalMarks = selectedQuestions.reduce(
+    (sum, q) => sum + (q.marks || 0),
+    0,
+  );
 
-  // --- Data Loading ---
-  useEffect(() => {
-    const storedQuestions = localStorage.getItem(QUESTIONS_STORAGE_KEY);
-    let questionsData = [];
-    if (storedQuestions) {
-      questionsData = JSON.parse(storedQuestions);
-    } else {
-      localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(sampleData));
-      questionsData = sampleData;
-    }
-    setAllQuestions(questionsData);
-
-    const storedSelectedIds = localStorage.getItem(SELECTED_QUESTIONS_KEY);
-    if (storedSelectedIds) {
-      setSelectedQuestionIds(JSON.parse(storedSelectedIds));
-    }
-  }, []);
-
-  // --- Question Management Logic ---
-  useEffect(() => {
-    localStorage.setItem(SELECTED_QUESTIONS_KEY, JSON.stringify(selectedQuestionIds));
-  }, [selectedQuestionIds]);
-
-  const addQuestion = (id) => {
-    if (!selectedQuestionIds.includes(id)) {
-      setSelectedQuestionIds((prevIds) => [...prevIds, id]);
-    }
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
-  const removeQuestion = (id) => {
-    setSelectedQuestionIds((prevIds) => prevIds.filter((qId) => qId !== id));
+  const handleRemoveQuestion = (questionId) => {
+    setSelectedQuestions(selectedQuestions.filter((q) => q._id !== questionId));
   };
 
-  const availableQuestions = allQuestions
-    .filter((q) => 
-      q.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const handleSubmit = async () => {
+    if (
+      !formData.exam_name ||
+      !formData.exam_date_time ||
+      !formData.duration_minutes
+    ) {
+      setSubmitStatus({
+        type: "error",
+        message: "Please fill all required fields",
+      });
+      return;
+    }
 
-  const selectedQuestionsFull = selectedQuestionIds
-    .map((id) => allQuestions.find((q) => q.id === id))
-    .filter(Boolean); 
+    if (selectedQuestions.length === 0) {
+      setSubmitStatus({
+        type: "error",
+        message: "Please select at least one question",
+      });
+      return;
+    }
 
-  // --- Form Submission ---
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    const calculatedMark = selectedQuestionsFull.reduce((total, q) => total + (Number(q.mark) || 0), 0);
-    
-    const examData = {
-      id: Date.now(),
-      examName,
-      examDate,
-      examTime: `${examTime} minutes`,
-      totalMark: examMark || calculatedMark, 
-      examinee,
-      selectedQuestionIds, 
-    };
+    setIsSubmitting(true);
+    setSubmitStatus(null);
 
-    // --- LOCALSTORAGE-E SAVE KORA ---
-    const storedExams = localStorage.getItem(ALL_EXAMS_KEY);
-    const allExams = storedExams ? JSON.parse(storedExams) : [];
-    const updatedExams = [...allExams, examData];
-    localStorage.setItem(ALL_EXAMS_KEY, JSON.stringify(updatedExams));
+    try {
 
-    console.log("--- Creating Exam (Data for Backend) ---");
-    console.log(JSON.stringify(examData, null, 2));
-    
-    alert('Exam created and saved to LocalStorage!');
-    
-    // Form Reset
-    setExamName('');
-    setExamDate('');
-    setExamTime('');
-    setExamMark('');
-    setExaminee('');
-    setSelectedQuestionIds([]);
-    localStorage.removeItem(SELECTED_QUESTIONS_KEY);
+      console.log("FormData", formData);
+      console.log("Negative", formData.negative_mark);
+
+      const payload = {
+        exam_name: formData.exam_name,
+        exam_date_time: formData.exam_date_time,
+        duration_minutes: parseInt(formData.duration_minutes),
+        total_marks: totalMarks,
+        questions: selectedQuestions.map((q) => q._id),
+            negative_mark: Number(formData.negative_mark),
+      };
+
+      const response = await fetch(`${ENV.BASE_URL}/exam/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: getCookie("access_token") || "",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      console.log("Exam CheckData", result);
+
+      if (result.success) {
+        setSubmitStatus({
+          type: "success",
+          message: "Exam created successfully!",
+        });
+        // Reset form
+        setFormData({
+          exam_name: "",
+          exam_date_time: "",
+          duration_minutes: "",
+            negative_mark: 0,
+        });
+        setSelectedQuestions([]);
+      } else {
+        setSubmitStatus({
+          type: "error",
+          message: result.message || "Failed to create exam",
+        });
+      }
+    } catch (error) {
+      setSubmitStatus({
+        type: "error",
+        message: "Error creating exam. Please try again.",
+      });
+      console.error("Error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    // ✅ Dark mode bad deya hoyeche
-    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
-      <form
-        onSubmit={handleSubmit}
-        // ✅ Dark mode bad deya hoyeche
-        className="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-xl space-y-6"
-      >
-        {/* --- ✅ Notun Header Title o Description --- */}
-        <div className="pb-5 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900">Create New Exam</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Fill in the details below to schedule a new exam and add questions from your question bank.
+    <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+      <div className="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+        {/* Header */}
+        <div className="pb-5 border-b">
+          <h1 className="text-3xl font-bold text-gray-900">Create New Exam</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Fill the form to schedule a new exam
           </p>
         </div>
-        
-        {/* --- Exam Details Fields --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* Status Message */}
+        {submitStatus && (
+          <div
+            className={`mt-6 p-4 rounded-lg ${
+              submitStatus.type === "success"
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : "bg-red-50 text-red-800 border border-red-200"
+            }`}
+          >
+            {submitStatus.message}
+          </div>
+        )}
+
+        {/* Form Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <Input
             label="Exam Name"
-            id="examName"
+            id="exam_name"
+            name="exam_name"
             icon={FaListUl}
-            type="text"
-            value={examName}
-            onChange={(e) => setExamName(e.target.value)}
-            placeholder="e.g., BCS Preliminary Mock Test 1"
+            placeholder="BCS Mock Test"
+            value={formData.exam_name}
+            onChange={handleInputChange}
             required
           />
           <Input
-            label="Examinee Group"
-            id="examinee"
-            icon={FaUserFriends}
-            type="text"
-            value={examinee}
-            onChange={(e) => setExaminee(e.target.value)}
-            placeholder="e.g., BCS Candidates"
-            required
-          />
-          <Input
-            label="Exam Date and Time"
-            id="examDate"
+            label="Exam Date & Time"
+            id="exam_date_time"
+            name="exam_date_time"
+            type="datetime-local"
             icon={FaCalendarAlt}
-            type="datetime-local" 
-            value={examDate}
-            onChange={(e) => setExamDate(e.target.value)}
+            value={formData.exam_date_time}
+            onChange={handleInputChange}
             required
           />
           <Input
-            label="Exam Time (in Minutes)"
-            id="examTime"
-            icon={FaClock}
+            label="Duration (Minutes)"
+            id="duration_minutes"
+            name="duration_minutes"
             type="number"
-            value={examTime}
-            onChange={(e) => setExamTime(e.target.value)}
+            icon={FaClock}
             placeholder="e.g., 60"
+            value={formData.duration_minutes}
+            onChange={handleInputChange}
             required
           />
-           <Input
-            label="Total Mark (Optional)"
-            id="examMark"
-            icon={FaCheckDouble}
+          <Input
+            label="Total Marks (Auto-calculated)"
+            id="total_marks"
             type="number"
-            value={examMark}
-            onChange={(e) => setExamMark(e.target.value)}
-            placeholder="Auto-calculates if left blank"
+            icon={FaCheckDouble}
+            value={totalMarks}
+            disabled
           />
-           <div className="md:col-span-1 flex items-end pb-2">
-            <p className="text-sm text-gray-600">
-              Auto-Mark: <span className="font-bold">{selectedQuestionsFull.reduce((total, q) => total + (Number(q.mark) || 0), 0)}</span>
-            </p>
-           </div>
         </div>
 
-        {/* --- Add Question Button & Selected List --- */}
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-            <h3 className="text-lg font-medium text-gray-800">
-              Selected Questions ({selectedQuestionIds.length})
+        <select
+          name="negative_mark"
+          value={formData.negative_mark}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              negative_mark: Number(e.target.value),
+            })
+          }
+          className="block w-6/12 px-3 py-2 border mt-3  border-gray-300 rounded-md shadow-sm
+             focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
+             bg-white text-gray-900"
+        >
+          {negativeMarkOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Selected Questions Section */}
+        <div className="mt-8">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-lg text-gray-800">
+              Selected Questions ({selectedQuestions.length})
+              {selectedQuestions.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-gray-600">
+                  • Total: {totalMarks} Marks
+                </span>
+              )}
             </h3>
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition-all"
+              className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-5 py-2.5 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg"
             >
-              <FaPlus size={14} />
-              Add / View Questions
+              <FaPlus size={14} /> Add Questions
             </button>
           </div>
 
-          <div className="p-4 border border-gray-200 rounded-lg max-h-64 overflow-y-auto space-y-2 bg-gray-50">
-            {selectedQuestionsFull.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No questions added yet.</p>
+          <div className="mt-4">
+            {selectedQuestions.length === 0 ? (
+              <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 text-center text-gray-500">
+                <p className="text-lg">No questions selected yet</p>
+                <p className="text-sm mt-1">
+                  Click "Add Questions" to get started
+                </p>
+              </div>
             ) : (
-              selectedQuestionsFull.map((q, index) => (
-                <div key={q.id} className="flex justify-between items-center p-2.5 bg-white rounded-md shadow-sm">
-                  <span className="text-sm text-gray-900 truncate pr-4" title={q.title}>
-                    {index + 1}. {q.title}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeQuestion(q.id)}
-                    className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100"
-                    title="Remove Question"
+              <div className="space-y-3">
+                {selectedQuestions.map((q, index) => (
+                  <div
+                    key={q._id}
+                    className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition-all"
                   >
-                    <FaMinus size={14} />
-                  </button>
-                </div>
-              ))
+                    <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-semibold">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-800">{q.title}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full capitalize">
+                          {q.type}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full capitalize">
+                          {q.answerType}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-700 ml-auto">
+                          {q.marks} Marks
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveQuestion(q._id)}
+                      className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Remove question"
+                    >
+                      <FaTrash size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
 
-        {/* --- ✅ Submit Button (Green Color) --- */}
-        <div className="pt-5 border-t border-gray-200">
+        {/* Submit */}
+        <div className="mt-8 pt-5 border-t">
           <button
-            type="submit"
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white 
-                       bg-emerald-600 hover:bg-emerald-700 
-                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg text-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Confirm & Create Exam
+            {isSubmitting ? "Creating Exam..." : "Create Exam"}
           </button>
         </div>
-      </form>
+      </div>
 
-      {/* --- Question Selector Modal --- */}
+      {/* Modal */}
       <QuestionSelectorModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        allQuestions={availableQuestions}
-        selectedIds={selectedQuestionIds}
-        onAdd={addQuestion}
-        onRemove={removeQuestion}
-        onSearch={setSearchTerm}
+        selectedQuestions={selectedQuestions}
+        onSelectQuestions={setSelectedQuestions}
       />
     </div>
   );
 }
-

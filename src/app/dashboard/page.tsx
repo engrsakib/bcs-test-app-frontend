@@ -1,10 +1,10 @@
+import { CardItem } from "@/components/modules/user/CardItem";
 
 
 
 
 
-// src/app/dashboard/page.tsx
-import { CardItem } from "@/components/CardItem";
+
 
 export default function DashboardPage() {
   return (

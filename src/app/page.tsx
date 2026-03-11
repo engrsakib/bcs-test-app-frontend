@@ -1,18 +1,30 @@
-import DashboardLayout from "./dashboard/layout";
+import Login from "@/components/modules/auth/Login";
 
-import PermissonPages from "./dashboard/permission/page";
 
 export default function Home() {
   return (
     <div>
-  
+
+
+  <Login></Login>
      
-      <DashboardLayout>
+      {/* <DashboardLayout> */}
              {/* <DashboardPage>
         // new cmmt
       </DashboardPage> */}
-      <PermissonPages></PermissonPages>
-      </DashboardLayout>
+      {/* <PermissonPages></PermissonPages> */}
+      {/* </DashboardLayout> */}
+      {/* <LoginPage></LoginPage> */}
     </div>
   )
 }
+
+
+
+
+
+// import { redirect } from "next/navigation";
+
+// export default function Home() {
+//   redirect("/login");
+// }
