@@ -10,22 +10,27 @@ import {
   FileText,
   Link2,
   ChevronDown,
+  Plane,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import Image from "next/image";
+import { MdOutlineLeaderboard } from "react-icons/md";
+
 
 const links = [
   { name: "Dashboard", href: "/dashboard", icon: Trophy },
+
   {
     name: "Questions",
     icon: GraduationCap,
-    basePath: "/dashboard/question", // Path update kora holo
+    basePath: "/dashboard/question",
     subLinks: [
       { name: "Create Question", href: "/dashboard/question/create-question" },
       { name: "View All Question", href: "/dashboard/question/view-question" },
     ],
   },
+
   {
     name: "Exam",
     icon: GraduationCap,
@@ -35,11 +40,33 @@ const links = [
       { name: "View All Exam", href: "/dashboard/exam/view-exam" },
     ],
   },
-  { name: "User", href: "/dashboard/user", icon: FileText },
-  { name: "Result", href: "/dashboard/result", icon: Trophy },
 
+  {
+    name: "Our Team",
+    icon: Video,
+    basePath: "/dashboard/team",
+    subLinks: [
+      // STUDENT
+      { name: "Create Student", href: "/dashboard/team/create-student" },
+      { name: "View Student", href: "/dashboard/team/view-student" },
 
-  // guideline link add kora holo
+      // ADMIN
+      { name: "Create Admin", href: "/dashboard/team/create-admin" },
+      { name: "View Admin", href: "/dashboard/team/view-admin" },
+    ],
+  },
+
+  // { name: "Leaderboard", href: "/dashboard/result", icon: Trophy },
+
+    {
+    name: "Leaderboard",
+    icon: MdOutlineLeaderboard,
+    basePath: "/dashboard/result",
+    subLinks: [
+    
+      { name: "View All Result", href: "/dashboard/result/view-result" },
+    ],
+  },
 
   {
     name: "Guideline",
@@ -51,12 +78,41 @@ const links = [
     ],
   },
 
+  {
+    name: "Youtube",
+    icon: Video,
+    basePath: "/dashboard/youtube",
+    subLinks: [
+      { name: "Create Video", href: "/dashboard/youtube/create-video" },
+      { name: "View All Videos", href: "/dashboard/youtube/view-video" },
+    ],
+  },
 
+  {
+    name: "My Book",
+    icon: Book,
+    basePath: "/dashboard/my-book",
+    subLinks: [
+      { name: "Create Book", href: "/dashboard/my-book/create-book" },
+      { name: "View Books", href: "/dashboard/my-book/view-book" },
+    ],
+  },
+  {
+    name: "Sturdy Plan",
+    icon: Plane,
+    basePath: "/dashboard/sturdy-plan",
+    subLinks: [
+      { name: "Create Plan", href: "/dashboard/sturdy-plan/create-plan" },
+      { name: "View Plans", href: "/dashboard/sturdy-plan/view-plan" },
+    ],
+  },
 
-  { name: "YouTube", href: "/dashboard/youtube", icon: Video },
-  { name: "Rokomari", href: "/dashboard/rokomari", icon: Link2 },
-  { name: "Manage-Permission", href: "/dashboard/permission", icon: Link2 },
+  { name: "Profile", href: "/dashboard/profile", icon: Link2 },
 ];
+
+
+
+
 
 export const Sidebar = () => {
   const pathname = usePathname();
@@ -74,7 +130,7 @@ export const Sidebar = () => {
     <aside className="w-64 bg-[#2B6A5B] border-r border-green-700/30 hidden md:flex flex-col shadow-lg">
       
 
-   <Link href="/">
+   <Link href="/dashboard">
       <div className="p-4 border-b border-green-700/50">
         {/* White background card for logo */}
         <div className="bg-white rounded-lg shadow-lg w-[150px] flex items-center justify-center py-2 

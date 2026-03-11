@@ -3,24 +3,162 @@
 
 
 "use client";
-import { Bell, LogOut, LogIn, UserPlus, User, Menu } from "lucide-react";
+import { 
+  Bell, LogOut, User, Menu, Award, BookOpen, FileText, TrendingUp 
+} from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import Swal from "sweetalert2";
+import { ENV } from "@/config/env";
 
-export const Navbar = ({ onMenuClick }:any) => {
+
+const notificationsData = [
+  {
+    id: 1,
+    icon: Award,
+    title: "New Achievement Unlocked!",
+    description: "You've completed 50 MCQ questions.",
+    time: "5 minutes ago",
+    read: false
+  },
+  {
+    id: 2,
+    icon: BookOpen,
+    title: "New Exam Available",
+    description: "Physics Chapter 5 exam is now available",
+    time: "1 hour ago",
+    read: false
+  }
+];
+
+// Get Cookie
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+}
+
+export const Navbar = ({ onMenuClick }: any) => {
   const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
 
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  const router = useRouter();
+
+  const unreadCount = notificationsData.filter(n => !n.read).length;
+
+  // ----------------------------
+  // ADMIN DATA STATES
+  // ----------------------------
+  const [admin, setAdmin] = useState<any>(null);
+  const [loadingAdmin, setLoadingAdmin] = useState(true);
+
+  // ----------------------------
+  // FETCH ADMIN DATA
+  // ----------------------------
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      try {
+        const token = getCookie("access_token");
+
+        const res = await fetch(`${ENV.BASE_URL}/admin/auth`, {
+          headers: {
+            Authorization: token || "",
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+
+        const data = await res.json();
+        // console.log("ADMIN PROFILE:", data);
+
+        if (data.success) {
+          setAdmin(data.data);
+        }
+      } catch (err) {
+        console.error("Admin fetch error:", err);
+      } finally {
+        setLoadingAdmin(false);
+      }
+    };
+
+    fetchAdminData();
+  }, []);
+
+  // ----------------------------
+  // CLICK OUTSIDE CLOSE DROPDOWN
+  // ----------------------------
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // ----------------------------
+  // LOGOUT
+  // ----------------------------
+  const handleLogout = async () => {
+    const result = await Swal.fire({
+      title: "Logout?",
+      text: "Are you sure you want to logout?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, logout",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#16a34a",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const accessToken = getCookie("access_token");
+
+        if (accessToken) {
+          await fetch(`${ENV.BASE_URL}/admin/logout`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": accessToken,
+            },
+            credentials: "include",
+          });
+        }
+
+        // Clear cookies
+        document.cookie = "access_token=; path=/; max-age=0";
+        document.cookie = "refresh_token=; path=/; max-age=0";
+
+        Swal.fire({
+          title: "Logged Out",
+          text: "You have been logged out successfully",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+        setTimeout(() => {
+          router.push("/login");
+          router.refresh();
+        }, 1200);
+
+      } catch (error) {
+        console.error("Logout error:", error);
+      }
+    }
+  };
 
   return (
     <header className="h-16 border-b border-green-800/30 bg-[#2B6A5B] flex items-center justify-between px-4 md:px-6 shadow-sm">
@@ -32,20 +170,74 @@ export const Navbar = ({ onMenuClick }:any) => {
           <Menu className="w-6 h-6" />
         </button>
         <h2 className="hidden md:block font-semibold text-lg text-white">
-          BCS Exam Panel
+          Smart Learning – MCQ Analysis Dashboard
         </h2>
       </div>
 
-      <div className="flex items-center gap-4 md:gap-5 relative text-white">
-        <button className="relative text-green-100 hover:text-white hover:bg-white/20 p-2 rounded-full transition-colors">
-          <Bell className="w-6 h-6" />
-          <span className="absolute top-1.5 right-1.5 bg-red-500 text-[10px] rounded-full w-2.5 h-2.5 border border-green-700" />
-        </button>
+      {/* RIGHT SIDE ICONS */}
+      <div className="flex items-center gap-4 relative text-white">
 
+        {/* ---------------------- NOTIFICATIONS ---------------------- */}
+        <div className="relative" ref={notifRef}>
+          <button
+            onClick={() => setNotifOpen(!notifOpen)}
+            className="relative text-green-100 hover:text-white hover:bg-white/20 p-2 rounded-full transition-colors"
+          >
+            <Bell className="w-6 h-6" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          <AnimatePresence>
+            {notifOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl overflow-hidden z-50 text-black"
+              >
+                <div className="px-4 py-3 border-b bg-gray-50">
+                  <h3 className="font-semibold text-gray-800">Notifications</h3>
+                  <p className="text-xs text-gray-500">You have {unreadCount} unread notifications</p>
+                </div>
+
+                <div className="max-h-96 overflow-y-auto">
+                  {notificationsData.map((n) => {
+                    const IconComp = n.icon;
+                    return (
+                      <div
+                        key={n.id}
+                        className={`px-4 py-3 border-b hover:bg-gray-100 transition cursor-pointer ${
+                          !n.read ? "bg-blue-50/50" : ""
+                        }`}
+                      >
+                        <div className="flex gap-3">
+                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            <IconComp className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-900">{n.title}</h4>
+                            <p className="text-xs text-gray-600">{n.description}</p>
+                            <p className="text-xs text-gray-500 mt-1">{n.time}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* ---------------------- USER DROPDOWN ---------------------- */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setOpen(!open)}
-            className="w-9 h-9 flex items-center justify-center bg-white/10 text-green-100 rounded-full font-semibold hover:bg-white/20 transition-colors"
+            className="w-9 h-9 flex items-center justify-center bg-white/10 text-green-100 rounded-full hover:bg-white/20 transition-colors"
           >
             <User className="w-5 h-5" />
           </button>
@@ -56,52 +248,52 @@ export const Navbar = ({ onMenuClick }:any) => {
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                className="absolute right-0 mt-2 w-56 bg-white border dark:border-gray-700 dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden z-50"
-                style={{ transformOrigin: "top right" }}
+                className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl overflow-hidden z-50 text-black"
               >
-                <div className="flex items-center gap-3 px-4 py-3 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                  <div className="w-9 h-9 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                {/* USER INFO */}
+                <div className="flex items-center gap-3 px-4 py-3 border-b bg-gray-50">
+                  <div className="w-9 h-9 bg-gray-200 rounded-full flex items-center justify-center">
+                    {/* <User className="w-5 h-5 text-gray-600" /> */}
+                    <img src={admin?.image || "/default-profile.png"} alt={admin?.name || "User"} width={36} height={36} className="rounded-full" />
                   </div>
+
                   <div>
-                    <p className="text-sm font-semibold text-gray-800 dark:text-white">Nowshad</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">user@example.com</p>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {loadingAdmin ? "Loading..." : admin?.name || "Unknown User"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {loadingAdmin ? "..." : admin?.phone_number || "No Number"}
+                    </p>
+                    <p className="text-xs text-gray-500 capitalize">
+                      {loadingAdmin ? "..." : admin?.role || "Role Not Found"}
+                    </p>
                   </div>
                 </div>
 
-                <ul className="text-sm text-gray-700 dark:text-gray-200 py-2">
+                {/* MENU */}
+                <ul className="text-sm text-gray-700 py-2">
                   <li>
                     <Link
-                      href="/dashboard/login"
-                      className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      href="/dashboard/profile"
+                      className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 transition-colors"
                       onClick={() => setOpen(false)}
                     >
-                      <LogIn className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Login
+                      My Profile
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      href="/dashboard/register"
-                      className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() => setOpen(false)}
-                    >
-                      <UserPlus className="w-4 h-4 text-green-600 dark:text-green-400" /> Register
-                    </Link>
-                  </li>
-                  <li className="border-t dark:border-gray-700 my-1"></li>
+
+                  <li className="border-t my-1"></li>
+
                   <li>
                     <button
-                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
-                      onClick={() => {
-                        alert("Logged out!");
-                        setOpen(false);
-                      }}
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 px-4 py-2 w-full hover:bg-gray-100 text-left text-red-600"
                     >
-                      <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" /> Logout
+                      <LogOut className="w-4 h-4" /> Logout
                     </button>
                   </li>
                 </ul>
+
               </motion.div>
             )}
           </AnimatePresence>

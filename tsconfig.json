@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -11,7 +15,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -19,9 +23,28 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/components/modules/permission/MathEditor.jsx", "src/components/modules/AddQuestion/AddQuestion.jsx", "src/app/dashboard/rokomari/page.jsx", "tailwind.config.js", "src/app/dashboard/exam/view-question/page.jsx", "src/components/modules/guidelineCompo/ViewAllGuideline.jsx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/components/modules/permission/MathEditor.jsx",
+    "src/components/modules/AddQuestion/AddQuestion.jsx",
+    "src/app/dashboard/my-book/page.jsx",
+    "tailwind.config.js",
+    "src/app/dashboard/exam/view-question/page.jsx",
+    "src/components/modules/guidelineCompo/ViewAllGuideline.tsx",
+    "src/components/modules/_Admin/UpdateModal.jsx",
+    "src/components/modules/_student/UserManagement.tsx",
+    "src/components/modules/viewAllQuestion/ViewAllQuestion.jsx",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
