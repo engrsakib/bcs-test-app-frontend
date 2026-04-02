@@ -108,54 +108,54 @@ const CreateGuideline = () => {
     setUploading(false);
   };
 
-  const handleSubmit = async () => {
-    
-    if (!formData.title.trim()) return Swal.fire("Missing Title", "Please enter guideline title", "warning");
-    if (!formData.category) return Swal.fire("Missing Category", "Please select a category", "warning");
-    if (!formData.thumbnail_url.trim()) return Swal.fire("Missing Thumbnail", "Please upload a thumbnail image", "warning");
-    if (!formData.description.trim()) return Swal.fire("Missing Description", "Please enter guideline description", "warning");
+const handleSubmit = async () => {
+  if (!formData.title.trim()) {
+    return Swal.fire("Missing Title", "Please enter guideline title", "warning");
+  }
 
-    setSubmitting(true);
+  if (!formData.thumbnail_url.trim()) {
+    return Swal.fire("Missing Thumbnail", "Please upload a thumbnail image", "warning");
+  }
 
-    try {
-      const res = await fetch(`${ENV.BASE_URL}/guideline/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": getCookie("access_token") || "",
-        },
-        body: JSON.stringify(formData)
+  setSubmitting(true);
+
+  try {
+    const res = await fetch(`${ENV.BASE_URL}/guideline/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": getCookie("access_token") || "",
+      },
+      body: JSON.stringify(formData),
+    });
+
+    const data = await res.json();
+    console.log("CreateGuideline", data);
+
+    if (res.ok) {
+      Swal.fire({
+        icon: "success",
+        title: "Guideline Created Successfully!",
+        text: data.message,
+        confirmButtonColor: "#0d9488",
       });
 
-      const data = await res.json();
-      console.log("CreateGuideline", data)
-
-      if (res.ok) {
-        Swal.fire({
-          icon: "success",
-          title: "Guideline Created Successfully!",
-          text: data.message,
-          confirmButtonColor: "#0d9488",
-        });
-
-        setFormData({
-          title: "",
-          category: "",
-          status: GUIDELINE_STATUS.ACTIVE,
-          description: "",
-          thumbnail_url: "",
-        });
-
-      } else {
-        Swal.fire("Error", data.message || "Failed to create guideline", "error");
-      }
-
-    } catch (error) {
-      Swal.fire("Error", "Network or server error", "error");
+      setFormData({
+        title: "",
+        category: "",
+        status: GUIDELINE_STATUS.ACTIVE,
+        description: "",
+        thumbnail_url: "",
+      });
+    } else {
+      Swal.fire("Error", data.message || "Failed to create guideline", "error");
     }
+  } catch (error) {
+    Swal.fire("Error", "Network or server error", "error");
+  }
 
-    setSubmitting(false);
-  };
+  setSubmitting(false);
+};
 
   // ============================================================
   return (
@@ -285,7 +285,6 @@ const CreateGuideline = () => {
 
     
 
-          {/* SUBMIT BUTTON */}
           <button
             onClick={handleSubmit}
             disabled={submitting}
