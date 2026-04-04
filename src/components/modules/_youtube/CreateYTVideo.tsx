@@ -8,6 +8,7 @@ import React, { useState, useRef } from 'react';
 import Swal from 'sweetalert2';
 
 import dynamic from "next/dynamic";
+import { useRouter } from 'next/navigation';
 
 const QuillEditor = dynamic(() => import("@/editor/QuilEditor"), {
   ssr: false,
@@ -15,6 +16,7 @@ const QuillEditor = dynamic(() => import("@/editor/QuilEditor"), {
 
 
 export default function CreateGuideline() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     title: '',
     video_url: '',
@@ -93,11 +95,14 @@ export default function CreateGuideline() {
         }
       );
 
+
+
       if (!response.ok) {
         throw new Error('Upload failed');
       }
 
       const data = await response.json();
+
       
       setFormData(prev => ({
         ...prev,
@@ -135,24 +140,30 @@ export default function CreateGuideline() {
   };
 
 
+const handleSubmit = async () => {
+  const videoUrl = formData.video_url.trim();
+  const title = formData.title.trim();
+  const thumbnailUrl = formData.thumbnail_url.trim();
+  const description = formData.description.trim();
 
-  const handleSubmit = async () => {
-  if (!formData.title.trim()) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Missing Title',
-      text: 'Please enter a title',
-      confirmButtonColor: '#0d9488'
+  
+  if (!title) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Title is required",
+      text: "Please enter the title.",
+      confirmButtonColor: "#0d9488",
     });
     return;
   }
 
-  if (!formData.video_url.trim()) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Missing Video URL',
-      text: 'Please enter a video URL',
-      confirmButtonColor: '#0d9488'
+
+  if (!videoUrl) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Video URL is required",
+      text: "Please enter the video URL.",
+      confirmButtonColor: "#0d9488",
     });
     return;
   }
@@ -162,54 +173,48 @@ export default function CreateGuideline() {
 
   try {
     const payload = {
-      title: formData.title.trim(),
-      video_url: formData.video_url.trim(),
-      thumbnail_url: formData.thumbnail_url?.trim() || '',
-      description: formData.description?.trim() || '',
+      title, // required
+      video_url: videoUrl, // required
+      thumbnail_url: thumbnailUrl || "", // optional
+      description: description || "", // optional
       is_published: formData.is_published,
     };
 
     const response = await fetch(`${ENV.BASE_URL}/youtube`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': getCookie('access_token') || ''
+        "Content-Type": "application/json",
+        Authorization: getCookie("access_token") || "",
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
-    const checkedData = await response.clone().json().catch(() => ({}));
-    console.log('Response Data:', checkedData);
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to create guideline');
+      throw new Error(data?.message || "Failed to create YouTube video");
     }
 
-    const result = await response.json();
-    console.log('Success:', result);
-
     await Swal.fire({
-      icon: 'success',
-      title: 'Success!',
-      text: 'YouTube video created successfully',
-      confirmButtonColor: '#0d9488',
-      timer: 3000
+      icon: "success",
+      title: "Success!",
+      text: "YouTube video created successfully.",
+      confirmButtonColor: "#0d9488",
+      timer: 2000,
+      showConfirmButton: false,
     });
 
+    router.push("/dashboard/youtube/view-video");
     handleReset();
   } catch (error) {
-    console.error('Error creating guideline:', error);
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : 'Failed to create video. Please try again.';
-
     Swal.fire({
-      icon: 'error',
-      title: 'Creation Failed',
-      text: errorMessage,
-      confirmButtonColor: '#0d9488'
+      icon: "error",
+      title: "Creation Failed",
+      text:
+        error instanceof Error
+          ? error.message
+          : "Failed to create YouTube video. Please try again.",
+      confirmButtonColor: "#0d9488",
     });
   } finally {
     setSubmitting(false);

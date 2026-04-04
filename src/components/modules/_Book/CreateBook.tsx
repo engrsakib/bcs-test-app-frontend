@@ -1,11 +1,21 @@
+
+
+
 "use client";
 
 import React, { useState } from "react";
-import { FileText, Tag, Type, Upload, Image as ImageIcon } from "lucide-react";
+import {
+  FileText,
+  Tag,
+  Type,
+  Upload,
+  Image as ImageIcon,
+  Loader2,
+} from "lucide-react";
 import Swal from "sweetalert2";
 import { ENV } from "@/config/env";
-
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 
 const ReusableQuillEditor = dynamic(() => import("@/editor/ReactQuilEditor"), {
   ssr: false,
@@ -22,7 +32,6 @@ function getCookie(name: string): string | null {
   return null;
 }
 
-// BOOK PLATFORM ENUMS
 const BOOK_PLATFORM_ENUMS = {
   ROKOMARI: "rokomari",
   WAFI_LIFE: "wafi_life",
@@ -31,6 +40,8 @@ const BOOK_PLATFORM_ENUMS = {
 
 export default function CreateBook() {
   const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -58,7 +69,7 @@ export default function CreateBook() {
         {
           method: "POST",
           body: data,
-        },
+        }
       );
 
       const cloudData = await res.json();
@@ -66,103 +77,113 @@ export default function CreateBook() {
       if (cloudData?.secure_url) {
         setFormData((prev) => ({
           ...prev,
-          thumbnail_url: cloudData.secure_url, // ONLY URL
+          thumbnail_url: cloudData.secure_url,
         }));
       }
     } finally {
       setUploading(false);
     }
 
-    // Clear browser file input to prevent re-reading file → base64
     event.target.value = "";
   };
 
-  // ========= Input Change Handler ==========
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async () => {
-    if (!formData.title.trim())
-      return Swal.fire("Title Missing!", "Please enter a title.", "warning");
+const handleSubmit = async () => {
+  const title = formData.title.trim();
+  const buyUrl = formData.buy_url.trim();
 
-    if (!formData.thumbnail_url)
-      return Swal.fire(
-        "Thumbnail Required!",
-        "Please upload a thumbnail.",
-        "warning",
-      );
+  if (!title) {
+    return Swal.fire("Title Missing!", "Please enter a title.", "warning");
+  }
 
-    if (!formData.sold_platform)
-      return Swal.fire("Platform Missing!", "Select a platform.", "warning");
+  if (!buyUrl) {
+    return Swal.fire("Buy URL Missing!", "Please enter buy URL.", "warning");
+  }
 
-    if (!formData.buy_url.trim())
-      return Swal.fire("Buy URL Missing!", "Please enter buy URL.", "warning");
+  const token = getCookie("access_token");
 
-    const token = getCookie("access_token");
+  try {
+    setSubmitting(true);
 
-    try {
-      const res = await fetch(`${ENV.BASE_URL}/books`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: token ? token : "",
-        },
-        body: JSON.stringify({
-          title: formData.title,
-          thumbnail_url: formData.thumbnail_url,
-          buy_url: formData.buy_url,
-          sold_platform: formData.sold_platform,
-          price: Number(formData.price),
-          is_published: formData.is_published === "true",
-          description: formData.description,
-        }),
+    const res = await fetch(`${ENV.BASE_URL}/books`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        authorization: token ? token : "",
+      },
+      body: JSON.stringify({
+        title,
+        thumbnail_url: formData.thumbnail_url || "",
+        buy_url: buyUrl,
+        sold_platform: formData.sold_platform || "",
+        price: Number(formData.price || 0),
+        is_published: formData.is_published === "true",
+        description: formData.description || "",
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok) {
+      await Swal.fire({
+        icon: "success",
+        title: "Book Created!",
+        text: `"${title}" added successfully.`,
+        confirmButtonColor: "#0d9488",
+        timer: 2000,
+        showConfirmButton: false,
       });
 
-      const data = await res.json();
+      router.push("/dashboard/my-book/view-book");
 
-      console.log("CreateBook CheckData", data);
+      setFormData({
+        title: "",
+        thumbnail_url: "",
+        buy_url: "",
+        sold_platform: "",
+        price: "",
+        is_published: "true",
+        description: "",
+      });
+    } else {
+      const errorText =
+        Array.isArray(data?.errorMessages) && data.errorMessages.length > 0
+          ? data.errorMessages.map((err: any) => err.message).join("\n")
+          : data?.message || "Failed to create book";
 
-      if (res.ok) {
-        Swal.fire({
-          icon: "success",
-          title: "Book Created!",
-          text: `"${formData.title}" has been added successfully.`,
-          confirmButtonColor: "#0d9488",
-        });
-
-        // Reset form
-        setFormData({
-          title: "",
-          thumbnail_url: "",
-          buy_url: "",
-          sold_platform: "",
-          price: "",
-          is_published: "true",
-          description: "",
-        });
-      } else {
-        Swal.fire("Error", data.message || "Something went wrong", "error");
-      }
-    } catch (error) {
-      Swal.fire("Error", "Failed to create book!", "error");
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: errorText,
+        confirmButtonColor: "#ef4444",
+      });
     }
-  };
+  } catch (error: any) {
+    await Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: error?.message || "Network or server error",
+      confirmButtonColor: "#ef4444",
+    });
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="bg-gradient-to-r from-teal-600 to-emerald-600 p-6 rounded-t-2xl shadow-lg">
           <h1 className="text-white text-3xl font-bold flex items-center gap-3">
             <FileText className="w-8 h-8" /> Create Book
           </h1>
         </div>
 
-        {/* BODY */}
         <div className="bg-white p-6 rounded-b-2xl shadow-xl space-y-6">
-          {/* Title */}
           <div>
             <label className="font-semibold text-gray-700 flex gap-2">
               <Type className="w-5 h-5 text-teal-600" /> Book Title
@@ -176,7 +197,6 @@ export default function CreateBook() {
             />
           </div>
 
-          {/* Thumbnail Upload */}
           <div>
             <label className="font-semibold text-gray-700 flex gap-2">
               <ImageIcon className="w-5 h-5 text-teal-600" /> Thumbnail Upload
@@ -210,7 +230,6 @@ export default function CreateBook() {
             )}
           </div>
 
-          {/* Platform */}
           <div>
             <label className="font-semibold text-gray-700 flex gap-2">
               <Tag className="w-5 h-5 text-teal-600" /> Sold Platform
@@ -228,7 +247,6 @@ export default function CreateBook() {
             </select>
           </div>
 
-          {/* Buy URL */}
           <div>
             <label className="font-semibold text-gray-700">Buy URL</label>
             <input
@@ -240,7 +258,6 @@ export default function CreateBook() {
             />
           </div>
 
-          {/* Price */}
           <div>
             <label className="font-semibold text-gray-700">Price (৳)</label>
             <input
@@ -253,7 +270,6 @@ export default function CreateBook() {
             />
           </div>
 
-          {/* Publish Status */}
           <div>
             <label className="font-semibold text-gray-700">Status</label>
             <select
@@ -266,23 +282,6 @@ export default function CreateBook() {
               <option value="false">Unpublished</option>
             </select>
           </div>
-
-          {/* Description */}
-          {/* Description */}
-          {/* <div>
-  <label className="font-semibold text-gray-700">
-    Description
-  </label>
-
-  <div className="mt-2">
-    <QuillEditor
-      value={formData.description}
-      onChange={(html) =>
-        setFormData((prev) => ({ ...prev, description: html }))
-      }
-    />
-  </div>
-</div> */}
 
           <div>
             <label className="font-semibold text-gray-700">Description</label>
@@ -298,12 +297,19 @@ export default function CreateBook() {
             </div>
           </div>
 
-          {/* Submit */}
           <button
             onClick={handleSubmit}
-            className="w-full py-3 bg-teal-600 text-white rounded-xl mt-4 shadow hover:bg-teal-700 transition"
+            disabled={submitting}
+            className="w-full py-3 bg-teal-600 text-white rounded-xl mt-4 shadow hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Create Book
+            {submitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create Book"
+            )}
           </button>
         </div>
       </div>

@@ -109,34 +109,42 @@ const CreateGuideline = () => {
   };
 
 const handleSubmit = async () => {
-  if (!formData.title.trim()) {
+  const title = formData.title.trim();
+  const description = formData.description.trim();
+
+  if (!title) {
     return Swal.fire("Missing Title", "Please enter guideline title", "warning");
   }
 
-  if (!formData.thumbnail_url.trim()) {
-    return Swal.fire("Missing Thumbnail", "Please upload a thumbnail image", "warning");
+  if (!description || description === "<p><br></p>") {
+    return Swal.fire("Missing Description", "Please enter description", "warning");
   }
 
   setSubmitting(true);
 
   try {
+    const payload = {
+      ...formData,
+      thumbnail_url: formData.thumbnail_url || "",
+      category: formData.category || "",
+    };
+
     const res = await fetch(`${ENV.BASE_URL}/guideline/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": getCookie("access_token") || "",
+        Authorization: getCookie("access_token") || "",
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
-    console.log("CreateGuideline", data);
+    const data = await res.json().catch(() => ({}));
 
     if (res.ok) {
-      Swal.fire({
+      await Swal.fire({
         icon: "success",
         title: "Guideline Created Successfully!",
-        text: data.message,
+     
         confirmButtonColor: "#0d9488",
       });
 
@@ -148,13 +156,28 @@ const handleSubmit = async () => {
         thumbnail_url: "",
       });
     } else {
-      Swal.fire("Error", data.message || "Failed to create guideline", "error");
-    }
-  } catch (error) {
-    Swal.fire("Error", "Network or server error", "error");
-  }
+      const errorText =
+        Array.isArray(data?.errorMessages) && data.errorMessages.length > 0
+          ? data.errorMessages.map((err: any) => err.message).join("\n")
+          : data?.message || "Failed to create guideline";
 
-  setSubmitting(false);
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: errorText,
+        confirmButtonColor: "#ef4444",
+      });
+    }
+  } catch (error: any) {
+    await Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: error?.message || "Network or server error",
+      confirmButtonColor: "#ef4444",
+    });
+  } finally {
+    setSubmitting(false);
+  }
 };
 
   // ============================================================
