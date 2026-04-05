@@ -443,7 +443,7 @@ export default function AdminList() {
         )}
       </div>
 
-      <div className="bg-white min-h-screen rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white  rounded-lg shadow-sm border border-gray-200">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-green-800 animate-spin mb-4" />
@@ -461,8 +461,8 @@ export default function AdminList() {
           </div>
         ) : (
           <>
-            <div className="hidden min-h-screen md:block overflow-x-auto overflow-y-visible rounded-lg">
-              <table className="w-full min-h-screen">
+            <div className="hidden  md:block overflow-x-auto overflow-y-visible rounded-lg">
+              <table className="w-full ">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">

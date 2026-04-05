@@ -238,11 +238,25 @@ export default function ViewAllGuideline() {
                   </td>
 
                   <td className="py-4">
-                    <div className="font-bold">{item.title}</div>
+                    <div className="font-bold">
+                      {item.title
+                        ? item.title.split(" ").slice(0, 3).join(" ") +
+                        (item.title.split(" ").length > 3 ? "..." : "")
+                        : ""}
+                    </div>
                     <div
                       className="text-gray-500 text-sm prose max-w-none"
                       dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(item.description),
+                        __html: (() => {
+                          const clean = DOMPurify.sanitize(item.description || "");
+                          const text = clean.replace(/<[^>]+>/g, ""); // remove HTML tags
+                          const words = text.split(" ");
+
+                          const sliced =
+                            words.slice(0, 3).join(" ") + (words.length > 3 ? "..." : "");
+
+                          return sliced;
+                        })(),
                       }}
                     />
                   </td>
@@ -255,11 +269,10 @@ export default function ViewAllGuideline() {
 
                   <td className="text-center">
                     <span
-                      className={`px-3 py-1 text-sm rounded-full ${
-                        item.status === "active"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-yellow-100 text-yellow-600"
-                      }`}
+                      className={`px-3 py-1 text-sm rounded-full ${item.status === "active"
+                        ? "bg-green-100 text-green-600"
+                        : "bg-yellow-100 text-yellow-600"
+                        }`}
                     >
                       {item.status === "active" ? "PUBLISHED" : "UNPUBLISHED"}
                     </span>

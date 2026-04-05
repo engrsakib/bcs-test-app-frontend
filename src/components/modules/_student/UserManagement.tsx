@@ -249,7 +249,7 @@ export default function UserManagementTable() {
             <div className="px-8 pb-8">
               <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-16">
                 <img
-                  src={selectedUser.image ? selectedUser.image : "N/A" } 
+                  src={selectedUser.image ? selectedUser.image : "N/A"}
                   className="w-32 h-32 rounded-xl border-4 border-white shadow-lg object-cover"
                   alt={selectedUser.name}
                 />
@@ -260,13 +260,12 @@ export default function UserManagementTable() {
                   </h1>
                   <div className="flex flex-wrap gap-2 items-center">
                     <span
-                      className={`px-4 py-1.5 rounded-full text-sm font-semibold text-white ${
-                        selectedUser.role.toLowerCase() === "customer"
+                      className={`px-4 py-1.5 rounded-full text-sm font-semibold text-white ${selectedUser.role.toLowerCase() === "customer"
                           ? "bg-gradient-to-r from-green-400 to-green-600"
                           : selectedUser.role.toLowerCase() === "admin"
-                          ? "bg-gradient-to-r from-red-400 to-red-600"
-                          : "bg-gradient-to-r from-blue-400 to-blue-600"
-                      }`}
+                            ? "bg-gradient-to-r from-red-400 to-red-600"
+                            : "bg-gradient-to-r from-blue-400 to-blue-600"
+                        }`}
                     >
                       {selectedUser.role}
                     </span>
@@ -611,6 +610,26 @@ export default function UserManagementTable() {
                 </thead>
 
                 <tbody className="divide-y divide-gray-100">
+                  {admins.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-16">
+                        <div className="flex flex-col items-center gap-2 text-gray-500">
+                          <User className="w-10 h-10 text-gray-300" />
+                          <p className="text-lg font-semibold">No Student Data Available</p>
+                          <p className="text-sm">There are no students to display right now.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    admins.map((u) => (
+                      <tr key={u._id} className="hover:bg-gray-50 transition-colors">
+                        {/* existing row code */}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+
+                <tbody className="divide-y divide-gray-100">
                   {admins.map((u) => (
                     <tr key={u._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
@@ -622,16 +641,16 @@ export default function UserManagementTable() {
                           /> */}
 
                           {u.image && u.image.trim() !== "" ? (
-  <img
-    src={u.image}
-    className="h-10 w-10 rounded-full object-cover"
-    alt={u.name}
-  />
-) : (
-  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-    <User className="w-5 h-5 text-gray-500" />
-  </div>
-)}
+                            <img
+                              src={u.image}
+                              className="h-10 w-10 rounded-full object-cover"
+                              alt={u.name}
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                              <User className="w-5 h-5 text-gray-500" />
+                            </div>
+                          )}
 
                           <div>
                             <p className="font-semibold text-gray-900">{u.name}</p>
@@ -644,13 +663,12 @@ export default function UserManagementTable() {
                       <td className="px-6 py-4 text-gray-700">{u.email && u.email ? u.email : "N/A"}</td>
                       <td className="px-6 py-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-white font-medium text-sm ${
-                            u.role.toLowerCase() === "customer"
+                          className={`px-3 py-1 rounded-full text-white font-medium text-sm ${u.role.toLowerCase() === "customer"
                               ? "bg-gradient-to-r from-green-400 to-green-600"
                               : u.role.toLowerCase() === "admin"
-                              ? "bg-gradient-to-r from-red-400 to-red-600"
-                              : "bg-gradient-to-r from-blue-400 to-blue-600"
-                          }`}
+                                ? "bg-gradient-to-r from-red-400 to-red-600"
+                                : "bg-gradient-to-r from-blue-400 to-blue-600"
+                            }`}
                         >
                           {u.role}
                         </span>
@@ -745,7 +763,7 @@ export default function UserManagementTable() {
 
         {/* DELETE MODAL - Only modal that remains */}
         {showDeleteModal && (
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             onClick={(e) => {
               if (e.target === e.currentTarget) {
@@ -753,7 +771,7 @@ export default function UserManagementTable() {
               }
             }}
           >
-            <div 
+            <div
               className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >

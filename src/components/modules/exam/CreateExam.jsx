@@ -16,6 +16,7 @@ import {
   FaChevronRight,
 } from "react-icons/fa";
 import { NegativeMark } from "./negativeMark";
+import { useRouter } from "next/navigation";
 
 
 const negativeMarkOptions = [
@@ -302,6 +303,7 @@ const QuestionSelectorModal = ({
 // Main Component
 // --------------------
 export default function CreateExamForm() {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [formData, setFormData] = useState({
@@ -392,6 +394,8 @@ export default function CreateExamForm() {
           duration_minutes: "",
             negative_mark: 0,
         });
+
+        router.push("/dashboard/exam/view-exam");
         setSelectedQuestions([]);
       } else {
         setSubmitStatus({
