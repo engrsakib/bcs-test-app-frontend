@@ -15,6 +15,7 @@ import {
   Loader2,
   AlertCircle,
   ChevronDown,
+  ImageOff,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
@@ -197,9 +198,8 @@ export default function ViewAllYouTubeVideos() {
           >
             <span>Advanced Filters</span>
             <ChevronDown
-              className={`transition-transform ${
-                showFilter ? "rotate-180" : ""
-              }`}
+              className={`transition-transform ${showFilter ? "rotate-180" : ""
+                }`}
             />
           </button>
 
@@ -280,10 +280,17 @@ export default function ViewAllYouTubeVideos() {
               {videos.map((v: any) => (
                 <tr key={v.video_number} className="border-b hover:bg-gray-50">
                   <td className="p-4">
-                    <img
-                      src={v.thumbnail_url}
-                      className="w-24 h-16 rounded-lg object-cover"
-                    />
+                    {v.thumbnail_url ? (
+                      <img
+                        src={v.thumbnail_url}
+                        alt={v.title || "Video thumbnail"}
+                        className="w-24 h-16 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-24 h-16 rounded-lg bg-gray-100 border flex items-center justify-center">
+                        <ImageOff className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
                   </td>
 
                   <td className="p-4">
