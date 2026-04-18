@@ -24,6 +24,7 @@ import {
   User,
   Shield,
   UserCheck,
+  EyeOff,
 } from "lucide-react";
 
 import Swal from "sweetalert2";
@@ -60,7 +61,7 @@ function getCookie(name: string): string | null {
 export default function UserManagementTable() {
   const [admins, setAdmins] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-
+    const [showPassword, setShowPassword] = useState(false);
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
@@ -88,6 +89,7 @@ export default function UserManagementTable() {
     phone_number: "",
     email: "",
     image: "",
+  password: "", 
   });
 
   const accessToken = getCookie("access_token");
@@ -163,11 +165,14 @@ export default function UserManagementTable() {
       name: u.name,
       phone_number: u.phone_number,
       email: u.email,
-      image: u.image || "",
+      image: u.image || "",     
+       password: "",
     });
     setCurrentView("update");
     setOpenDropdown(null);
   };
+
+
 
   const handleUpdateSubmit = async (e: any) => {
     e.preventDefault();
@@ -197,7 +202,37 @@ export default function UserManagementTable() {
     }
   };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   // DELETE
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+  
+ 
   const handleDelete = async () => {
     if (!selectedUser) return;
 
@@ -304,6 +339,15 @@ export default function UserManagementTable() {
                     <p className="text-gray-900 font-semibold mt-1">{selectedUser.phone_number}</p>
                   </div>
                 </div>
+
+
+
+
+                          
+
+
+
+
 
                 {/* Join Date */}
                 <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
@@ -462,6 +506,48 @@ export default function UserManagementTable() {
                   }
                 />
               </div>
+
+
+
+
+
+
+<div>
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Password <span className="text-gray-400 font-normal">(Leave blank to keep current)</span>
+  </label>
+  <div className="relative">
+    <input
+      type={showPassword ? "text" : "password"}
+      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:border-green-500 focus:outline-none transition-colors"
+      value={updateFormData.password}
+      onChange={(e) =>
+        setUpdateFormData({
+          ...updateFormData,
+          password: e.target.value,
+        })
+      }
+      placeholder="Enter new password (optional)"
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+      tabIndex={-1}
+    >
+      {showPassword ? (
+        <EyeOff className="w-5 h-5" />
+      ) : (
+        <Eye className="w-5 h-5" />
+      )}
+    </button>
+  </div>
+</div>
+
+
+
+
+
 
               {/* Buttons */}
               <div className="flex gap-4 pt-4">
