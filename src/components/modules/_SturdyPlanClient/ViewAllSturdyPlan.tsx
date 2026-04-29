@@ -141,7 +141,7 @@ export default function ViewAllStudyPlanTemplate() {
     try {
       const token = getCookie("access_token");
 
-      const res = await fetch(`${ENV.BASE_URL}/guideline/${studyPlanNumber}`, {
+      const res = await fetch(`${ENV.BASE_URL}/study-plan/${studyPlanNumber}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -429,13 +429,20 @@ export default function ViewAllStudyPlanTemplate() {
                         </div>
 
                    <div className="min-w-0 flex-1 leading-snug">
-  <h3 className="truncate text-sm font-semibold text-gray-800">
-    {item.title}
-  </h3>
+<h3 className="text-sm font-semibold text-gray-800">
+  {item.title
+    .split(" ")
+    .slice(0, 4)
+    .join(" ")}
+  {item.title.split(" ").length > 10 && "..."}
+</h3>
 
-  <p className="line-clamp-3 text-xs text-gray-500">
-    {decodeHtml(stripHtml(item.description))}
-  </p>
+<p className="text-xs text-gray-500">
+  {decodeHtml(stripHtml(item.description))
+    .split(" ")
+    .slice(0, 6)
+    .join(" ")}...
+</p>
 </div>
                       </div>
                     </td>

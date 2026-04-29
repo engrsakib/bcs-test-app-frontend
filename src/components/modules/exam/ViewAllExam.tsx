@@ -8,6 +8,7 @@ import { ENV } from "@/config/env";
 import getCookie from "@/util/GetCookie";
 import { ChevronLeft, ChevronRight, ToggleRight } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import {
   FaSearch,
@@ -34,14 +35,12 @@ const Toggle = ({
 }) => (
   <div
     onClick={() => onChange(!enabled)}
-    className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition ${
-      enabled ? "bg-green-500" : "bg-gray-300"
-    }`}
+    className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition ${enabled ? "bg-green-500" : "bg-gray-300"
+      }`}
   >
     <div
-      className={`bg-white w-6 h-6 rounded-full shadow transform transition ${
-        enabled ? "translate-x-7" : ""
-      }`}
+      className={`bg-white w-6 h-6 rounded-full shadow transform transition ${enabled ? "translate-x-7" : ""
+        }`}
     />
   </div>
 );
@@ -60,6 +59,9 @@ export default function ExamListPage() {
   // Modal States
   const [selectedExam, setSelectedExam] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
+  const router = useRouter();
+
+
 
   // -----------------------------------------------------
   // Fetch Exams
@@ -67,6 +69,10 @@ export default function ExamListPage() {
   useEffect(() => {
     fetchExams(1, "");
   }, []);
+
+  const handleCreateExam = () => {
+  router.push("/dashboard/exam/view-exam");
+};
 
   const fetchExams = async (currentPage: number, search: string) => {
     setLoading(true);
@@ -215,7 +221,9 @@ export default function ExamListPage() {
             </div>
 
             <Link href={"/dashboard/exam/create-exam"}>
-              <button className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg shadow hover:bg-green-700">
+              <button 
+              
+              className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg shadow hover:bg-green-700">
                 <FaPlus /> Create Exam
               </button>
             </Link>
@@ -252,6 +260,14 @@ export default function ExamListPage() {
                 </thead>
 
                 <tbody>
+                  {!loading && exams.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="text-center py-10 text-gray-500">
+                        No Exam Data Available
+                      </td>
+                    </tr>
+                  )}
+
                   {exams.map((exam) => (
                     <tr key={exam._id} className="border-b hover:bg-gray-50">
                       <td className="px-6 py-4">{exam.exam_number}</td>
@@ -333,7 +349,7 @@ export default function ExamListPage() {
                   disabled={page === 1}
                   className="px-7 text-white  bg-green-600 py-2 border rounded disabled:opacity-50"
                 >
-                         <ChevronLeft />
+                  <ChevronLeft />
                 </button>
 
                 <span className="text-gray-700">
@@ -345,7 +361,7 @@ export default function ExamListPage() {
                   disabled={page === totalPages}
                   className="px-7 bg-green-600 text-white py-2  border rounded disabled:opacity-50"
                 >
-                      <ChevronRight />
+                  <ChevronRight />
                 </button>
               </div>
             </>

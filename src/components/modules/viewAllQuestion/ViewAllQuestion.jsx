@@ -461,16 +461,25 @@ export default function ViewAllQuestions() {
               </tr>
             </thead>
 
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-10">
-                    <Loader2 className="mx-auto animate-spin text-green-600" size={32} />
-                  </td>
-                </tr>
-              ) : (
-                questions.map((q) => (
-                  <tr key={q._id} className="border-b border-gray-200 hover:bg-gray-50 transition">
+
+            
+
+      <tbody>
+  {loading ? (
+    <tr>
+      <td colSpan={7} className="text-center py-10">
+        <Loader2 className="mx-auto animate-spin text-green-600" size={32} />
+      </td>
+    </tr>
+  ) : questions.length === 0 ? (
+    <tr>
+      <td colSpan={7} className="text-center py-10 text-gray-500">
+        No Question is Available
+      </td>
+    </tr>
+  ) : (
+    questions.map((q) => (
+          <tr key={q._id} className="border-b border-gray-200 hover:bg-gray-50 transition">
                     <td className="p-4 text-gray-600">{q.questionId}</td>
                     <td className="p-4 text-gray-800">{truncateText(q.title, 40)}</td>
                     <td className="p-4 text-gray-600 text-sm">{truncateText(q.description, 50)}</td>
@@ -539,9 +548,9 @@ export default function ViewAllQuestions() {
                       )}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
+    ))
+  )}
+</tbody>
           </table>
         </div>
 

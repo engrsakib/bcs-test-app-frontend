@@ -11,9 +11,8 @@ import {
   FaCheckDouble, FaBook, FaToggleOn, FaToggleOff
 } from "react-icons/fa";
 
-// 🔥 Math Formula Rendering (KaTeX)
 import { BlockMath } from "react-katex";
-import "katex/dist/katex.min.css";
+
 
 export default function ExamDetailsClient() {
   const params = useSearchParams();

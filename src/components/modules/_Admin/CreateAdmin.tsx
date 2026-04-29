@@ -1,5 +1,15 @@
 
 
+
+
+
+
+
+
+
+
+
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -11,7 +21,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ENV } from "@/config/env";
 
-// Roles Enum
 export const ROLES = {
   FOUNDER: "founder",
   SUPER_ADMIN: "super_admin",
@@ -19,29 +28,27 @@ export const ROLES = {
   MODERATOR: "moderator",
 };
 
-// 🌿 ZOD VALIDATION SCHEMA (Bengali Error Messages)
 const AdminSchema = z.object({
   name: z
     .string()
-    .min(3, "নামের কমপক্ষে ৩ অক্ষর হতে হবে")
-    .nonempty("নাম প্রয়োজন"),
+    .min(3, "Name must be at least 3 characters")
+    .nonempty("Name is required"),
 
   phone_number: z
     .string()
-    .length(11, "ফোন নম্বর অবশ্যই ১১ ডিজিট হতে হবে")
-    .regex(/^01[0-9]{9}$/, "সঠিক বাংলাদেশি ফোন নম্বর লিখুন"),
+    .length(11, "Phone number must be 11 digits")
+    .regex(/^01[0-9]{9}$/, "Enter a valid Bangladeshi phone number"),
 
   password: z
     .string()
-    .min(6, "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে")
-    .nonempty("পাসওয়ার্ড প্রয়োজন"),
+    .min(6, "Password must be at least 6 characters")
+    .nonempty("Password is required"),
 
-  role: z.string().nonempty("অবশ্যই একটি রোল নির্বাচন করুন"),
+  role: z.string().nonempty("Please select a role"),
 });
 
 type AdminFormType = z.infer<typeof AdminSchema>;
 
-// COOKIE GETTER
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
 
@@ -63,7 +70,7 @@ export default function CreateAdminForm() {
     formState: { errors, isSubmitting },
   } = useForm<AdminFormType>({
     resolver: zodResolver(AdminSchema),
-    mode: "onChange",          
+    mode: "onChange",
     reValidateMode: "onChange",
   });
 
@@ -73,30 +80,26 @@ export default function CreateAdminForm() {
 
       if (!accessToken) {
         Swal.fire({
-          title: "অননুমোদিত অ্যাক্সেস",
-          text: "আপনাকে আগে লগইন করতে হবে",
+          title: "Unauthorized Access",
+          text: "You need to log in first",
           icon: "warning",
         });
         router.push("/login");
         return;
       }
 
-      const res = await fetch(
-        `${ENV.BASE_URL}/admin/create`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: accessToken,
-          },
-          body: JSON.stringify(data),
-        }
-      );
-
-
+      const res = await fetch(`${ENV.BASE_URL}/admin/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: accessToken,
+        },
+        body: JSON.stringify(data),
+      });
 
       const result = await res.json();
-      console.log("Create Admin", result)
+      // console.log("Create Admin", result);
+
       if (result.success) {
         Swal.fire({
           title: "Success!",
@@ -106,15 +109,15 @@ export default function CreateAdminForm() {
         reset();
       } else {
         Swal.fire({
-          title: "ত্রুটি",
-          text: result.message || "অ্যাডমিন তৈরি করা যায়নি!",
+          title: "Error",
+          text: result.message || "Failed to create admin!",
           icon: "error",
         });
       }
     } catch (error) {
       Swal.fire({
-        title: "সার্ভার ত্রুটি",
-        text: "কিছু সমস্যা হয়েছে, পরে আবার চেষ্টা করুন।",
+        title: "Server Error",
+        text: "Something went wrong, please try again later.",
         icon: "error",
       });
     }
@@ -122,31 +125,27 @@ export default function CreateAdminForm() {
 
   return (
     <div className="w-full flex flex-col items-center px-4 py-10">
-      {/* Title Section */}
       <div className="w-full max-w-4xl mb-8">
         <h1 className="text-3xl font-bold text-green-800">Create Admin</h1>
         <p className="text-gray-600">
-          Smart Learning – MCQ Analysis সিস্টেমে নতুন অ্যাডমিন যোগ করুন।
+          Add a new admin to the Smart Learning – MCQ Analysis system.
         </p>
       </div>
 
-      {/* Form Card */}
       <div className="w-full max-w-4xl bg-white shadow-xl rounded-2xl p-8 border border-green-200">
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
-          {/* NAME */}
           <div className="flex flex-col">
             <label className="font-semibold text-gray-700 mb-2">
               Full Name
             </label>
             <div className="relative">
               <User2 className="absolute left-3 top-3 text-gray-400" />
-
               <input
                 type="text"
-                placeholder="পূর্ণ নাম লিখুন"
+                placeholder="Enter full name"
                 {...register("name")}
                 className={`w-full pl-10 p-3 rounded-xl border-2 ${
                   errors.name
@@ -161,14 +160,12 @@ export default function CreateAdminForm() {
             )}
           </div>
 
-          {/* PHONE NUMBER */}
           <div className="flex flex-col">
             <label className="font-semibold text-gray-700 mb-2">
               Phone Number
             </label>
             <div className="relative">
               <Phone className="absolute left-3 top-3 text-gray-400" />
-
               <input
                 type="text"
                 maxLength={11}
@@ -189,17 +186,15 @@ export default function CreateAdminForm() {
             )}
           </div>
 
-          {/* PASSWORD */}
           <div className="flex flex-col">
             <label className="font-semibold text-gray-700 mb-2">
               Password
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 text-gray-400" />
-
               <input
                 type="password"
-                placeholder="পাসওয়ার্ড লিখুন"
+                placeholder="Enter password"
                 {...register("password")}
                 className={`w-full pl-10 p-3 rounded-xl border-2 ${
                   errors.password
@@ -216,14 +211,12 @@ export default function CreateAdminForm() {
             )}
           </div>
 
-          {/* ROLE */}
           <div className="flex flex-col">
             <label className="font-semibold text-gray-700 mb-2">
               Select Role
             </label>
             <div className="relative">
               <ShieldCheck className="absolute left-3 top-3 text-gray-400" />
-
               <select
                 {...register("role")}
                 className={`w-full pl-10 p-3 rounded-xl border-2 bg-white ${
@@ -232,7 +225,7 @@ export default function CreateAdminForm() {
                     : "border-gray-200 focus:border-green-500"
                 }`}
               >
-                <option value="">রোল নির্বাচন করুন</option>
+                <option value="">Select role</option>
                 <option value={ROLES.FOUNDER}>Founder</option>
                 <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
                 <option value={ROLES.ADMIN}>Admin</option>
@@ -245,17 +238,16 @@ export default function CreateAdminForm() {
             )}
           </div>
 
-          {/* SUBMIT BUTTON */}
           <div className="md:col-span-2 mt-4">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-green-600 text-white py-3.5 rounded-xl shadow-lg hover:bg-green-700 transition-all flex justify-center items-center gap-2"
+              className="w-full bg-teal-600 text-white py-3.5 rounded-xl shadow-lg hover:bg-teal-700 transition-all flex justify-center items-center gap-2"
             >
               {isSubmitting ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  তৈরি হচ্ছে...
+                  Creating...
                 </>
               ) : (
                 "Create Admin"
@@ -267,12 +259,3 @@ export default function CreateAdminForm() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
