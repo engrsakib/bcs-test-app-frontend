@@ -1,9 +1,3 @@
-
-
-
-
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,7 +9,7 @@ import {
   XCircle,
   ArrowLeft,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -83,7 +77,9 @@ interface Admin {
 
 export default function ManagePermissions() {
   const router = useRouter();
-  const [adminId, setAdminId] = useState<string>("");
+  const params = useParams();
+  const adminId = params.id as string;
+
   const [adminInfo, setAdminInfo] = useState<Admin | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -165,93 +161,66 @@ export default function ManagePermissions() {
   ];
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
-
-    if (id) {
-      setAdminId(id);
-      fetchPermissionsForId(id);
-    }
-  }, []);
-
-  const fetchPermissionsForId = async (id: string) => {
-    if (!id) {
-      setMessage({ type: "error", text: "Please enter admin ID" });
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setMessage(null);
-      setAdminInfo(null);
-
-      const accessToken = getCookie("access_token");
-
-      if (!accessToken) {
-        setMessage({ type: "error", text: "Please login first" });
-        router.push("/login");
-        return;
-      }
-
-      const res = await fetch(`${BASE_URL}/admin?limit=100&strat=1`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: accessToken,
-        },
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      if (res.status === 401) {
-        setMessage({
-          type: "error",
-          text: "Session expired. Please login again",
-        });
-        router.push("/login");
-        return;
-      }
-
-      const json = await res.json();
-      console.log("Fetched admin list:", json);
-
-      if (!json.success) {
-        setMessage({
-          type: "error",
-          text: json.message || "Failed to load admin list",
-        });
-        return;
-      }
-
-      const admins: Admin[] = json?.data?.data || [];
-      const foundAdmin = admins.find((admin) => admin._id === id);
-
-      if (!foundAdmin) {
-        setMessage({ type: "error", text: "Admin not found" });
-        return;
-      }
-
-      setAdminInfo(foundAdmin);
-      setSelectedPermissions(foundAdmin.permissions || []);
-      setMessage({
-        type: "success",
-        text: "Permissions loaded successfully!",
-      });
-
-      setTimeout(() => setMessage(null), 2000);
-    } catch (e) {
-      console.error("Error fetching permissions:", e);
-      setMessage({ type: "error", text: "Failed to load permissions" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPermissions = () => {
     if (adminId) {
       fetchPermissionsForId(adminId);
     }
-  };
+  }, [adminId]);
+
+const fetchPermissionsForId = async (id: string) => {
+  try {
+    setLoading(true);
+    setMessage(null);
+    setAdminInfo(null);
+
+    const accessToken = getCookie("access_token");
+
+    if (!accessToken) {
+      setMessage({ type: "error", text: "Please login first" });
+      router.push("/login");
+      return;
+    }
+
+    const res = await fetch(`${BASE_URL}/admin/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: accessToken,
+      },
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (res.status === 401) {
+      setMessage({
+        type: "error",
+        text: "Session expired. Please login again",
+      });
+      router.push("/login");
+      return;
+    }
+
+    const json = await res.json();
+
+    if (!json.success) {
+      setMessage({
+        type: "error",
+        text: json.message || "Failed to load admin details",
+      });
+      return;
+    }
+
+    // API directly data dey, array na
+    const adminData: Admin = json.data;
+
+    setAdminInfo(adminData);
+    setSelectedPermissions(adminData.permissions || []);
+  } catch (e) {
+    console.error("Error fetching permissions:", e);
+    setMessage({ type: "error", text: "Failed to load permissions" });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleTogglePermission = (permission: string) => {
     setSelectedPermissions((prev) =>
@@ -305,6 +274,8 @@ export default function ManagePermissions() {
         }),
       });
 
+      console.log("Update permission", res)
+
       if (res.status === 401) {
         setMessage({
           type: "error",
@@ -315,22 +286,12 @@ export default function ManagePermissions() {
       }
 
       const json = await res.json();
-      console.log("Save response:", json);
 
       if (json.success) {
         setMessage({
           type: "success",
           text: "Permissions saved successfully!",
         });
-
-        if (adminInfo) {
-          setAdminInfo({
-            ...adminInfo,
-            permissions: selectedPermissions,
-          });
-        }
-
-        setTimeout(() => setMessage(null), 3000);
       } else {
         setMessage({
           type: "error",
@@ -359,7 +320,7 @@ export default function ManagePermissions() {
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
       <div className="mb-6 md:mb-8">
         <button
-          onClick={() => window.history.back()}
+          onClick={() => router.back()}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -373,36 +334,7 @@ export default function ManagePermissions() {
           </h1>
         </div>
 
-        <p className="text-gray-600">
-          Configure access permissions for admin users
-        </p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Admin ID
-        </label>
-
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={adminId}
-            onChange={(e) => setAdminId(e.target.value)}
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent outline-none transition-all"
-            placeholder="Enter admin ID"
-          />
-          <button
-            onClick={fetchPermissions}
-            disabled={loading || !adminId}
-            className="px-6 py-2.5 bg-green-800 text-white rounded-lg hover:bg-green-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              "Load Permissions"
-            )}
-          </button>
-        </div>
+        <p className="text-gray-600">Configure access permissions for admin users</p>
       </div>
 
       {adminInfo && (
@@ -417,9 +349,7 @@ export default function ManagePermissions() {
               className="w-14 h-14 rounded-full object-cover border"
             />
             <div>
-              <h2 className="text-xl font-bold text-gray-900">
-                {adminInfo.name}
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900">{adminInfo.name}</h2>
               <p className="text-sm text-gray-600">{adminInfo.phone_number}</p>
               <p className="text-sm text-gray-500">
                 {adminInfo.role} • {adminInfo.status}
@@ -453,14 +383,12 @@ export default function ManagePermissions() {
             <p className="text-gray-600">Loading permissions...</p>
           </div>
         </div>
-      ) : adminId ? (
+      ) : (
         <>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 mb-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">
-                  Total Permissions Selected
-                </p>
+                <p className="text-sm text-gray-600 mb-1">Total Permissions Selected</p>
                 <p className="text-3xl font-bold text-green-800">
                   {selectedPermissions.length}
                 </p>
@@ -477,9 +405,7 @@ export default function ManagePermissions() {
               <div
                 className="bg-green-800 h-full transition-all duration-300"
                 style={{
-                  width: `${
-                    (selectedPermissions.length / totalPermissionCount) * 100
-                  }%`,
+                  width: `${(selectedPermissions.length / totalPermissionCount) * 100}%`,
                 }}
               />
             </div>
@@ -531,9 +457,7 @@ export default function ManagePermissions() {
 
                   <div className="p-4 space-y-2">
                     {group.permissions.map((permission) => {
-                      const isSelected = selectedPermissions.includes(
-                        permission.key
-                      );
+                      const isSelected = selectedPermissions.includes(permission.key);
 
                       return (
                         <label
@@ -543,9 +467,7 @@ export default function ManagePermissions() {
                           <input
                             type="checkbox"
                             checked={isSelected}
-                            onChange={() =>
-                              handleTogglePermission(permission.key)
-                            }
+                            onChange={() => handleTogglePermission(permission.key)}
                             className="w-5 h-5 text-green-800 border-gray-300 rounded focus:ring-2 focus:ring-green-800 cursor-pointer"
                           />
                           <span className="flex-1 text-gray-700 group-hover:text-gray-900 font-medium">
@@ -588,7 +510,7 @@ export default function ManagePermissions() {
             </div>
           </div>
         </>
-      ) : null}
+      )}
     </div>
   );
 }

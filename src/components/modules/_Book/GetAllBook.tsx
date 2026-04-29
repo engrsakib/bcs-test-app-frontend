@@ -316,16 +316,21 @@ export default function ViewAllBooks() {
                   </td>
 
                   {/* TITLE */}
-                  <td className="py-4 font-medium">{book.title}</td>
+                  <td className="py-4 font-medium">
+                    {book.title
+                      ? book.title.split(" ").slice(0, 3).join(" ") +
+                      (book.title.split(" ").length > 3 ? "..." : "")
+                      : ""}
+                  </td>
 
                   {/* DESCRIPTION */}
                   <td className="py-4 text-gray-600 max-w-[260px]">
                     <div
                       dangerouslySetInnerHTML={{
-                        __html:
-                          book.description?.length > 90
-                            ? book.description.slice(0, 90) + "..."
-                            : book.description,
+                        __html: book.description
+                          ? book.description.split(" ").slice(0, 3).join(" ") +
+                          (book.description.split(" ").length > 3 ? "..." : "")
+                          : "",
                       }}
                     />
                   </td>

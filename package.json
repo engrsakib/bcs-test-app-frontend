@@ -21,6 +21,7 @@
     "jodit": "^4.9.16",
     "jodit-react": "^5.3.21",
     "js-cookie": "^3.0.5",
+    "jwt-decode": "^4.0.0",
     "katex": "^0.16.27",
     "lucide-react": "^0.546.0",
     "mathlive": "^0.107.1",
@@ -44,6 +45,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/js-cookie": "^3.0.6",
+    "@types/katex": "^0.16.8",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

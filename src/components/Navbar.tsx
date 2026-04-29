@@ -76,7 +76,7 @@ export const Navbar = ({ onMenuClick }: any) => {
         });
 
         const data = await res.json();
-        // console.log("ADMIN PROFILE:", data);
+      
 
         if (data.success) {
           setAdmin(data.data);

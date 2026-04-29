@@ -15,6 +15,7 @@ import {
 import Swal from "sweetalert2";
 import { ENV } from "@/config/env";
 import getCookie from "@/util/GetCookie";
+import { useRouter } from "next/navigation";
 
 const QuillEditor = dynamic(() => import("@/editor/QuilEditor"), {
   ssr: false,
@@ -47,9 +48,10 @@ const labelClassName =
   "flex items-center gap-2 text-sm font-semibold text-gray-700";
 
 const CreateStudyPlan = () => {
+  
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
-
+  const router = useRouter();
   const [formData, setFormData] = useState<StudyPlanFormData>({
     title: "",
     description: "",
@@ -137,69 +139,75 @@ const handleImageUpload = async (event: any) => {
 
 
 
+const handleSubmit = async () => {
+  const title = formData.title.trim();
+  const studyUrl = formData.study_plan_url.trim();
 
-  const handleSubmit = async () => {
-    if (!formData.title.trim()) {
-      return Swal.fire("Missing Title", "Please enter study plan title", "warning");
-    }
+  if (!title) {
+    return Swal.fire("Missing Title", "Please enter study plan title", "warning");
+  }
 
-    if (!formData.category.trim()) {
-      return Swal.fire("Missing Category", "Please select a category", "warning");
-    }
+  if (!studyUrl) {
+    return Swal.fire("Missing Study Plan URL", "Please enter study plan file URL", "warning");
+  }
 
-    if (!formData.thumbnail_url.trim()) {
-      return Swal.fire("Missing Thumbnail URL", "Please enter thumbnail URL", "warning");
-    }
+  try {
+    setSubmitting(true);
 
-    if (!formData.study_plan_url.trim()) {
-      return Swal.fire("Missing Study Plan URL", "Please enter study plan file URL", "warning");
-    }
+    const token = getCookie("access_token");
 
-    if (!formData.description.trim()) {
-      return Swal.fire("Missing Description", "Please enter description", "warning");
-    }
+    const res = await fetch(`${ENV.BASE_URL}/study-plan`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token || "",
+      },
+      body: JSON.stringify({
+        ...formData,
+        thumbnail_url: formData.thumbnail_url || "",
+        category: formData.category || "",
+        description: formData.description || "",
+        study_plan_url: studyUrl,
+        title,
+      }),
+    });
 
-    try {
-      setSubmitting(true);
+    const data = await res.json().catch(() => ({}));
 
-      const token = getCookie("access_token");
-
-      const res = await fetch(`${ENV.BASE_URL}/study-plan`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token || "",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-
-      console.log(data)
-
-      if (!res.ok) {
-        throw new Error(data?.message || "Failed to create study plan");
-      }
-
-      Swal.fire({
+    if (res.ok) {
+      await Swal.fire({
         icon: "success",
         title: "Study Plan Created",
         text: data?.message || "Study plan created successfully",
         confirmButtonColor: "#0f766e",
       });
 
+      router.push("/dashboard/sturdy-plan/view-plan");
       resetForm();
-    } catch (error: any) {
-      Swal.fire({
-        icon: "error",
-        title: "Failed",
-        text: error?.message || "Something went wrong",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    } else {
+      const errorText =
+        Array.isArray(data?.errorMessages) && data.errorMessages.length > 0
+          ? data.errorMessages.map((err: any) => err.message).join("\n")
+          : data?.message || "Failed to create study plan";
 
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: errorText,
+        confirmButtonColor: "#ef4444",
+      });
+    }
+  } catch (error: any) {
+    await Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: error?.message || "Something went wrong",
+      confirmButtonColor: "#ef4444",
+    });
+  } finally {
+    setSubmitting(false);
+  }
+};
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
@@ -360,3 +368,11 @@ const handleImageUpload = async (event: any) => {
 };
 
 export default CreateStudyPlan;
+
+
+
+
+
+
+
+
