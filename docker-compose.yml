@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  edu-master:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: edu_master_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - NEXT_PUBLIC_BASE_URL=https://mcq-analysis-apps-server.onrender.com/api/v1/
+      - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=drbq8i19k
+      - NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=yt_new
+
+networks:
+  default:
+    name: edu_master_network
