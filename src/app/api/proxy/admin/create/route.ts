@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL="https://mcq-analysis.vercel.app/api/v1";
+const BACKEND_URL="https://mcq-analysis-apps-server.onrender.com/api/v1/api/v1";
 
 export async function POST(req: NextRequest) {
   try {
