@@ -37,13 +37,13 @@ const Input = ({ label, id, icon, ...props }) => {
     <div>
       <label
         htmlFor={id}
-        className="block text-sm font-medium text-gray-700 mb-1"
+        className="block mb-1 text-sm font-medium text-gray-700"
       >
         {label}
       </label>
       <div className="relative">
         {Icon && (
-          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Icon className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2" />
         )}
         <input
           id={id}
@@ -80,8 +80,8 @@ const QuestionCard = ({ question, isSelected, onToggle }) => {
           : "bg-white border-gray-200 hover:shadow-md"
       }`}
     >
-      <div className="flex justify-between items-start">
-        <h4 className="font-semibold text-sm text-gray-800 flex-1 line-clamp-2">
+      <div className="flex items-start justify-between">
+        <h4 className="flex-1 text-sm font-semibold text-gray-800 line-clamp-2">
           {question.title}
         </h4>
         <button
@@ -97,11 +97,11 @@ const QuestionCard = ({ question, isSelected, onToggle }) => {
         </button>
       </div>
 
-      <p className="text-xs text-gray-500 mt-2 line-clamp-2">
+      <p className="mt-2 text-xs text-gray-500 line-clamp-2">
         {question.description}
       </p>
 
-      <div className="flex items-center gap-2 mt-3 flex-wrap">
+      <div className="flex flex-wrap items-center gap-2 mt-3">
         <span
           className={`px-2 py-0.5 text-xs rounded-full capitalize ${typeColors[question.type] || "bg-gray-100 text-gray-800"}`}
         >
@@ -144,10 +144,12 @@ const QuestionSelectorModal = ({
     }
   }, [isOpen]);
 
+  const backendUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  
   const fetchQuestions = async (currentPage, search) => {
     setLoading(true);
     try {
-      const url = `https://mcq-analysis.vercel.app/api/v1/question/?page=${currentPage}&limit=${limit}${search ? `&searchTerm=${search}` : ""}`;
+      const url = `${backendUrl}/api/v1/question/?page=${currentPage}&limit=${limit}${search ? `&searchTerm=${search}` : ""}`;
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -196,18 +198,18 @@ const QuestionSelectorModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-white bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white bg-opacity-60 backdrop-blur-sm">
       <div className="bg-white w-full max-w-6xl rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-5 border-b flex justify-between items-center bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-xl">
+        <div className="flex items-center justify-between p-5 text-white border-b from-green-600 to-emerald-600 rounded-t-xl">
           <div>
             <h2 className="text-2xl font-bold">Select Questions</h2>
-            <p className="text-sm text-green-100 mt-1">
+            <p className="mt-1 text-sm text-green-100">
               {localSelected.length} questions selected
             </p>
           </div>
           <button
-            className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
+            className="p-2 text-white transition-colors rounded-lg hover:bg-white hover:bg-opacity-20"
             onClick={onClose}
           >
             <FaTimes size={24} />
@@ -222,27 +224,27 @@ const QuestionSelectorModal = ({
               placeholder="Search questions by title or description..."
               value={searchQuery}
               onChange={handleSearch}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full py-3 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             <FaSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2"
               size={18}
             />
           </div>
         </div>
 
         {/* Cards */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="flex-1 p-6 overflow-y-auto">
           {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <div className="flex items-center justify-center h-64">
+              <div className="w-12 h-12 border-b-2 border-green-600 rounded-full animate-spin"></div>
             </div>
           ) : questions.length === 0 ? (
-            <div className="text-center text-gray-500 py-12">
+            <div className="py-12 text-center text-gray-500">
               <p className="text-lg">No questions found</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {questions.map((q) => (
                 <QuestionCard
                   key={q._id}
@@ -259,7 +261,7 @@ const QuestionSelectorModal = ({
 
         {/* Pagination */}
         {!loading && questions.length > 0 && (
-          <div className="px-6 py-3 border-t bg-gray-50 flex justify-between items-center">
+          <div className="flex items-center justify-between px-6 py-3 border-t bg-gray-50">
             <div className="text-sm text-gray-600">
               Page {page} of {totalPages}
             </div>
@@ -267,14 +269,14 @@ const QuestionSelectorModal = ({
               <button
                 onClick={() => handlePageChange(page - 1)}
                 disabled={page === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FaChevronLeft size={12} /> Previous
               </button>
               <button
                 onClick={() => handlePageChange(page + 1)}
                 disabled={page === totalPages}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next <FaChevronRight size={12} />
               </button>
@@ -285,7 +287,7 @@ const QuestionSelectorModal = ({
         {/* Footer */}
         <div className="p-5 border-t bg-gray-50 rounded-b-xl">
           <button
-            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 rounded-lg transition-all shadow-md hover:shadow-lg"
+            className="w-full py-3 font-semibold text-white transition-all rounded-lg shadow-md bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:shadow-lg"
             onClick={handleDone}
           >
             Done - Add {localSelected.length} Question
@@ -415,12 +417,12 @@ export default function CreateExamForm() {
   };
 
   return (
-    <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-      <div className="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+    <div className="min-h-screen p-6 bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="max-w-5xl p-8 mx-auto bg-white shadow-lg rounded-xl">
         {/* Header */}
         <div className="pb-5 border-b">
           <h1 className="text-3xl font-bold text-gray-900">Create New Exam</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="mt-1 text-sm text-gray-600">
             Fill the form to schedule a new exam
           </p>
         </div>
@@ -439,7 +441,7 @@ export default function CreateExamForm() {
         )}
 
         {/* Form Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 gap-6 mt-6 md:grid-cols-2">
           <Input
             label="Exam Name"
             id="exam_name"
@@ -490,9 +492,7 @@ export default function CreateExamForm() {
               negative_mark: Number(e.target.value),
             })
           }
-          className="block w-6/12 px-3 py-2 border mt-3  border-gray-300 rounded-md shadow-sm
-             focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
-             bg-white text-gray-900"
+          className="block w-6/12 px-3 py-2 mt-3 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
         >
           {negativeMarkOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -503,8 +503,8 @@ export default function CreateExamForm() {
 
         {/* Selected Questions Section */}
         <div className="mt-8">
-          <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-lg text-gray-800">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-800">
               Selected Questions ({selectedQuestions.length})
               {selectedQuestions.length > 0 && (
                 <span className="ml-2 text-sm font-normal text-gray-600">
@@ -523,9 +523,9 @@ export default function CreateExamForm() {
 
           <div className="mt-4">
             {selectedQuestions.length === 0 ? (
-              <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 text-center text-gray-500">
+              <div className="p-8 text-center text-gray-500 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50">
                 <p className="text-lg">No questions selected yet</p>
-                <p className="text-sm mt-1">
+                <p className="mt-1 text-sm">
                   Click "Add Questions" to get started
                 </p>
               </div>
@@ -534,9 +534,9 @@ export default function CreateExamForm() {
                 {selectedQuestions.map((q, index) => (
                   <div
                     key={q._id}
-                    className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-lg hover:shadow-md transition-all"
+                    className="flex items-center gap-4 p-4 transition-all border border-gray-200 rounded-lg bg-gray-50 hover:shadow-md"
                   >
-                    <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-semibold">
+                    <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 font-semibold text-white bg-green-600 rounded-full">
                       {index + 1}
                     </div>
                     <div className="flex-1">
@@ -548,7 +548,7 @@ export default function CreateExamForm() {
                         <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full capitalize">
                           {q.answerType}
                         </span>
-                        <span className="text-sm font-semibold text-gray-700 ml-auto">
+                        <span className="ml-auto text-sm font-semibold text-gray-700">
                           {q.marks} Marks
                         </span>
                       </div>
@@ -556,7 +556,7 @@ export default function CreateExamForm() {
                     <button
                       type="button"
                       onClick={() => handleRemoveQuestion(q._id)}
-                      className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="flex-shrink-0 p-2 text-red-600 transition-colors rounded-lg hover:bg-red-50"
                       title="Remove question"
                     >
                       <FaTrash size={16} />
@@ -569,12 +569,12 @@ export default function CreateExamForm() {
         </div>
 
         {/* Submit */}
-        <div className="mt-8 pt-5 border-t">
+        <div className="pt-5 mt-8 border-t">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold py-4 rounded-lg text-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 text-lg font-semibold text-white transition-all rounded-lg shadow-md bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Creating Exam..." : "Create Exam"}
           </button>
