@@ -14,9 +14,10 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { ENV } from "@/config/env";
+import { notify } from "@/lib/toast";
+import { confirmAction } from "@/components/ui/confirm-dialog";
 
 // COOKIE FUNCTION
 function getCookie(name: string) {
@@ -109,17 +110,14 @@ export default function ViewAllBooks() {
   // DELETE BOOK
   // ============================
   const handleDelete = async (book_number: number) => {
-    const confirm = await Swal.fire({
+    const confirmed = await confirmAction({
       title: "Are you sure?",
-      text: "This book will be deleted permanently!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Delete",
+      description: "This book will be deleted permanently!",
+      variant: "destructive",
+      confirmText: "Delete",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`${ENV.BASE_URL}/books/${book_number}`, {
@@ -132,10 +130,10 @@ export default function ViewAllBooks() {
         throw new Error(err.message);
       }
 
-      Swal.fire("Deleted!", "Book deleted successfully!", "success");
+      notify.success("Deleted!", "Book deleted successfully!");
       getAllBooks();
     } catch (err: any) {
-      Swal.fire("Error", err.message, "error");
+      notify.error("Error", err.message);
     }
   };
 
@@ -143,11 +141,7 @@ export default function ViewAllBooks() {
   // TOGGLE PUBLISH
   // ============================
   const handleToggle = async (book_number: number) => {
-    Swal.fire({
-      title: "Updating...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
+    const id = notify.loading("Updating...");
 
     try {
       const res = await fetch(`${ENV.BASE_URL}/books/${book_number}`, {
@@ -160,12 +154,12 @@ export default function ViewAllBooks() {
         throw new Error(err.message);
       }
 
-      Swal.close();
-      Swal.fire("Updated!", "Publish status changed.", "success");
+      notify.dismiss(id);
+      notify.success("Updated!", "Publish status changed.");
       getAllBooks();
     } catch (err: any) {
-      Swal.close();
-      Swal.fire("Error", err.message, "error");
+      notify.dismiss(id);
+      notify.error("Error", err.message);
     }
   };
 

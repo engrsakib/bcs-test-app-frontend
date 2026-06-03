@@ -10,7 +10,7 @@ import {
   FileText, Tag, AlignLeft, Type,
   Bold, Italic, Underline, Image as ImageIcon, Upload, Loader2
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { notify } from '@/lib/toast';
 import { ENV } from '@/config/env';
 import getCookie from '@/util/GetCookie';
 
@@ -91,18 +91,16 @@ const CreateGuideline = () => {
       if (data.secure_url) {
         setFormData(prev => ({ ...prev, thumbnail_url: data.secure_url }));
 
-        Swal.fire({
-          icon: "success",
-          title: "Image Uploaded!",
-          text: "Thumbnail image uploaded successfully.",
-          confirmButtonColor: "#10b981"
-        });
+        notify.success(
+          "Image Uploaded!",
+          "Thumbnail image uploaded successfully."
+        );
       } else {
-        Swal.fire("Upload Failed", "Cloudinary didn't return a valid image URL", "error");
+        notify.error("Upload Failed", "Cloudinary didn't return a valid image URL");
       }
 
     } catch (error) {
-      Swal.fire("Error", "Cloudinary upload failed", "error");
+      notify.error("Error", "Cloudinary upload failed");
     }
 
     setUploading(false);
@@ -113,11 +111,11 @@ const handleSubmit = async () => {
   const description = formData.description.trim();
 
   if (!title) {
-    return Swal.fire("Missing Title", "Please enter guideline title", "warning");
+    return notify.warning("Missing Title", "Please enter guideline title");
   }
 
   if (!description || description === "<p><br></p>") {
-    return Swal.fire("Missing Description", "Please enter description", "warning");
+    return notify.warning("Missing Description", "Please enter description");
   }
 
   setSubmitting(true);
@@ -141,12 +139,7 @@ const handleSubmit = async () => {
     const data = await res.json().catch(() => ({}));
 
     if (res.ok) {
-      await Swal.fire({
-        icon: "success",
-        title: "Guideline Created Successfully!",
-     
-        confirmButtonColor: "#0d9488",
-      });
+      notify.success("Guideline Created Successfully!");
 
       setFormData({
         title: "",
@@ -161,20 +154,10 @@ const handleSubmit = async () => {
           ? data.errorMessages.map((err: any) => err.message).join("\n")
           : data?.message || "Failed to create guideline";
 
-      await Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: errorText,
-        confirmButtonColor: "#ef4444",
-      });
+      notify.error("Error", errorText);
     }
   } catch (error: any) {
-    await Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: error?.message || "Network or server error",
-      confirmButtonColor: "#ef4444",
-    });
+    notify.error("Error", error?.message || "Network or server error");
   } finally {
     setSubmitting(false);
   }

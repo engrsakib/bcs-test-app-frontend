@@ -5,7 +5,7 @@ import { ENV } from '@/config/env';
 import getCookie from '@/util/GetCookie';
 import { AlignLeft, Bold, Italic, Underline, List, ListOrdered, Type, FileText, Upload, X, Loader2, CheckCircle } from 'lucide-react';
 import React, { useState, useRef } from 'react';
-import Swal from 'sweetalert2';
+import { notify } from "@/lib/toast";
 
 import dynamic from "next/dynamic";
 import { useRouter } from 'next/navigation';
@@ -60,22 +60,12 @@ export default function CreateGuideline() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Invalid File',
-        text: 'Please select an image file',
-        confirmButtonColor: '#0d9488'
-      });
+      notify.error('Invalid File', 'Please select an image file');
       return;
     }
 
     if (file.size > 6 * 1024 * 1024) {
-      Swal.fire({
-        icon: 'error',
-        title: 'File Too Large',
-        text: 'File size must be less than 6MB',
-        confirmButtonColor: '#0d9488'
-      });
+      notify.error('File Too Large', 'File size must be less than 6MB');
       return;
     }
 
@@ -110,22 +100,13 @@ export default function CreateGuideline() {
       }));
       setThumbnailPreview(data.secure_url);
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Upload Success!',
-        text: 'Thumbnail uploaded successfully',
-        timer: 2000,
-        showConfirmButton: false
+      notify.success('Upload Success!', 'Thumbnail uploaded successfully', {
+        duration: 2000,
       });
       
     } catch (error) {
       console.error('Error uploading image:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Upload Failed',
-        text: 'Failed to upload image. Please try again.',
-        confirmButtonColor: '#0d9488'
-      });
+      notify.error('Upload Failed', 'Failed to upload image. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -148,23 +129,13 @@ const handleSubmit = async () => {
 
   
   if (!title) {
-    await Swal.fire({
-      icon: "warning",
-      title: "Title is required",
-      text: "Please enter the title.",
-      confirmButtonColor: "#0d9488",
-    });
+    notify.warning("Title is required", "Please enter the title.");
     return;
   }
 
 
   if (!videoUrl) {
-    await Swal.fire({
-      icon: "warning",
-      title: "Video URL is required",
-      text: "Please enter the video URL.",
-      confirmButtonColor: "#0d9488",
-    });
+    notify.warning("Video URL is required", "Please enter the video URL.");
     return;
   }
 
@@ -195,27 +166,20 @@ const handleSubmit = async () => {
       throw new Error(data?.message || "Failed to create YouTube video");
     }
 
-    await Swal.fire({
-      icon: "success",
-      title: "Success!",
-      text: "YouTube video created successfully.",
-      confirmButtonColor: "#0d9488",
-      timer: 2000,
-      showConfirmButton: false,
+    notify.success("Success!", "YouTube video created successfully.", {
+      duration: 2000,
+      onAutoClose: () => {
+        router.push("/dashboard/youtube/view-video");
+        handleReset();
+      },
     });
-
-    router.push("/dashboard/youtube/view-video");
-    handleReset();
   } catch (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Creation Failed",
-      text:
-        error instanceof Error
-          ? error.message
-          : "Failed to create YouTube video. Please try again.",
-      confirmButtonColor: "#0d9488",
-    });
+    notify.error(
+      "Creation Failed",
+      error instanceof Error
+        ? error.message
+        : "Failed to create YouTube video. Please try again."
+    );
   } finally {
     setSubmitting(false);
   }

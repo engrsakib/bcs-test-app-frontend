@@ -11,8 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { ENV } from "@/config/env";
-import getCookie from "@/util/GetCookie";
+import { studyPlanProxy } from "@/lib/study-plan-api";
 
 type StudyPlanDetails = {
   _id: string;
@@ -71,22 +70,12 @@ export default function StudyPlanDetailsPage() {
       setLoading(true);
       setError("");
 
-      const token = getCookie("access_token");
-
-      const res = await fetch(
-        `${ENV.BASE_URL}/study-plan/${studyPlanNumber}`,
-        {
+      const { ok, data: result } =
+        await studyPlanProxy<StudyPlanDetailsResponse>(`/${studyPlanNumber}`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token || "",
-          },
-        }
-      );
+        });
 
-      const result: StudyPlanDetailsResponse = await res.json();
-
-      if (!res.ok) {
+      if (!ok) {
         throw new Error(result?.message || "Failed to fetch study plan details");
       }
 

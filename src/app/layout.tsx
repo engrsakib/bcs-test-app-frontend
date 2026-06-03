@@ -6,6 +6,7 @@ import { Poppins } from "next/font/google";
 
 import "./globals.css";
 import Script from "next/script";
+import { AppProviders } from "@/components/providers/app-providers";
 
 
 
@@ -44,7 +45,7 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} font-poppins antialiased bg-gray-50 text-gray-800`}
       >
-        {children}
+        <AppProviders>{children}</AppProviders>
       </body>
       
     </html>

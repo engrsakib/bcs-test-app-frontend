@@ -12,8 +12,8 @@ import {
   Image as ImageIcon,
   Loader2,
 } from "lucide-react";
-import Swal from "sweetalert2";
 import { ENV } from "@/config/env";
+import { notify } from "@/lib/toast";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 
@@ -97,11 +97,11 @@ const handleSubmit = async () => {
   const buyUrl = formData.buy_url.trim();
 
   if (!title) {
-    return Swal.fire("Title Missing!", "Please enter a title.", "warning");
+    return notify.warning("Title Missing!", "Please enter a title.");
   }
 
   if (!buyUrl) {
-    return Swal.fire("Buy URL Missing!", "Please enter buy URL.", "warning");
+    return notify.warning("Buy URL Missing!", "Please enter buy URL.");
   }
 
   const token = getCookie("access_token");
@@ -129,25 +129,20 @@ const handleSubmit = async () => {
     const data = await res.json().catch(() => ({}));
 
     if (res.ok) {
-      await Swal.fire({
-        icon: "success",
-        title: "Book Created!",
-        text: `"${title}" added successfully.`,
-        confirmButtonColor: "#0d9488",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-
-      router.push("/dashboard/my-book/view-book");
-
-      setFormData({
-        title: "",
-        thumbnail_url: "",
-        buy_url: "",
-        sold_platform: "",
-        price: "",
-        is_published: "true",
-        description: "",
+      notify.success("Book Created!", `"${title}" added successfully.`, {
+        duration: 2000,
+        onAutoClose: () => {
+          router.push("/dashboard/my-book/view-book");
+          setFormData({
+            title: "",
+            thumbnail_url: "",
+            buy_url: "",
+            sold_platform: "",
+            price: "",
+            is_published: "true",
+            description: "",
+          });
+        },
       });
     } else {
       const errorText =
@@ -155,20 +150,10 @@ const handleSubmit = async () => {
           ? data.errorMessages.map((err: any) => err.message).join("\n")
           : data?.message || "Failed to create book";
 
-      await Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: errorText,
-        confirmButtonColor: "#ef4444",
-      });
+      notify.error("Error", errorText);
     }
   } catch (error: any) {
-    await Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: error?.message || "Network or server error",
-      confirmButtonColor: "#ef4444",
-    });
+    notify.error("Error", error?.message || "Network or server error");
   } finally {
     setSubmitting(false);
   }

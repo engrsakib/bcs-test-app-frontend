@@ -14,7 +14,7 @@
 
 import { useForm } from "react-hook-form";
 import { Phone, User2, Lock, ShieldCheck } from "lucide-react";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 
 import { z } from "zod";
@@ -79,11 +79,7 @@ export default function CreateAdminForm() {
       const accessToken = getCookie("access_token");
 
       if (!accessToken) {
-        Swal.fire({
-          title: "Unauthorized Access",
-          text: "You need to log in first",
-          icon: "warning",
-        });
+        notify.warning("Unauthorized Access", "You need to log in first");
         router.push("/login");
         return;
       }
@@ -101,25 +97,13 @@ export default function CreateAdminForm() {
       // console.log("Create Admin", result);
 
       if (result.success) {
-        Swal.fire({
-          title: "Success!",
-          text: "Admin Create Successfully",
-          icon: "success",
-        });
+        notify.success("Success!", "Admin Create Successfully");
         reset();
       } else {
-        Swal.fire({
-          title: "Error",
-          text: result.message || "Failed to create admin!",
-          icon: "error",
-        });
+        notify.error("Error", result.message || "Failed to create admin!");
       }
     } catch (error) {
-      Swal.fire({
-        title: "Server Error",
-        text: "Something went wrong, please try again later.",
-        icon: "error",
-      });
+      notify.error("Server Error", "Something went wrong, please try again later.");
     }
   };
 

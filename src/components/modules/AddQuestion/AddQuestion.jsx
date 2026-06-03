@@ -4,7 +4,7 @@
 
 import { ENV } from '@/config/env';
 import React, { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
+import { notify } from '@/lib/toast';
 
 // Fixed MathEditor Component
 const MathEditor = ({ value, onChange, readOnly = false }) => {
@@ -325,21 +325,14 @@ export default function CreateQuestionForm() {
     console.log("CreateQuestionForm", result)
 
     if (!response.ok) {
-      Swal.fire({
-        icon: "error",
-        title: "❌ Failed!",
-        text: result.message || "Question create failed!",
-      });
+      notify.error("❌ Failed!", result.message || "Question create failed!");
       throw new Error(result.message);
     }
 
-    // SUCCESS SWEETALERT
-    await Swal.fire({
-      icon: "success",
-      title: "✅ Question Created!",
-      text: "Your question is successfully saved to the API.",
-      confirmButtonColor: "#2B6A5B",
-    });
+    notify.success(
+      "✅ Question Created!",
+      "Your question is successfully saved to the API."
+    );
 
     // LocalStorage update
     const newQuestion = {
@@ -371,11 +364,7 @@ export default function CreateQuestionForm() {
   } catch (error) {
     console.error("❌ API Error:", error);
 
-    Swal.fire({
-      icon: "error",
-      title: "Error!",
-      text: error.message || "Something went wrong",
-    });
+    notify.error("Error!", error.message || "Something went wrong");
 
   } finally {
     setLoading(false);

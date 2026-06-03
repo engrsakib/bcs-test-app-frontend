@@ -5,8 +5,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Swal from "sweetalert2";
 import getCookie from "@/util/GetCookie";
+import { notify } from "@/lib/toast";
 
 import {
   FaSearch,
@@ -323,26 +323,14 @@ export default function UpdateExamClient() {
       const json = await res.json();
 
       if (json.success) {
-        Swal.fire({
-          icon: "success",
-          title: "Updated Successfully!",
-          text: "The exam has been updated.",
-          timer: 1800,
-          showConfirmButton: false,
+        notify.success("Updated Successfully!", "The exam has been updated.", {
+          duration: 1500,
         });
       } else {
-        Swal.fire({
-          icon: "error",
-          title: "Update Failed",
-          text: json.message,
-        });
+        notify.error("Update Failed", json.message);
       }
     } catch {
-      Swal.fire({
-        icon: "error",
-        title: "Network Error",
-        text: "Could not update exam.",
-      });
+      notify.error("Network Error", "Could not update exam.");
     }
 
     setIsUpdating(false);

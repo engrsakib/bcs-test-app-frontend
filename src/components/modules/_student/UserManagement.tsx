@@ -27,7 +27,7 @@ import {
   EyeOff,
 } from "lucide-react";
 
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 import Link from "next/link";
 import { ENV } from "@/config/env";
 
@@ -190,7 +190,7 @@ export default function UserManagementTable() {
     const result = await res.json();
 
     if (result.success) {
-      Swal.fire("Updated!", "Student Updated Successfully", "success");
+      notify.success("Updated!", "Student Updated Successfully");
 
       setAdmins((prev) =>
         prev.map((x) =>
@@ -242,7 +242,7 @@ export default function UserManagementTable() {
     });
 
     if (res.ok) {
-      Swal.fire("Deleted!", "User Deleted Successfully", "success");
+      notify.success("Deleted!", "User Deleted Successfully");
 
       setAdmins((prev) => prev.filter((u) => u._id !== selectedUser._id));
       setShowDeleteModal(false);
@@ -432,12 +432,7 @@ export default function UserManagementTable() {
                           image: uploadedUrl,
                         });
 
-                        Swal.fire({
-                          icon: "success",
-                          title: "Image Uploaded",
-                          timer: 1500,
-                          showConfirmButton: false,
-                        });
+                        notify.success("Image Uploaded", undefined, { duration: 1500 });
                       }}
                     />
                     <label

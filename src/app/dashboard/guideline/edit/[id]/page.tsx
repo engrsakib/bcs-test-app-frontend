@@ -14,7 +14,7 @@ import {
   Loader2,
   Image as ImageIcon,
 } from "lucide-react";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 import { ENV } from "@/config/env";
 import getCookie from "@/util/GetCookie";
 
@@ -64,10 +64,10 @@ export default function UpdateGuideline() {
           thumbnail_url: json.data.thumbnail_url,
         });
       } else {
-        Swal.fire("Error", json.message, "error");
+        notify.error("Error", json.message);
       }
     } catch (error) {
-      Swal.fire("Error", "Failed to load guideline", "error");
+      notify.error("Error", "Failed to load guideline");
     }
 
     setLoading(false);
@@ -109,12 +109,12 @@ export default function UpdateGuideline() {
           thumbnail_url: data.secure_url,
         }));
 
-        Swal.fire("Success", "Thumbnail uploaded!", "success");
+        notify.success("Success", "Thumbnail uploaded!");
       } else {
-        Swal.fire("Upload Failed", "Invalid Cloudinary response", "error");
+        notify.error("Upload Failed", "Invalid Cloudinary response");
       }
     } catch (error) {
-      Swal.fire("Error", "Upload failed", "error");
+      notify.error("Error", "Upload failed");
     }
 
     setUploading(false);
@@ -125,13 +125,13 @@ export default function UpdateGuideline() {
   // -----------------------------------
   const handleUpdate = async () => {
     if (!formData.title.trim()) {
-      return Swal.fire("Missing Title", "Enter guideline title", "warning");
+      return notify.warning("Missing Title", "Enter guideline title");
     }
     if (!formData.category) {
-      return Swal.fire("Missing Category", "Select category", "warning");
+      return notify.warning("Missing Category", "Select category");
     }
     if (!formData.description.trim()) {
-      return Swal.fire("Missing Description", "Write description", "warning");
+      return notify.warning("Missing Description", "Write description");
     }
 
     setUpdating(true);
@@ -149,13 +149,14 @@ export default function UpdateGuideline() {
       const data = await res.json();
 
       if (res.ok) {
-        Swal.fire("Success", "Guideline updated!", "success");
-        router.push(`/dashboard/guideline/view-guideline`);
+        notify.success("Success", "Guideline updated!", {
+          onAutoClose: () => router.push(`/dashboard/guideline/view-guideline`),
+        });
       } else {
-        Swal.fire("Error", data.message, "error");
+        notify.error("Error", data.message);
       }
     } catch (error) {
-      Swal.fire("Error", "Update failed", "error");
+      notify.error("Error", "Update failed");
     }
 
     setUpdating(false);

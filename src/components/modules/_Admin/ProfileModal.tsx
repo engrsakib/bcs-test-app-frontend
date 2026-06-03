@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { X, Loader2, Phone, Briefcase, Calendar, FileText, Mail, Shield } from "lucide-react";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import { ENV } from "@/config/env";
 
@@ -48,11 +48,7 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
       const accessToken = getCookie("access_token");
 
       if (!accessToken) {
-        Swal.fire({
-          title: "Unauthorized",
-          text: "Please login first",
-          icon: "warning",
-        });
+        notify.warning("Unauthorized", "Please login first");
         router.push("/login");
         return;
       }
@@ -67,11 +63,7 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
       });
 
       if (res.status === 401) {
-        Swal.fire({
-          title: "Session Expired",
-          text: "Please login again",
-          icon: "warning",
-        });
+        notify.warning("Session Expired", "Please login again");
         router.push("/login");
         return;
       }
@@ -79,22 +71,14 @@ export default function ProfileModal({ adminId, onClose }: ProfileModalProps) {
       const json = await res.json();
 
       if (!json.success) {
-        Swal.fire({
-          title: "Error",
-          text: json.message || "Failed to fetch profile",
-          icon: "error",
-        });
+        notify.error("Error", json.message || "Failed to fetch profile");
         onClose();
         return;
       }
 
       setAdmin(json.data);
     } catch (e) {
-      Swal.fire({
-        title: "Error",
-        text: "Failed to fetch admin profile",
-        icon: "error",
-      });
+      notify.error("Error", "Failed to fetch admin profile");
       onClose();
     } finally {
       setLoading(false);

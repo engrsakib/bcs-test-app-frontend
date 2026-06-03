@@ -15,7 +15,7 @@ import {
   LogIn,
   AlertCircle,
 } from "lucide-react";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 import { ENV } from "@/config/env";
 
 const Login: React.FC = () => {
@@ -108,32 +108,19 @@ const Login: React.FC = () => {
           document.cookie = `refresh_token=${result.data.refresh_token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
         }
 
-        Swal.fire({
-          title: "Success!",
-          text: "Login successful!",
-          icon: "success",
-          timer: 1500,
-          showConfirmButton: false,
+        notify.success("Success!", "Login successful!", {
+          duration: 1500,
+          onAutoClose: () => {
+            router.push(redirectUrl);
+            router.refresh();
+          },
         });
-
-        setTimeout(() => {
-          router.push(redirectUrl);
-          router.refresh();
-        }, 1500);
       } else {
-        Swal.fire({
-          title: "Failed",
-          text: result.message || "Login failed",
-          icon: "error",
-        });
+        notify.error("Failed", result.message || "Login failed");
       }
     } catch (error) {
       console.error("Login error:", error);
-      Swal.fire({
-        title: "Error",
-        text: "Unable to connect to server!",
-        icon: "error",
-      });
+      notify.error("Error", "Unable to connect to server!");
     } finally {
       setIsLoading(false);
     }
@@ -146,15 +133,15 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl">
-        <div className="h-32 bg-gradient-to-br from-green-600 via-green-700 to-emerald-700 flex flex-col items-center justify-center text-white rounded-t-2xl">
+    <div className="w-full flex items-center justify-center p-2 sm:p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl ring-1 ring-slate-200/60 overflow-hidden">
+        <div className="h-32 bg-gradient-to-br from-emerald-600 via-green-700 to-teal-700 flex flex-col items-center justify-center text-white">
           <LogIn className="w-12 h-12 mb-2" />
           <h2 className="text-2xl font-bold">Login</h2>
           <p className="text-green-100 text-sm">MCQ Analysis Admin</p>
         </div>
 
-        <div className="p-8 space-y-5">
+        <div className="p-6 sm:p-8 space-y-5">
           {/* Phone Input */}
           <div>
             <label className="block mb-2 font-semibold text-gray-700">

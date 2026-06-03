@@ -10,7 +10,7 @@ import {
   CheckCircle,
   Eye,
 } from "lucide-react";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 import { ENV } from "@/config/env";
 import getCookie from "@/util/GetCookie";
 
@@ -54,10 +54,10 @@ export default function ViewGuideline() {
       if (res.ok) {
         setData(json.data);
       } else {
-        Swal.fire("Error", json.message, "error");
+        notify.error("Error", json.message);
       }
     } catch (error) {
-      Swal.fire("Error", "Failed to load data", "error");
+      notify.error("Error", "Failed to load data");
     }
 
     setLoading(false);

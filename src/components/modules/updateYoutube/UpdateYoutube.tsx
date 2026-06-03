@@ -18,8 +18,8 @@ import {
   Loader2,
   CheckCircle,
 } from "lucide-react";
-import Swal from "sweetalert2";
 import getCookie from "@/util/GetCookie";
+import { notify } from "@/lib/toast";
 import { ENV } from "@/config/env";
 
 import dynamic from "next/dynamic";
@@ -124,7 +124,7 @@ export default function UpdateYouTube() {
       setFormData((prev) => ({ ...prev, thumbnail_url: data.secure_url }));
       setThumbnailPreview(data.secure_url);
     } catch {
-      Swal.fire("Error", "Thumbnail upload failed", "error");
+      notify.error("Error", "Thumbnail upload failed");
     }
 
     setUploading(false);
@@ -161,23 +161,17 @@ export default function UpdateYouTube() {
         formData.description.trim() === "";
 
       if (isEmptyDescription) {
-        return Swal.fire(
+        return notify.warning(
           "Missing Description",
           "Please enter description",
-          "warning",
         );
       }
 
-      Swal.fire({
-        icon: "success",
-        title: "Updated!",
-        text: "YouTube video updated successfully",
-        confirmButtonColor: "#0d9488",
+      notify.success("Updated!", "YouTube video updated successfully", {
+        onAutoClose: () => router.push("/dashboard/youtube/view-video"),
       });
-
-      router.push("/dashboard/youtube/view-video");
     } catch (err) {
-      Swal.fire("Error", "Failed to update video", "error");
+      notify.error("Error", "Failed to update video");
     } finally {
       setSubmitting(false);
     }

@@ -5,7 +5,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import getCookie from "@/util/GetCookie";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 
 export default function SingleResult() {
   const params = useSearchParams();
@@ -60,12 +60,10 @@ export default function SingleResult() {
   const handleUpdateMarks = async () => {
     const amount = Number(markAmount);
     if (!markAmount || amount <= 0) {
-      Swal.fire({
-        icon: "error",
-        title: "Invalid Amount",
-        text: "Please enter a valid amount greater than 0",
-        confirmButtonColor: "#0d9488",
-      });
+      notify.error(
+        "Invalid Amount",
+        "Please enter a valid amount greater than 0"
+      );
       return;
     }
 
@@ -97,28 +95,13 @@ export default function SingleResult() {
         setShowModal(false);
         setMarkAmount("");
         
-        Swal.fire({
-          icon: "success",
-          title: "Success!",
-          text: "Marks updated successfully!",
-          confirmButtonColor: "#0d9488",
-        });
+        notify.success("Success!", "Marks updated successfully!");
       } else {
-        Swal.fire({
-          icon: "error",
-          title: "Update Failed",
-          text: json.message || "Failed to update marks",
-          confirmButtonColor: "#0d9488",
-        });
+        notify.error("Update Failed", json.message || "Failed to update marks");
       }
     } catch (err) {
       console.error("Update marks failed", err);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to update marks. Please try again.",
-        confirmButtonColor: "#0d9488",
-      });
+      notify.error("Error", "Failed to update marks. Please try again.");
     }
 
     setUpdating(false);

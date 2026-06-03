@@ -13,7 +13,8 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
+import { confirmAction } from "@/components/ui/confirm-dialog";
 import { ENV } from "@/config/env";
 import getCookie from "@/util/GetCookie";
 import { useRouter } from "next/navigation";
@@ -85,22 +86,22 @@ export default function ViewAllGuideline() {
 
   // DELETE GUIDELINE
   const deleteGuideline = async (guidelineNumber: number) => {
-    Swal.fire({
+    const confirmed = await confirmAction({
       title: "Delete?",
-      text: "Do you want to delete this guideline?",
-      icon: "warning",
-      showCancelButton: true,
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        await fetch(`${ENV.BASE_URL}/guideline/${guidelineNumber}`, {
-          method: "DELETE",
-          headers: { Authorization: getCookie("access_token") || "" },
-        });
-
-        Swal.fire("Deleted!", "", "success");
-        fetchGuidelines();
-      }
+      description: "Do you want to delete this guideline?",
+      variant: "destructive",
+      confirmText: "Delete",
     });
+
+    if (!confirmed) return;
+
+    await fetch(`${ENV.BASE_URL}/guideline/${guidelineNumber}`, {
+      method: "DELETE",
+      headers: { Authorization: getCookie("access_token") || "" },
+    });
+
+    notify.success("Deleted!");
+    fetchGuidelines();
   };
 
   // UPDATE STATUS
@@ -110,7 +111,7 @@ export default function ViewAllGuideline() {
       headers: { Authorization: getCookie("access_token") || "" },
     });
 
-    Swal.fire("Updated!", "Status updated", "success");
+    notify.success("Updated!", "Status updated");
     fetchGuidelines();
   };
 

@@ -21,7 +21,7 @@ import {
   Search,
   Filter
 } from "lucide-react";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 
 // Mock ENV for demo
 const ENV = {
@@ -86,31 +86,6 @@ function getCookie(name) {
   if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
 
   return null;
-}
-
-// ====================== SWEET ALERT ======================
-function showAlert(title, text, icon) {
-  // Simple custom alert since we can't use external libraries
-  const alertDiv = document.createElement("div");
-  alertDiv.innerHTML = `
-    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-      <div style="background: white; padding: 30px; border-radius: 12px; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
-        <div style="font-size: 48px; margin-bottom: 20px;">
-          ${icon === "success" ? "✅" : icon === "error" ? "❌" : "ℹ️"}
-        </div>
-        <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 12px; color: #333;">${title}</h2>
-        <p style="color: #666; margin-bottom: 24px;">${text}</p>
-        <button id="alertOkBtn" style="background: #10b981; color: white; padding: 12px 32px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px;">OK</button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(alertDiv);
-  
-  const okBtn = document.getElementById("alertOkBtn");
-  okBtn.onclick = () => {
-    document.body.removeChild(alertDiv);
-  };
 }
 
 export default function ViewAllQuestions() {
@@ -191,8 +166,6 @@ export default function ViewAllQuestions() {
 
   // ====================== DELETE QUESTION ======================
   const handleDelete = async (id) => {
-    // if (!confirm("Are you sure you want to delete?")) return;
-
     try {
       const accessToken = getCookie("access_token");
 
@@ -207,76 +180,16 @@ export default function ViewAllQuestions() {
       const result = await res.json();
 
       if (result.success) {
-        showAlert("Deleted!", "Question deleted successfully", "success");
+        notify.success("Deleted!", "Question deleted successfully", { duration: 1500 });
         fetchQuestions();
       } else {
-        showAlert("Error", result.message || "Delete failed!", "error");
+        notify.error("Error", result.message || "Delete failed!");
       }
     } catch (error) {
       console.error("Delete Error:", error);
-      showAlert("Error", "Failed to delete question", "error");
+      notify.error("Error", "Failed to delete question");
     }
   };
-
-
-
-
-// const handleDelete = async (id) => {
-//   // SweetAlert2 Confirmation
-//   const confirm = await Swal.fire({
-//     title: "Are you sure?",
-//     text: "You won't be able to revert this!",
-//     icon: "warning",
-//     showCancelButton: true,
-//     confirmButtonColor: "#d33",
-//     cancelButtonColor: "#3085d6",
-//     confirmButtonText: "Yes, delete it!",
-//   });
-
-//   if (!confirm.isConfirmed) return;
-
-//   try {
-//     const accessToken = getCookie("access_token");
-
-//     const res = await fetch(`${ENV.BASE_URL}/question/${id}`, {
-//       method: "DELETE",
-//       credentials: "include",
-//       headers: {
-//         Authorization: accessToken || "",
-//       },
-//     });
-
-//     const result = await res.json();
-
-//     if (result.success) {
-//       await Swal.fire({
-//         title: "Deleted!",
-//         text: "Question deleted successfully.",
-//         icon: "success",
-//         timer: 1500,
-//       });
-
-//       fetchQuestions(); // refresh list
-//     } else {
-//       Swal.fire({
-//         title: "Error!",
-//         text: result.message || "Delete failed!",
-//         icon: "error",
-//       });
-//     }
-//   } catch (error) {
-//     console.error("Delete Error:", error);
-
-//     Swal.fire({
-//       title: "Error!",
-//       text: "Failed to delete question",
-//       icon: "error",
-//     });
-//   }
-// };
-
-
-
 
   // ====================== ACTION HANDLERS ======================
   const handleViewQuestion = (q) => {
@@ -307,17 +220,17 @@ export default function ViewAllQuestions() {
       const result = await res.json();
 
       if (result.success) {
-        showAlert("Success!", "Question updated successfully", "success");
+        notify.success("Success!", "Question updated successfully", { duration: 1500 });
         setTimeout(() => {
           setViewMode("list");
           fetchQuestions();
         }, 1500);
       } else {
-        showAlert("Error", result.message || "Update failed!", "error");
+        notify.error("Error", result.message || "Update failed!");
       }
     } catch (err) {
       console.log("Update failed", err);
-      showAlert("Error", "Failed to update question", "error");
+      notify.error("Error", "Failed to update question");
     } finally {
       setUpdateLoading(false);
     }

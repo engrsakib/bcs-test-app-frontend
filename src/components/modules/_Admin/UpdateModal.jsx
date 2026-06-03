@@ -6,7 +6,7 @@
 "use client";
 
 import { useState } from "react";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 
 export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
   const [form, setForm] = useState({
@@ -34,12 +34,12 @@ export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!validTypes.includes(file.type)) {
-      Swal.fire("Error", "Please select a valid image (JPEG, PNG, WebP)", "error");
+      notify.show("Error", "Please select a valid image (JPEG, PNG, WebP)", "error");
       return;
     }
 
     if (file.size > maxSize) {
-      Swal.fire("Error", "Image size must be less than 5MB", "error");
+      notify.show("Error", "Image size must be less than 5MB", "error");
       return;
     }
 
@@ -65,9 +65,9 @@ export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
       const uploaded = await res.json();
       setForm({ ...form, image: uploaded.secure_url });
       
-      Swal.fire("Success", "Image uploaded successfully!", "success");
+      notify.show("Success", "Image uploaded successfully!", "success");
     } catch (error) {
-      Swal.fire("Error", "Failed to upload image", "error");
+      notify.show("Error", "Failed to upload image", "error");
     } finally {
       setUploading(false);
     }
@@ -83,7 +83,7 @@ export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
   const handleUpdate = async () => {
     // Validation
     if (!form.name.trim() || !form.phone_number.trim() || !form.role) {
-      Swal.fire("Error", "Please fill in all required fields", "error");
+      notify.show("Error", "Please fill in all required fields", "error");
       return;
     }
 
@@ -110,14 +110,14 @@ export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
       const json = await res.json();
 
       if (!json.success) {
-        return Swal.fire("Error", json.message, "error");
+        return notify.show("Error", json.message, "error");
       }
 
-      Swal.fire("Updated!", "Admin info updated successfully", "success");
+      notify.show("Updated!", "Admin info updated successfully", "success");
       onUpdated();
       onClose();
     } catch (error) {
-      Swal.fire("Error", "Something went wrong!", "error");
+      notify.show("Error", "Something went wrong!", "error");
     }
   };
 
