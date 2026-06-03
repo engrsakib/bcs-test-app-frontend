@@ -16,8 +16,8 @@ import {
 
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import Swal from "sweetalert2";
 import getCookie from "@/util/GetCookie";
+import { notify } from "@/lib/toast";
 
 import dynamic from "next/dynamic";
 
@@ -80,11 +80,7 @@ export default function UpdateBookTemplate() {
   // UPDATE BOOK API CALL
   // ===========================
   const handleUpdate = async () => {
-    Swal.fire({
-      title: "Updating Book...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
+    const id = notify.loading("Updating Book...");
 
     try {
       const token = getCookie("access_token");
@@ -109,18 +105,18 @@ export default function UpdateBookTemplate() {
       });
 
       const result = await res.json();
-      Swal.close();
+      notify.dismiss(id);
 
       if (!res.ok) {
-        return Swal.fire("Error", result?.message || "Failed to update!", "error");
+        return notify.error("Error", result?.message || "Failed to update!");
       }
 
-      Swal.fire("Success!", "Book updated successfully!", "success").then(() =>
-        router.push("/dashboard/my-book/view-book")
-      );
+      notify.success("Success!", "Book updated successfully!", {
+        onAutoClose: () => router.push("/dashboard/my-book/view-book"),
+      });
     } catch (error) {
-      Swal.close();
-      Swal.fire("Error", "Something went wrong!", "error");
+      notify.dismiss(id);
+      notify.error("Error", "Something went wrong!");
     }
   };
 

@@ -1,34 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { asyncHandler } from "@/server/middleware/async-handler";
+import { proxyToBackend } from "@/server/services/proxy-client";
 
-const BACKEND_URL="https://mcq-analysis-apps-server.onrender.com/api/v1/api/v1";
+export const POST = asyncHandler(async (req: Request) => {
+  const body = await req.json();
+  const { data, status } = await proxyToBackend({
+    path: "/admin/create",
+    method: "POST",
+    body,
+  });
 
-export async function POST(req: NextRequest) {
-  try {
-    const token = req.cookies.get("cbd_atkn_91f2a")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: "Token missing" },
-        { status: 401 }
-      );
-    }
-
-    const body = await req.json();
-
-    const backendRes = await fetch(`${BACKEND_URL}/admin/create`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token, // ⭐ auto token send
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await backendRes.json();
-    return NextResponse.json(data, { status: backendRes.status });
-  } catch (err) {
-    return NextResponse.json(
-      { success: false, message: "Server error", err },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json(data, { status });
+});

@@ -17,9 +17,10 @@ import {
   ChevronDown,
   ImageOff,
 } from "lucide-react";
-import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { ENV } from "@/config/env";
+import { notify } from "@/lib/toast";
+import { confirmAction } from "@/components/ui/confirm-dialog";
 
 function getCookie(name: string) {
   if (typeof document === "undefined") return null;
@@ -110,20 +111,17 @@ export default function ViewAllYouTubeVideos() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text:
-          newValue === "true"
-            ? "Video published successfully"
-            : "Video unpublished successfully",
-        timer: 1500,
-        showConfirmButton: false,
-      });
+      notify.success(
+        "Success",
+        newValue === "true"
+          ? "Video published successfully"
+          : "Video unpublished successfully",
+        { duration: 1500 }
+      );
 
       fetchVideos();
     } catch (err) {
-      Swal.fire("Error", "Failed to update publish status", "error");
+      notify.error("Error", "Failed to update publish status");
     }
   };
 
@@ -131,15 +129,14 @@ export default function ViewAllYouTubeVideos() {
   // Delete Video
   // ==============================
   const deleteVideo = async (video_number: number, title: string) => {
-    const confirm = await Swal.fire({
-      icon: "warning",
+    const confirmed = await confirmAction({
       title: "Are you sure?",
-      text: `Delete "${title}"?`,
-      showCancelButton: true,
-      confirmButtonColor: "#dc2626",
+      description: `Delete "${title}"?`,
+      variant: "destructive",
+      confirmText: "Delete",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!confirmed) return;
 
     try {
       const token = getCookie("access_token");
@@ -151,17 +148,11 @@ export default function ViewAllYouTubeVideos() {
 
       if (!res.ok) throw new Error("Delete failed");
 
-      Swal.fire({
-        icon: "success",
-        title: "Deleted!",
-        text: "Video deleted successfully",
-        timer: 1500,
-        showConfirmButton: false,
-      });
+      notify.success("Deleted!", "Video deleted successfully", { duration: 1500 });
 
       fetchVideos();
     } catch (err) {
-      Swal.fire("Error", "Failed to delete video", "error");
+      notify.error("Error", "Failed to delete video");
     }
   };
 

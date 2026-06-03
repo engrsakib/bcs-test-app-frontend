@@ -14,7 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
+import { confirmAction } from "@/components/ui/confirm-dialog";
 import { useRouter } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
 import UpdateAdminModal from "./UpdateModal";
@@ -152,11 +153,7 @@ export default function AdminList() {
       const accessToken = getCookie("access_token");
 
       if (!accessToken) {
-        Swal.fire({
-          title: "Unauthorized",
-          text: "Please login first",
-          icon: "warning",
-        });
+        notify.warning("Unauthorized", "Please login first");
         router.push("/login");
         return;
       }
@@ -190,11 +187,7 @@ export default function AdminList() {
       console.log("From Admin List:", res);
 
       if (res.status === 401) {
-        Swal.fire({
-          title: "Session Expired",
-          text: "Please login again",
-          icon: "warning",
-        });
+        notify.warning("Session Expired", "Please login again");
         router.push("/login");
         return;
       }
@@ -214,11 +207,7 @@ export default function AdminList() {
       setAdmins(json.data?.data || json.data || []);
     } catch (e) {
       console.log(e);
-      Swal.fire({
-        title: "Error",
-        text: "Failed to fetch admins",
-        icon: "error",
-      });
+      notify.error("Error", "Failed to fetch admins");
     } finally {
       setLoading(false);
     }
@@ -241,29 +230,21 @@ export default function AdminList() {
   };
 
   const handleDelete = async (adminId: string) => {
-    const result = await Swal.fire({
+    const confirmed = await confirmAction({
       title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#166534",
-      cancelButtonColor: "#dc2626",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "Cancel",
+      description: "You won't be able to revert this!",
+      confirmText: "Yes, delete it!",
+      cancelText: "Cancel",
+      variant: "destructive",
     });
 
-    if (!result.isConfirmed) return;
+    if (!confirmed) return;
 
     try {
       const accessToken = getCookie("access_token");
 
       if (!accessToken) {
-        Swal.fire({
-          icon: "error",
-          title: "Authentication Error",
-          text: "Please login again.",
-          confirmButtonColor: "#166534",
-        });
+        notify.error("Authentication Error", "Please login again.");
         router.push("/login");
         return;
       }
@@ -278,11 +259,7 @@ export default function AdminList() {
       });
 
       if (res.status === 401) {
-        Swal.fire({
-          icon: "warning",
-          title: "Session Expired",
-          text: "Please login again",
-        });
+        notify.warning("Session Expired", "Please login again");
         router.push("/login");
         return;
       }
@@ -291,29 +268,14 @@ export default function AdminList() {
       console.log("Delete response:", json);
 
       if (json.success) {
-        Swal.fire({
-          icon: "success",
-          title: "Deleted!",
-          text: "Admin has been deleted successfully.",
-          confirmButtonColor: "#166534",
-        });
+        notify.success("Deleted!", "Admin has been deleted successfully.");
         fetchAdmins();
       } else {
-        Swal.fire({
-          icon: "error",
-          title: "Delete Failed",
-          text: json.message || "Failed to delete admin",
-          confirmButtonColor: "#166534",
-        });
+        notify.error("Delete Failed", json.message || "Failed to delete admin");
       }
     } catch (error) {
       console.error("Delete error:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "An error occurred while deleting the admin",
-        confirmButtonColor: "#166534",
-      });
+      notify.error("Error", "An error occurred while deleting the admin");
     }
   };
 

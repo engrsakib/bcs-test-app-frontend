@@ -21,7 +21,8 @@ import {
   FaArrowLeft,
   FaArrowRight,
 } from "react-icons/fa";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
+import { confirmAction } from "@/components/ui/confirm-dialog";
 
 // -----------------------------------------------------
 // Toggle Component
@@ -113,17 +114,14 @@ export default function ExamListPage() {
 
   // DELETE
   const handleDelete = async (examNumber: string) => {
-    const confirm = await Swal.fire({
+    const confirmed = await confirmAction({
       title: "Are you sure?",
-      text: "This exam will be permanently deleted!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it",
+      description: "This exam will be permanently deleted!",
+      variant: "destructive",
+      confirmText: "Yes, delete it",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`${ENV.BASE_URL}/exam/${examNumber}`, {
@@ -134,17 +132,12 @@ export default function ExamListPage() {
       const result = await response.json();
 
       if (result.success) {
-        Swal.fire({
-          icon: "success",
-          title: "Deleted!",
-          timer: 1500,
-          showConfirmButton: false,
-        });
+        notify.success("Deleted!", undefined, { duration: 1500 });
 
         fetchExams(page, searchTerm);
       }
     } catch (error) {
-      Swal.fire({ icon: "error", title: "Delete failed" });
+      notify.error("Delete failed");
     }
   };
 
@@ -180,18 +173,13 @@ export default function ExamListPage() {
       const result = await response.json();
 
       if (result.success) {
-        Swal.fire({
-          icon: "success",
-          title: "Status Updated!",
-          timer: 1500,
-          showConfirmButton: false,
-        });
+        notify.success("Status Updated!", undefined, { duration: 1500 });
 
         setShowModal(false);
         fetchExams(page, searchTerm);
       }
     } catch (error) {
-      Swal.fire({ icon: "error", title: "Update Failed!" });
+      notify.error("Update Failed!");
     }
   };
 

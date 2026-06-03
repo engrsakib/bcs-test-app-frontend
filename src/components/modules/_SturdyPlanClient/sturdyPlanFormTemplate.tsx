@@ -12,9 +12,8 @@ import {
   Loader2,
   Upload,
 } from "lucide-react";
-import Swal from "sweetalert2";
-import { ENV } from "@/config/env";
-import getCookie from "@/util/GetCookie";
+import { notify } from "@/lib/toast";
+import { studyPlanProxy } from "@/lib/study-plan-api";
 import { useRouter } from "next/navigation";
 
 const QuillEditor = dynamic(() => import("@/editor/QuilEditor"), {
@@ -124,11 +123,11 @@ const handleImageUpload = async (event: any) => {
         thumbnail_url: data.secure_url,
       }));
     } else {
-      Swal.fire("Upload Failed", "Invalid image response", "error");
+      notify.error("Upload Failed", "Invalid image response");
     }
 
   } catch (error) {
-    Swal.fire("Error", "Image upload failed", "error");
+    notify.error("Error", "Image upload failed");
   } finally {
     setUploading(false);
   }
@@ -144,24 +143,21 @@ const handleSubmit = async () => {
   const studyUrl = formData.study_plan_url.trim();
 
   if (!title) {
-    return Swal.fire("Missing Title", "Please enter study plan title", "warning");
+    return notify.warning("Missing Title", "Please enter study plan title");
   }
 
   if (!studyUrl) {
-    return Swal.fire("Missing Study Plan URL", "Please enter study plan file URL", "warning");
+    return notify.warning("Missing Study Plan URL", "Please enter study plan file URL");
   }
 
   try {
     setSubmitting(true);
 
-    const token = getCookie("access_token");
-
-    const res = await fetch(`${ENV.BASE_URL}/study-plan`, {
+    const { ok, data } = await studyPlanProxy<{
+      message?: string;
+      errorMessages?: { message: string }[];
+    }>("", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token || "",
-      },
       body: JSON.stringify({
         ...formData,
         thumbnail_url: formData.thumbnail_url || "",
@@ -172,38 +168,27 @@ const handleSubmit = async () => {
       }),
     });
 
-    const data = await res.json().catch(() => ({}));
-
-    if (res.ok) {
-      await Swal.fire({
-        icon: "success",
-        title: "Study Plan Created",
-        text: data?.message || "Study plan created successfully",
-        confirmButtonColor: "#0f766e",
-      });
-
-      router.push("/dashboard/sturdy-plan/view-plan");
-      resetForm();
+    if (ok) {
+      notify.success(
+        "Study Plan Created",
+        data?.message || "Study plan created successfully",
+        {
+          onAutoClose: () => {
+            resetForm();
+            router.push("/dashboard/sturdy-plan/view-plan");
+          },
+        }
+      );
     } else {
       const errorText =
         Array.isArray(data?.errorMessages) && data.errorMessages.length > 0
           ? data.errorMessages.map((err: any) => err.message).join("\n")
           : data?.message || "Failed to create study plan";
 
-      await Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: errorText,
-        confirmButtonColor: "#ef4444",
-      });
+      notify.error("Error", errorText);
     }
   } catch (error: any) {
-    await Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: error?.message || "Something went wrong",
-      confirmButtonColor: "#ef4444",
-    });
+    notify.error("Error", error?.message || "Something went wrong");
   } finally {
     setSubmitting(false);
   }

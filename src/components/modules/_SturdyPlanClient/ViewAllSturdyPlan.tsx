@@ -14,11 +14,12 @@ import {
   Loader2,
   ExternalLink,
   ImageOff,
+  GripVertical,
 } from "lucide-react";
-import { ENV } from "@/config/env";
-import getCookie from "@/util/GetCookie";
 import { useRouter } from "next/navigation";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
+import { studyPlanProxy } from "@/lib/study-plan-api";
+import { confirmAction } from "@/components/ui/confirm-dialog";
 
 type StudyPlanItem = {
   _id: string;
@@ -27,6 +28,7 @@ type StudyPlanItem = {
   title: string;
   description: string;
   status: "active" | "inactive" | "admin_approval";
+  position?: number;
   thumbnail_url: string;
   study_plan_url: string;
   category: string;
@@ -116,6 +118,10 @@ export default function ViewAllStudyPlanTemplate() {
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   const [loading, setLoading] = useState(false);
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
+  const [draggedPlanNumber, setDraggedPlanNumber] = useState<number | null>(
+    null,
+  );
   const [studyPlans, setStudyPlans] = useState<StudyPlanItem[]>([]);
   const [meta, setMeta] = useState({
     page: 1,
@@ -125,108 +131,63 @@ export default function ViewAllStudyPlanTemplate() {
   });
 
   const handleDelete = async (studyPlanNumber: number) => {
-    const confirm = await Swal.fire({
+    const confirmed = await confirmAction({
       title: "Are you sure?",
-      text: "This item will be deleted permanently.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#dc2626",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete it",
-      cancelButtonText: "Cancel",
+      description: "This item will be deleted permanently.",
+      variant: "destructive",
+      confirmText: "Yes, delete it",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!confirmed) return;
 
     try {
-      const token = getCookie("access_token");
+      const { ok, data: result } = await studyPlanProxy<{ message?: string }>(
+        `/${studyPlanNumber}`,
+        { method: "DELETE" },
+      );
 
-      const res = await fetch(`${ENV.BASE_URL}/study-plan/${studyPlanNumber}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token || "",
-        },
-      });
-
-      const result = await res.json();
-      console.log(result);
-
-      if (!res.ok) {
+      if (!ok) {
         throw new Error(result?.message || "Failed to delete item");
       }
 
-      Swal.fire({
-        icon: "success",
-        title: "Deleted",
-        text: result?.message || "Item deleted successfully",
-        confirmButtonColor: "#0f766e",
-      });
+      notify.success("Deleted", result?.message || "Item deleted successfully");
 
       fetchStudyPlans();
     } catch (error: any) {
-      Swal.fire({
-        icon: "error",
-        title: "Delete Failed",
-        text: error?.message || "Something went wrong",
-      });
+      notify.error("Delete Failed", error?.message || "Something went wrong");
     }
   };
 
   const handleToggleStatus = async (item: StudyPlanItem) => {
-    const confirm = await Swal.fire({
+    const confirmed = await confirmAction({
       title: "Change Status?",
-      text: `This will toggle the status of "${item.title}".`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#0f766e",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText:
-        item.status === "active" ? "Make Inactive" : "Make Active",
+      description: `This will toggle the status of "${item.title}".`,
+      confirmText: item.status === "active" ? "Make Inactive" : "Make Active",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!confirmed) return;
 
     try {
-      const token = getCookie("access_token");
+      const { ok, data: result } = await studyPlanProxy<{
+        message?: string;
+        data?: { status: StudyPlanItem["status"] };
+      }>(`/${item.study_plan_number}`, { method: "PATCH" });
 
-      const res = await fetch(
-        `${ENV.BASE_URL}/study-plan/${item.study_plan_number}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token || "",
-          },
-        },
-      );
-
-      const result = await res.json();
-
-      if (!res.ok) {
+      if (!ok) {
         throw new Error(result?.message || "Failed to toggle status");
       }
 
-      Swal.fire({
-        icon: "success",
-        title: "Updated",
-        text: result?.message || "Status updated successfully",
-        confirmButtonColor: "#0f766e",
-      });
+      notify.success("Updated", result?.message || "Status updated successfully");
 
       setStudyPlans((prev) =>
         prev.map((p) =>
           p.study_plan_number === item.study_plan_number
-            ? { ...p, status: result.data.status }
+            ? { ...p, status: result.data?.status ?? p.status }
             : p,
         ),
       );
     } catch (error: any) {
-      Swal.fire({
-        icon: "error",
-        title: "Failed",
-        text: error?.message || "Something went wrong",
-      });
+      notify.error("Failed", error?.message || "Something went wrong");
     }
   };
 
@@ -234,27 +195,18 @@ export default function ViewAllStudyPlanTemplate() {
     try {
       setLoading(true);
 
-      const token = getCookie("access_token");
       const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
         searchTerm,
       });
 
-      const res = await fetch(
-        `${ENV.BASE_URL}/study-plan?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token || "",
-          },
-        },
+      const { ok, data: result } = await studyPlanProxy<StudyPlanApiResponse>(
+        `?${params.toString()}`,
+        { method: "GET" },
       );
 
-      const result: StudyPlanApiResponse = await res.json();
-
-      if (!res.ok) {
+      if (!ok) {
         throw new Error(result.message || "Failed to fetch study plans");
       }
 
@@ -266,6 +218,81 @@ export default function ViewAllStudyPlanTemplate() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const buildReorderPayload = (items: StudyPlanItem[]) => {
+    const pageOffset = (page - 1) * limit;
+
+    return items.map((item, index) => ({
+      id: item.study_plan_number,
+      position: pageOffset + index,
+    }));
+  };
+
+  const saveStudyPlanOrder = async (
+    updatedPlans: StudyPlanItem[],
+    activeItemId: string,
+  ) => {
+    const previousPlans = studyPlans;
+
+    setStudyPlans(updatedPlans);
+    setReorderingId(activeItemId);
+
+    try {
+      const { ok, data: result } = await studyPlanProxy<{ message?: string }>(
+        "/reorder",
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            items: buildReorderPayload(updatedPlans),
+          }),
+        },
+      );
+
+      if (!ok) {
+        throw new Error(result?.message || "Failed to update order");
+      }
+
+      notify.success(
+        "Order updated successfully",
+        result?.message || "Study plan sequence saved",
+      );
+
+      fetchStudyPlans();
+    } catch (error: any) {
+      setStudyPlans(previousPlans);
+      notify.error(
+        "Order Update Failed",
+        error?.message || "Something went wrong",
+      );
+    } finally {
+      setReorderingId(null);
+      setDraggedPlanNumber(null);
+    }
+  };
+
+  const moveStudyPlan = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
+
+    const updatedPlans = [...studyPlans];
+    const [movedItem] = updatedPlans.splice(fromIndex, 1);
+    updatedPlans.splice(toIndex, 0, movedItem);
+
+    saveStudyPlanOrder(updatedPlans, movedItem._id);
+  };
+
+  const handlePositionChange = (item: StudyPlanItem, nextIndex: number) => {
+    const currentIndex = studyPlans.findIndex((plan) => plan._id === item._id);
+    moveStudyPlan(currentIndex, nextIndex);
+  };
+
+  const handleDrop = (targetItem: StudyPlanItem) => {
+    const currentIndex = studyPlans.findIndex(
+      (plan) => plan.study_plan_number === draggedPlanNumber,
+    );
+    const nextIndex = studyPlans.findIndex((plan) => plan._id === targetItem._id);
+
+    moveStudyPlan(currentIndex, nextIndex);
   };
 
   useEffect(() => {
@@ -290,8 +317,8 @@ export default function ViewAllStudyPlanTemplate() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 p-6">
-      <div className="mb-6 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 p-6 text-white shadow-lg">
+    <div className="min-h-screen bg-linear-to-br from-teal-50 to-emerald-50 p-6">
+      <div className="mb-6 rounded-2xl bg-linear-to-r from-teal-600 to-emerald-600 p-6 text-white shadow-lg">
         <h1 className="text-3xl font-bold">All Study Plans</h1>
         <p className="text-teal-100">Browse and manage study plans</p>
       </div>
@@ -370,6 +397,7 @@ export default function ViewAllStudyPlanTemplate() {
           <table className="w-full min-w-[1200px]">
             <thead className="bg-teal-600 text-white">
               <tr>
+                <th className="py-3 px-4 text-center">Order</th>
                 <th className="py-3 px-4 text-center">Plan No</th>
                 <th className="py-3 px-4 text-left">Study Plan</th>
                 <th className="py-3 px-4 text-center">Category</th>
@@ -382,7 +410,7 @@ export default function ViewAllStudyPlanTemplate() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-10">
+                  <td colSpan={7} className="py-10">
                     <div className="flex items-center justify-center gap-2 text-teal-600">
                       <Loader2 className="animate-spin" size={20} />
                       Loading study plans...
@@ -391,13 +419,53 @@ export default function ViewAllStudyPlanTemplate() {
                 </tr>
               ) : studyPlans.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                  <td colSpan={7} className="py-8 text-center text-gray-500">
                     No study plans found
                   </td>
                 </tr>
               ) : (
-                studyPlans.map((item) => (
-                  <tr key={item._id} className="border-b align-top">
+                studyPlans.map((item, index) => (
+                  <tr
+                    key={item._id}
+                    draggable={!reorderingId}
+                    onDragStart={() =>
+                      setDraggedPlanNumber(item.study_plan_number)
+                    }
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => handleDrop(item)}
+                    onDragEnd={() => setDraggedPlanNumber(null)}
+                    className={`border-b align-top transition-colors ${
+                      draggedPlanNumber === item.study_plan_number
+                        ? "bg-teal-50"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <GripVertical size={16} className="text-gray-400" />
+                        <select
+                          value={index}
+                          disabled={!!reorderingId}
+                          onChange={(e) =>
+                            handlePositionChange(item, Number(e.target.value))
+                          }
+                          className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm font-semibold text-gray-700 outline-none transition focus:border-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {studyPlans.map((plan, optionIndex) => (
+                            <option key={plan._id} value={optionIndex}>
+                              {(page - 1) * limit + optionIndex + 1}
+                            </option>
+                          ))}
+                        </select>
+                        {reorderingId === item._id && (
+                          <Loader2
+                            className="animate-spin text-teal-600"
+                            size={16}
+                          />
+                        )}
+                      </div>
+                    </td>
+
                     <td className="py-4 px-4 text-center font-semibold text-gray-700">
                       #{item.study_plan_number}
                     </td>
@@ -428,28 +496,26 @@ export default function ViewAllStudyPlanTemplate() {
                           )}
                         </div>
 
-                   <div className="min-w-0 flex-1 leading-snug">
-<h3 className="text-sm font-semibold text-gray-800">
-  {item.title
-    .split(" ")
-    .slice(0, 4)
-    .join(" ")}
-  {item.title.split(" ").length > 10 && "..."}
-</h3>
+                        <div className="min-w-0 flex-1 leading-snug">
+                          <h3 className="text-sm font-semibold text-gray-800">
+                            {item.title.split(" ").slice(0, 4).join(" ")}
+                            {item.title.split(" ").length > 10 && "..."}
+                          </h3>
 
-<p className="text-xs text-gray-500">
-  {decodeHtml(stripHtml(item.description))
-    .split(" ")
-    .slice(0, 6)
-    .join(" ")}...
-</p>
-</div>
+                          <p className="text-xs text-gray-500">
+                            {decodeHtml(stripHtml(item.description))
+                              .split(" ")
+                              .slice(0, 6)
+                              .join(" ")}
+                            ...
+                          </p>
+                        </div>
                       </div>
                     </td>
 
                     <td className="px-4 py-4 text-center">
                       <span
-                        className={`inline-flex max-w-[180px] items-center justify-center rounded-full px-3 py-1 text-sm font-medium break-words ${categoryBadgeClass(
+                        className={`inline-flex max-w-[180px] items-center justify-center rounded-full px-3 py-1 text-sm font-medium wrap-break-word ${categoryBadgeClass(
                           item.category,
                         )}`}
                       >

@@ -5,7 +5,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import { User, Phone, Lock } from "lucide-react";
 import { z } from "zod";
@@ -60,30 +60,15 @@ export default function CreateStudent() {
       const json = await res.json();
 
       if (json.success) {
-        Swal.fire({
-          icon: "success",
-          title: "Student Created",
-          text: json.message,
-          confirmButtonColor: "#065f46",
-        });
+        notify.success("Student Created", json.message);
 
         reset();
         router.push("/dashboard/team/view-student");
       } else {
-        Swal.fire({
-          icon: "error",
-          title: "Failed",
-          text: json.message || "Something went wrong!",
-          confirmButtonColor: "#065f46",
-        });
+        notify.error("Failed", json.message || "Something went wrong!");
       }
     } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Unexpected Error",
-        text: "Please try again later",
-        confirmButtonColor: "#065f46",
-      });
+      notify.error("Unexpected Error", "Please try again later");
     }
   };
 

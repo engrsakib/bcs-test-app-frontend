@@ -11,10 +11,10 @@ import {
   Link as LinkIcon,
   ArrowLeft,
 } from "lucide-react";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
+import { confirmAction } from "@/components/ui/confirm-dialog";
 import { useParams, useRouter } from "next/navigation";
-import { ENV } from "@/config/env";
-import getCookie from "@/util/GetCookie";
+import { studyPlanProxy } from "@/lib/study-plan-api";
 import ReusableQuillEditor from "@/editor/ReactQuilEditor";
 
 type StudyPlanDetails = {
@@ -91,22 +91,12 @@ export default function EditStudyPlanPage() {
     try {
       setLoading(true);
 
-      const token = getCookie("access_token");
-
-      const res = await fetch(
-        `${ENV.BASE_URL}/study-plan/${studyPlanNumber}`,
-        {
+      const { ok, data: result } =
+        await studyPlanProxy<StudyPlanDetailsResponse>(`/${studyPlanNumber}`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token || "",
-          },
-        }
-      );
+        });
 
-      const result: StudyPlanDetailsResponse = await res.json();
-
-      if (!res.ok) {
+      if (!ok) {
         throw new Error(result?.message || "Failed to fetch study plan");
       }
 
@@ -119,7 +109,7 @@ export default function EditStudyPlanPage() {
         category: result.data.category || "",
       });
     } catch (error: any) {
-      Swal.fire("Error", error?.message || "Failed to load study plan", "error");
+      notify.error("Error", error?.message || "Failed to load study plan");
     } finally {
       setLoading(false);
     }
@@ -160,17 +150,12 @@ export default function EditStudyPlanPage() {
           thumbnail_url: data.secure_url,
         }));
 
-        Swal.fire({
-          icon: "success",
-          title: "Image Uploaded",
-          text: "Thumbnail uploaded successfully",
-          confirmButtonColor: "#0f766e",
-        });
+        notify.success("Image Uploaded", "Thumbnail uploaded successfully");
       } else {
         throw new Error("Cloudinary did not return image URL");
       }
     } catch (error: any) {
-      Swal.fire("Error", error?.message || "Image upload failed", "error");
+      notify.error("Error", error?.message || "Image upload failed");
     } finally {
       setUploading(false);
     }
@@ -178,41 +163,35 @@ export default function EditStudyPlanPage() {
 
   const handleUpdate = async () => {
     if (!formData.title.trim()) {
-      return Swal.fire("Missing Title", "Please enter title", "warning");
+      return notify.warning("Missing Title", "Please enter title");
     }
 
     if (!formData.category.trim()) {
-      return Swal.fire("Missing Category", "Please select category", "warning");
+      return notify.warning("Missing Category", "Please select category");
     }
 
     if (!formData.thumbnail_url.trim()) {
-      return Swal.fire("Missing Thumbnail", "Please upload thumbnail image", "warning");
+      return notify.warning("Missing Thumbnail", "Please upload thumbnail image");
     }
 
     if (!formData.study_plan_url.trim()) {
-      return Swal.fire("Missing Study Plan URL", "Please enter study plan URL", "warning");
+      return notify.warning("Missing Study Plan URL", "Please enter study plan URL");
     }
 
     if (!formData.description.trim()) {
-      return Swal.fire("Missing Description", "Please write description", "warning");
+      return notify.warning("Missing Description", "Please write description");
     }
 
-    const confirm = await Swal.fire({
+    const confirmed = await confirmAction({
       title: "Update Study Plan?",
-      text: "Do you want to save these changes?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#0f766e",
-      cancelButtonColor: "#ef4444",
-      confirmButtonText: "Yes, Update",
+      description: "Do you want to save these changes?",
+      confirmText: "Yes, Update",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!confirmed) return;
 
     try {
       setSubmitting(true);
-
-      const token = getCookie("access_token");
 
       const payload = {
         title: formData.title,
@@ -222,34 +201,27 @@ export default function EditStudyPlanPage() {
         category: formData.category,
       };
 
-      const res = await fetch(
-        `${ENV.BASE_URL}/study-plan/${studyPlanNumber}`,
+      const { ok, data: result } = await studyPlanProxy<{ message?: string }>(
+        `/${studyPlanNumber}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token || "",
-          },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
-      const result = await res.json();
-
-      if (!res.ok) {
+      if (!ok) {
         throw new Error(result?.message || "Failed to update study plan");
       }
 
-      Swal.fire({
-        icon: "success",
-        title: "Updated Successfully",
-        text: result?.message || "Study plan updated successfully",
-        confirmButtonColor: "#0f766e",
-      });
-
-      router.push(`/dashboard/sturdy-plan/view-plan`);
+      notify.success(
+        "Updated Successfully",
+        result?.message || "Study plan updated successfully",
+        {
+          onAutoClose: () => router.push(`/dashboard/sturdy-plan/view-plan`),
+        }
+      );
     } catch (error: any) {
-      Swal.fire("Error", error?.message || "Update failed", "error");
+      notify.error("Error", error?.message || "Update failed");
     } finally {
       setSubmitting(false);
     }

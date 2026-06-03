@@ -3,7 +3,7 @@
 // import { useEffect, useState } from "react";
 // import { Loader2, Phone, Briefcase, Calendar, FileText } from "lucide-react";
 // import { useRouter } from "next/navigation";
-// import Swal from "sweetalert2";
+// import { notify } from "@/lib/toast";
 
 // function getCookie(name: string): string | null {
 //   if (typeof document === "undefined") return null;
@@ -74,11 +74,7 @@
 //       const accessToken = getCookie("access_token");
 
 //       if (!accessToken) {
-//         Swal.fire({
-//           title: "Unauthorized",
-//           text: "Please login first",
-//           icon: "warning",
-//         });
+//         notify.warning("Unauthorized", "Please login first");
 //         router.push("/login");
 //         return;
 //       }
@@ -96,11 +92,7 @@
 //       );
 
 //       if (res.status === 401) {
-//         Swal.fire({
-//           title: "Session Expired",
-//           text: "Please login again",
-//           icon: "warning",
-//         });
+//         notify.warning("Session Expired", "Please login again");
 //         router.push("/login");
 //         return;
 //       }
@@ -110,22 +102,14 @@
 
 //       if (!json.success) {
 //         console.error(json);
-//         Swal.fire({
-//           title: "Error",
-//           text: json.message || "Failed to fetch profile",
-//           icon: "error",
-//         });
+//         notify.error("Error", json.message || "Failed to fetch profile");
 //         return;
 //       }
 
 //       setAdmin(json.data);
 //     } catch (e) {
 //       console.log(e);
-//       Swal.fire({
-//         title: "Error",
-//         text: "Failed to fetch admin profile",
-//         icon: "error",
-//       });
+//       notify.error("Error", "Failed to fetch admin profile");
 //     } finally {
 //       setLoading(false);
 //     }
@@ -307,7 +291,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Phone, Briefcase, Calendar, FileText } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Swal from "sweetalert2";
+import { notify } from "@/lib/toast";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -378,11 +362,7 @@ export default function AdminProfile() {
       const accessToken = getCookie("access_token");
 
       if (!accessToken) {
-        Swal.fire({
-          title: "Unauthorized",
-          text: "Please login first",
-          icon: "warning",
-        });
+        notify.warning("Unauthorized", "Please login first");
         router.push("/login");
         return;
       }
@@ -400,11 +380,7 @@ export default function AdminProfile() {
       );
 
       if (res.status === 401) {
-        Swal.fire({
-          title: "Session Expired",
-          text: "Please login again",
-          icon: "warning",
-        });
+        notify.warning("Session Expired", "Please login again");
         router.push("/login");
         return;
       }
@@ -414,22 +390,14 @@ export default function AdminProfile() {
 
       if (!json.success) {
         console.error(json);
-        Swal.fire({
-          title: "Error",
-          text: json.message || "Failed to fetch profile",
-          icon: "error",
-        });
+        notify.error("Error", json.message || "Failed to fetch profile");
         return;
       }
 
       setAdmin(json.data);
     } catch (e) {
       console.log(e);
-      Swal.fire({
-        title: "Error",
-        text: "Failed to fetch admin profile",
-        icon: "error",
-      });
+      notify.error("Error", "Failed to fetch admin profile");
     } finally {
       setLoading(false);
     }
