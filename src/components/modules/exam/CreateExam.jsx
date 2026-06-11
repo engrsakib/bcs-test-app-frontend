@@ -1,23 +1,23 @@
 "use client";
 
-import { ENV } from "@/config/env";
+import { apiUrl } from "@/config/env";
 import getCookie from "@/util/GetCookie";
 import React, { useState, useEffect } from "react";
 import {
-  FaSearch,
-  FaPlus,
-  FaTimes,
   FaListUl,
   FaTrash,
   FaCalendarAlt,
   FaClock,
   FaCheckDouble,
-  FaChevronLeft,
-  FaChevronRight,
+  FaPlus,
 } from "react-icons/fa";
 import { NegativeMark } from "./negativeMark";
 import { useRouter } from "next/navigation";
-
+import {
+  saveExamDraft,
+  loadExamDraft,
+  clearExamDraft,
+} from "@/lib/exam-draft-storage";
 
 const negativeMarkOptions = [
   { label: "ZERO", value: 0 },
@@ -26,11 +26,6 @@ const negativeMarkOptions = [
   { label: "FULL", value: 1 },
 ];
 
-
-
-// --------------------
-// Reusable Input
-// --------------------
 const Input = ({ label, id, icon, ...props }) => {
   const Icon = icon;
   return (
@@ -57,265 +52,28 @@ const Input = ({ label, id, icon, ...props }) => {
   );
 };
 
-// --------------------
-// Question Card UI
-// --------------------
-const QuestionCard = ({ question, isSelected, onToggle }) => {
-  const typeColors = {
-    math: "bg-purple-100 text-purple-800",
-    general: "bg-blue-100 text-blue-800",
-    science: "bg-green-100 text-green-800",
-  };
-
-  const answerColors = {
-    mcq: "bg-indigo-100 text-indigo-800",
-    written: "bg-orange-100 text-orange-800",
-  };
-
-  return (
-    <div
-      className={`p-4 border rounded-lg transition-all cursor-pointer ${
-        isSelected
-          ? "bg-green-50 border-green-500 shadow-md"
-          : "bg-white border-gray-200 hover:shadow-md"
-      }`}
-    >
-      <div className="flex items-start justify-between">
-        <h4 className="flex-1 text-sm font-semibold text-gray-800 line-clamp-2">
-          {question.title}
-        </h4>
-        <button
-          type="button"
-          onClick={() => onToggle(question)}
-          className={`ml-2 p-1.5 rounded-full transition-colors ${
-            isSelected
-              ? "bg-red-600 hover:bg-red-700 text-white"
-              : "bg-green-600 hover:bg-green-700 text-white"
-          }`}
-        >
-          {isSelected ? <FaTimes size={12} /> : <FaPlus size={12} />}
-        </button>
-      </div>
-
-      <p className="mt-2 text-xs text-gray-500 line-clamp-2">
-        {question.description}
-      </p>
-
-      <div className="flex flex-wrap items-center gap-2 mt-3">
-        <span
-          className={`px-2 py-0.5 text-xs rounded-full capitalize ${typeColors[question.type] || "bg-gray-100 text-gray-800"}`}
-        >
-          {question.type}
-        </span>
-        <span
-          className={`px-2 py-0.5 text-xs rounded-full capitalize ${answerColors[question.answerType] || "bg-gray-100 text-gray-800"}`}
-        >
-          {question.answerType}
-        </span>
-        <span className="ml-auto text-sm font-bold text-gray-700">
-          {question.marks} Marks
-        </span>
-      </div>
-    </div>
-  );
-};
-
-// --------------------
-// Modal UI
-// --------------------
-const QuestionSelectorModal = ({
-  isOpen,
-  onClose,
-  selectedQuestions,
-  onSelectQuestions,
-}) => {
-  const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [localSelected, setLocalSelected] = useState([]);
-  const limit = 9;
-
-  useEffect(() => {
-    if (isOpen) {
-      setLocalSelected([...selectedQuestions]);
-      fetchQuestions(1, "");
-    }
-  }, [isOpen]);
-
-  const backendUrl = process.env.NEXT_PUBLIC_BASE_URL;
-  
-  const fetchQuestions = async (currentPage, search) => {
-    setLoading(true);
-    try {
-      const url = `${backendUrl}/api/v1/question/?page=${currentPage}&limit=${limit}${search ? `&searchTerm=${search}` : ""}`;
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: getCookie("access_token") || "",
-        },
-      });
-      const result = await response.json();
-
-      if (result.success) {
-        setQuestions(result.data.data);
-        setTotalPages(Math.ceil(result.data.meta.total / limit));
-      }
-    } catch (error) {
-      console.error("Error fetching questions:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    setPage(1);
-    fetchQuestions(1, value);
-  };
-
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-    fetchQuestions(newPage, searchQuery);
-  };
-
-  const handleToggleQuestion = (question) => {
-    const isAlreadySelected = localSelected.some((q) => q._id === question._id);
-    if (isAlreadySelected) {
-      setLocalSelected(localSelected.filter((q) => q._id !== question._id));
-    } else {
-      setLocalSelected([...localSelected, question]);
-    }
-  };
-
-  const handleDone = () => {
-    onSelectQuestions(localSelected);
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white bg-opacity-60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-6xl rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 text-white border-b from-green-600 to-emerald-600 rounded-t-xl">
-          <div>
-            <h2 className="text-2xl font-bold">Select Questions</h2>
-            <p className="mt-1 text-sm text-green-100">
-              {localSelected.length} questions selected
-            </p>
-          </div>
-          <button
-            className="p-2 text-white transition-colors rounded-lg hover:bg-white hover:bg-opacity-20"
-            onClick={onClose}
-          >
-            <FaTimes size={24} />
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="p-4 border-b bg-gray-50">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search questions by title or description..."
-              value={searchQuery}
-              onChange={handleSearch}
-              className="w-full py-3 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-            <FaSearch
-              className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2"
-              size={18}
-            />
-          </div>
-        </div>
-
-        {/* Cards */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="w-12 h-12 border-b-2 border-green-600 rounded-full animate-spin"></div>
-            </div>
-          ) : questions.length === 0 ? (
-            <div className="py-12 text-center text-gray-500">
-              <p className="text-lg">No questions found</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {questions.map((q) => (
-                <QuestionCard
-                  key={q._id}
-                  question={q}
-                  isSelected={localSelected.some(
-                    (selected) => selected._id === q._id,
-                  )}
-                  onToggle={handleToggleQuestion}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {!loading && questions.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-3 border-t bg-gray-50">
-            <div className="text-sm text-gray-600">
-              Page {page} of {totalPages}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FaChevronLeft size={12} /> Previous
-              </button>
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next <FaChevronRight size={12} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="p-5 border-t bg-gray-50 rounded-b-xl">
-          <button
-            className="w-full py-3 font-semibold text-white transition-all rounded-lg shadow-md bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:shadow-lg"
-            onClick={handleDone}
-          >
-            Done - Add {localSelected.length} Question
-            {localSelected.length !== 1 ? "s" : ""}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-
-// --------------------
-// Main Component
-// --------------------
 export default function CreateExamForm() {
   const router = useRouter();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [formData, setFormData] = useState({
     exam_name: "",
     exam_date_time: "",
     duration_minutes: "",
-   negative_mark: NegativeMark[0],
+    negative_mark: NegativeMark[0],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+
+  useEffect(() => {
+    const draft = loadExamDraft();
+    if (!draft) return;
+    if (draft.formData) {
+      setFormData((prev) => ({ ...prev, ...draft.formData }));
+    }
+    if (draft.selectedQuestions?.length) {
+      setSelectedQuestions(draft.selectedQuestions);
+    }
+  }, []);
 
   const totalMarks = selectedQuestions.reduce(
     (sum, q) => sum + (q.marks || 0),
@@ -330,7 +88,16 @@ export default function CreateExamForm() {
   };
 
   const handleRemoveQuestion = (questionId) => {
-    setSelectedQuestions(selectedQuestions.filter((q) => q._id !== questionId));
+    const updated = selectedQuestions.filter((q) => q._id !== questionId);
+    setSelectedQuestions(updated);
+    saveExamDraft({ formData, selectedQuestions: updated });
+  };
+
+  const openQuestionSelector = () => {
+    saveExamDraft({ formData, selectedQuestions });
+    router.push(
+      "/dashboard/exam/select-questions?returnTo=/dashboard/exam/create-exam&mode=create",
+    );
   };
 
   const handleSubmit = async () => {
@@ -358,20 +125,16 @@ export default function CreateExamForm() {
     setSubmitStatus(null);
 
     try {
-
-      console.log("FormData", formData);
-      console.log("Negative", formData.negative_mark);
-
       const payload = {
         exam_name: formData.exam_name,
         exam_date_time: formData.exam_date_time,
         duration_minutes: parseInt(formData.duration_minutes),
         total_marks: totalMarks,
         questions: selectedQuestions.map((q) => q._id),
-            negative_mark: Number(formData.negative_mark),
+        negative_mark: Number(formData.negative_mark),
       };
 
-      const response = await fetch(`${ENV.BASE_URL}/exam/`, {
+      const response = await fetch(apiUrl("/exam/"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -382,21 +145,18 @@ export default function CreateExamForm() {
 
       const result = await response.json();
 
-      console.log("Exam CheckData", result);
-
       if (result.success) {
         setSubmitStatus({
           type: "success",
           message: "Exam created successfully!",
         });
-        // Reset form
+        clearExamDraft();
         setFormData({
           exam_name: "",
           exam_date_time: "",
           duration_minutes: "",
-            negative_mark: 0,
+          negative_mark: 0,
         });
-
         router.push("/dashboard/exam/view-exam");
         setSelectedQuestions([]);
       } else {
@@ -419,7 +179,6 @@ export default function CreateExamForm() {
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-5xl p-8 mx-auto bg-white shadow-lg rounded-xl">
-        {/* Header */}
         <div className="pb-5 border-b">
           <h1 className="text-3xl font-bold text-gray-900">Create New Exam</h1>
           <p className="mt-1 text-sm text-gray-600">
@@ -427,7 +186,6 @@ export default function CreateExamForm() {
           </p>
         </div>
 
-        {/* Status Message */}
         {submitStatus && (
           <div
             className={`mt-6 p-4 rounded-lg ${
@@ -440,7 +198,6 @@ export default function CreateExamForm() {
           </div>
         )}
 
-        {/* Form Fields */}
         <div className="grid grid-cols-1 gap-6 mt-6 md:grid-cols-2">
           <Input
             label="Exam Name"
@@ -501,20 +258,19 @@ export default function CreateExamForm() {
           ))}
         </select>
 
-        {/* Selected Questions Section */}
         <div className="mt-8">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-800">
               Selected Questions ({selectedQuestions.length})
               {selectedQuestions.length > 0 && (
                 <span className="ml-2 text-sm font-normal text-gray-600">
-                  • Total: {totalMarks} Marks
+                  · Total: {totalMarks} Marks
                 </span>
               )}
             </h3>
             <button
               type="button"
-              onClick={() => setIsModalOpen(true)}
+              onClick={openQuestionSelector}
               className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-5 py-2.5 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg"
             >
               <FaPlus size={14} /> Add Questions
@@ -523,12 +279,16 @@ export default function CreateExamForm() {
 
           <div className="mt-4">
             {selectedQuestions.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50">
-                <p className="text-lg">No questions selected yet</p>
+              <button
+                type="button"
+                onClick={openQuestionSelector}
+                className="w-full p-8 text-center text-gray-500 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50 hover:border-emerald-400 hover:bg-emerald-50/50 transition-colors"
+              >
+                <p className="text-lg font-medium">No questions selected yet</p>
                 <p className="mt-1 text-sm">
-                  Click "Add Questions" to get started
+                  Click here to browse and select questions
                 </p>
-              </div>
+              </button>
             ) : (
               <div className="space-y-3">
                 {selectedQuestions.map((q, index) => (
@@ -536,7 +296,7 @@ export default function CreateExamForm() {
                     key={q._id}
                     className="flex items-center gap-4 p-4 transition-all border border-gray-200 rounded-lg bg-gray-50 hover:shadow-md"
                   >
-                    <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 font-semibold text-white bg-green-600 rounded-full">
+                    <div className="flex items-center justify-center shrink-0 w-8 h-8 font-semibold text-white bg-green-600 rounded-full">
                       {index + 1}
                     </div>
                     <div className="flex-1">
@@ -556,7 +316,7 @@ export default function CreateExamForm() {
                     <button
                       type="button"
                       onClick={() => handleRemoveQuestion(q._id)}
-                      className="flex-shrink-0 p-2 text-red-600 transition-colors rounded-lg hover:bg-red-50"
+                      className="shrink-0 p-2 text-red-600 transition-colors rounded-lg hover:bg-red-50"
                       title="Remove question"
                     >
                       <FaTrash size={16} />
@@ -568,7 +328,6 @@ export default function CreateExamForm() {
           </div>
         </div>
 
-        {/* Submit */}
         <div className="pt-5 mt-8 border-t">
           <button
             type="button"
@@ -580,14 +339,6 @@ export default function CreateExamForm() {
           </button>
         </div>
       </div>
-
-      {/* Modal */}
-      <QuestionSelectorModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        selectedQuestions={selectedQuestions}
-        onSelectQuestions={setSelectedQuestions}
-      />
     </div>
   );
 }

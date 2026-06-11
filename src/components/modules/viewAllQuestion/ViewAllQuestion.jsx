@@ -22,11 +22,7 @@ import {
   Filter
 } from "lucide-react";
 import { notify } from "@/lib/toast";
-
-// Mock ENV for demo
-const ENV = {
-  BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || "https://mcq-analysis.vercel.app/api/v1"
-};
+import { apiUrl } from "@/config/env";
 
 function MathEditor({ value, onChange, readOnly = false }) {
   const mathEditorRef = useRef(null);
@@ -135,7 +131,7 @@ export default function ViewAllQuestions() {
 
       const accessToken = getCookie("access_token");
 
-      const res = await fetch(`${ENV.BASE_URL}/question/?${query}`, {
+      const res = await fetch(`${apiUrl("/question/")}?${query}`, {
         method: "GET",
         credentials: "include",
         headers: {
@@ -169,7 +165,7 @@ export default function ViewAllQuestions() {
     try {
       const accessToken = getCookie("access_token");
 
-      const res = await fetch(`${ENV.BASE_URL}/question/${id}`, {
+      const res = await fetch(apiUrl(`/question/${id}`), {
         method: "DELETE",
         credentials: "include",
         headers: {
@@ -207,7 +203,7 @@ export default function ViewAllQuestions() {
       setUpdateLoading(true);
       const accessToken = getCookie("access_token");
 
-      const res = await fetch(`${ENV.BASE_URL}/question/${selectedQuestion.questionId}`, {
+      const res = await fetch(apiUrl(`/question/${selectedQuestion.questionId}`), {
         method: "PATCH",
         credentials: "include",
         headers: {
