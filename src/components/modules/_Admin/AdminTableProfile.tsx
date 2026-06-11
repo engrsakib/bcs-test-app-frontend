@@ -292,6 +292,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Phone, Briefcase, Calendar, FileText } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notify } from "@/lib/toast";
+import { apiUrl } from "@/config/env";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -354,8 +355,6 @@ export default function AdminProfile() {
     "delete exam"
   ];
 
-  const backendUrl = process.env.NEXT_PUBLIC_BASE_URL;
-
   const fetchAdminProfile = async () => {
     try {
       setLoading(true);
@@ -368,7 +367,7 @@ export default function AdminProfile() {
       }
 
       const res = await fetch(
-        `${backendUrl}/api/v1/admin/${adminId}`,
+        apiUrl(`/admin/${adminId}`),
         {
           method: "GET",
           headers: {
