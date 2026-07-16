@@ -13,7 +13,7 @@ import {
   Type,
 
   Image as ImageIcon,
-
+  X,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import getCookie from "@/util/GetCookie";
@@ -87,9 +87,9 @@ export default function UpdateBookTemplate() {
 
       const payload = {
         title: formData.title,
-        thumbnail_url: formData.thumbnail_url,    // must be hosted URL
+        thumbnail_url: formData.thumbnail_url?.trim() || "",
         buy_url: formData.buy_url,
-        sold_platform: formData.sold_platform,    // 🔥 correct enum
+        sold_platform: formData.sold_platform,
         price: Number(formData.price),
         is_published: Boolean(formData.is_published),
         description: formData.description,
@@ -160,27 +160,43 @@ export default function UpdateBookTemplate() {
             />
           </div>
 
-          {/* THUMBNAIL URL */}
+          {/* THUMBNAIL (optional) */}
           <div>
-            <label className="font-semibold text-gray-700 flex gap-2">
-              <ImageIcon className="w-5 h-5 text-teal-600" /> Thumbnail Upload (URL Only)
+            <label className="font-semibold text-gray-700 flex gap-2 items-center">
+              <ImageIcon className="w-5 h-5 text-teal-600" /> Thumbnail URL
+              <span className="text-xs font-normal text-gray-500">(optional)</span>
             </label>
 
             <input
               className="w-full px-4 py-3 border rounded-xl mt-2"
-              placeholder="https://image-url.com"
+              placeholder="https://image-url.com (optional)"
               value={formData.thumbnail_url}
               onChange={(e) =>
                 setFormData({ ...formData, thumbnail_url: e.target.value })
               }
             />
 
-            {/* PREVIEW */}
-            <div className="w-40 h-28 bg-gray-200 mt-3 rounded-xl shadow overflow-hidden">
+            <div className="relative w-40 h-28 bg-gray-200 mt-3 rounded-xl shadow overflow-hidden">
               {formData.thumbnail_url ? (
-                <img src={formData.thumbnail_url} className="w-full h-full object-cover" />
+                <>
+                  <img
+                    src={formData.thumbnail_url}
+                    alt="Thumbnail preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, thumbnail_url: "" })
+                    }
+                    className="absolute top-2 right-2 rounded-full bg-red-600 p-1.5 text-white shadow hover:bg-red-700"
+                    title="Remove thumbnail"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </>
               ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
                   No Image
                 </div>
               )}

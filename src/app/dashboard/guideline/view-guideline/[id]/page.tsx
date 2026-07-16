@@ -104,13 +104,21 @@ export default function ViewGuideline() {
       <div className="bg-white rounded-2xl shadow-xl p-6 space-y-6">
 
         {/* THUMBNAIL */}
-        <div className="flex justify-center">
-          <img
-            src={data.thumbnail_url}
-            alt="Thumbnail"
-            className="w-72 h-48 object-cover rounded-xl shadow-md border"
-          />
-        </div>
+        {data.thumbnail_url?.trim() ? (
+          <div className="flex justify-center">
+            <img
+              src={data.thumbnail_url}
+              alt="Thumbnail"
+              className="w-72 h-48 object-cover rounded-xl shadow-md border"
+            />
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <div className="w-72 h-48 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
+              No thumbnail
+            </div>
+          </div>
+        )}
 
         {/* CATEGORY + STATUS */}
         <div className="flex flex-wrap gap-4 justify-center">

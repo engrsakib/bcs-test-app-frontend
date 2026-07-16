@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import { 
   FileText, Tag, AlignLeft, Type,
-  Bold, Italic, Underline, Image as ImageIcon, Upload, Loader2
+  Bold, Italic, Underline, Image as ImageIcon, Upload, Loader2, X
 } from 'lucide-react';
 import { notify } from '@/lib/toast';
 import { ENV } from '@/config/env';
@@ -234,10 +234,11 @@ const handleSubmit = async () => {
             </select>
           </div>
 
-          {/* THUMBNAIL UPLOADER */}
+          {/* THUMBNAIL UPLOADER (optional) */}
           <div>
-            <label className="flex gap-2 text-gray-700 font-semibold">
+            <label className="flex gap-2 text-gray-700 font-semibold items-center">
               <ImageIcon className="text-teal-600" /> Thumbnail Image
+              <span className="text-xs font-normal text-gray-500">(optional)</span>
             </label>
 
             <div className="mt-2 flex items-center gap-4">
@@ -258,14 +259,26 @@ const handleSubmit = async () => {
               )}
             </div>
 
-            {formData.thumbnail_url && (
-              <div className="mt-4">
+            {formData.thumbnail_url ? (
+              <div className="relative mt-4 inline-block">
                 <img
                   src={formData.thumbnail_url}
                   alt="Thumbnail Preview"
                   className="w-48 h-32 object-cover rounded-xl shadow-md border"
                 />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, thumbnail_url: "" }))
+                  }
+                  className="absolute top-2 right-2 rounded-full bg-red-600 p-2 text-white shadow hover:bg-red-700"
+                  title="Remove thumbnail"
+                >
+                  <X size={14} />
+                </button>
               </div>
+            ) : (
+              <p className="mt-3 text-sm text-gray-400">No thumbnail selected</p>
             )}
           </div>
 

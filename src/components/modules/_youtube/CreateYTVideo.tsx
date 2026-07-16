@@ -268,6 +268,7 @@ const handleSubmit = async () => {
             <label className="flex items-center gap-2 text-gray-700 font-semibold text-sm sm:text-base">
               <Upload className="w-5 h-5 text-teal-600" />
               Thumbnail Image
+              <span className="text-xs font-normal text-gray-500">(optional)</span>
             </label>
             
             {!thumbnailPreview ? (
