@@ -148,7 +148,10 @@ export default function UpdateYouTube() {
           "Content-Type": "application/json",
           authorization: getCookie("access_token") || "",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          thumbnail_url: formData.thumbnail_url?.trim() || "",
+        }),
       });
 
       const data = await res.json();
@@ -237,6 +240,7 @@ export default function UpdateYouTube() {
           <div>
             <label className="font-semibold flex items-center gap-2 mb-1">
               <Upload className="w-5 h-5 text-teal-600" /> Thumbnail
+              <span className="text-xs font-normal text-gray-500">(optional)</span>
             </label>
 
             {!thumbnailPreview ? (

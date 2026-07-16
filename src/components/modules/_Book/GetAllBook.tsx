@@ -303,10 +303,17 @@ export default function ViewAllBooks() {
 
                   {/* THUMB */}
                   <td className="text-center py-4">
-                    <img
-                      src={book.thumbnail_url}
-                      className="w-16 h-16 rounded-lg object-cover shadow"
-                    />
+                    {book.thumbnail_url?.trim() ? (
+                      <img
+                        src={book.thumbnail_url}
+                        alt={book.title || "Book thumbnail"}
+                        className="w-16 h-16 rounded-lg object-cover shadow mx-auto"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-gray-100 text-gray-400 text-xs flex items-center justify-center mx-auto">
+                        No image
+                      </div>
+                    )}
                   </td>
 
                   {/* TITLE */}

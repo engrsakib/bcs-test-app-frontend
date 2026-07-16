@@ -10,6 +10,7 @@ import {
   Loader2,
   Link as LinkIcon,
   ArrowLeft,
+  X,
 } from "lucide-react";
 import { notify } from "@/lib/toast";
 import { confirmAction } from "@/components/ui/confirm-dialog";
@@ -170,10 +171,6 @@ export default function EditStudyPlanPage() {
       return notify.warning("Missing Category", "Please select category");
     }
 
-    if (!formData.thumbnail_url.trim()) {
-      return notify.warning("Missing Thumbnail", "Please upload thumbnail image");
-    }
-
     if (!formData.study_plan_url.trim()) {
       return notify.warning("Missing Study Plan URL", "Please enter study plan URL");
     }
@@ -196,7 +193,7 @@ export default function EditStudyPlanPage() {
       const payload = {
         title: formData.title,
         description: formData.description,
-        thumbnail_url: formData.thumbnail_url,
+        thumbnail_url: formData.thumbnail_url?.trim() || "",
         study_plan_url: formData.study_plan_url,
         category: formData.category,
       };
@@ -306,6 +303,7 @@ export default function EditStudyPlanPage() {
             <label className={labelClassName}>
               <ImageIcon className="text-teal-600" size={18} />
               Thumbnail Image
+              <span className="ml-1 text-xs font-normal text-gray-500">(optional)</span>
             </label>
 
             <div className="mt-2 flex items-center gap-4 flex-wrap">
@@ -328,14 +326,26 @@ export default function EditStudyPlanPage() {
               )}
             </div>
 
-            {formData.thumbnail_url && (
-              <div className="mt-4">
+            {formData.thumbnail_url ? (
+              <div className="relative mt-4 inline-block">
                 <img
                   src={formData.thumbnail_url}
                   alt="Thumbnail Preview"
                   className="w-56 h-36 object-cover rounded-xl shadow-md border"
                 />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, thumbnail_url: "" }))
+                  }
+                  className="absolute top-2 right-2 rounded-full bg-red-600 p-2 text-white shadow hover:bg-red-700"
+                  title="Remove thumbnail"
+                >
+                  <X size={14} />
+                </button>
               </div>
+            ) : (
+              <p className="mt-3 text-sm text-gray-400">No thumbnail selected</p>
             )}
           </div>
 

@@ -11,6 +11,7 @@ import {
   Upload,
   Image as ImageIcon,
   Loader2,
+  X,
 } from "lucide-react";
 import { ENV } from "@/config/env";
 import { notify } from "@/lib/toast";
@@ -183,8 +184,9 @@ const handleSubmit = async () => {
           </div>
 
           <div>
-            <label className="font-semibold text-gray-700 flex gap-2">
+            <label className="font-semibold text-gray-700 flex gap-2 items-center">
               <ImageIcon className="w-5 h-5 text-teal-600" /> Thumbnail Upload
+              <span className="text-xs font-normal text-gray-500">(optional)</span>
             </label>
 
             <div className="mt-2 flex items-center gap-3">
@@ -206,12 +208,26 @@ const handleSubmit = async () => {
               {uploading && <span className="text-teal-700">Uploading...</span>}
             </div>
 
-            {formData.thumbnail_url && (
-              <img
-                src={formData.thumbnail_url}
-                className="w-40 mt-3 rounded-xl shadow"
-                alt="thumbnail"
-              />
+            {formData.thumbnail_url ? (
+              <div className="relative mt-3 inline-block">
+                <img
+                  src={formData.thumbnail_url}
+                  className="w-40 rounded-xl shadow"
+                  alt="thumbnail"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, thumbnail_url: "" }))
+                  }
+                  className="absolute top-2 right-2 rounded-full bg-red-600 p-2 text-white shadow hover:bg-red-700"
+                  title="Remove thumbnail"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-gray-400">No thumbnail selected</p>
             )}
           </div>
 

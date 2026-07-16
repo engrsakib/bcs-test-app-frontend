@@ -98,6 +98,7 @@ const GuidelineFormTemplate = () => {
             <label className="flex items-center gap-2 text-gray-700 font-semibold">
               <ImageIcon className="text-teal-600" size={18} />
               Thumbnail Image
+              <span className="text-xs font-normal text-gray-500">(optional)</span>
             </label>
 
             <div className="mt-2 flex items-center gap-4">
