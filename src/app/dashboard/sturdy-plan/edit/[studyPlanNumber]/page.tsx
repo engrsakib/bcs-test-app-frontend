@@ -16,6 +16,10 @@ import { notify } from "@/lib/toast";
 import { confirmAction } from "@/components/ui/confirm-dialog";
 import { useParams, useRouter } from "next/navigation";
 import { studyPlanProxy } from "@/lib/study-plan-api";
+import {
+  formatStudyPlanCategory,
+  STUDY_PLAN_CATEGORY_OPTIONS,
+} from "@/lib/study-plan-categories";
 import ReusableQuillEditor from "@/editor/ReactQuilEditor";
 
 type StudyPlanDetails = {
@@ -38,15 +42,6 @@ type StudyPlanDetailsResponse = {
   message: string;
   data: StudyPlanDetails;
 };
-
-const categoryOptions = [
-  "general",
-  "technical",
-  "exam",
-  "bcs_preparation",
-  "primary_teacher_preparation",
-  "teacher_nibondhon_preparation",
-];
 
 const statusOptions = ["inactive", "active", "admin_approval"];
 
@@ -289,9 +284,9 @@ export default function EditStudyPlanPage() {
               className={inputClassName}
             >
               <option value="">Select category</option>
-              {categoryOptions.map((item) => (
+              {STUDY_PLAN_CATEGORY_OPTIONS.map((item) => (
                 <option key={item} value={item}>
-                  {item.replace(/_/g, " ")}
+                  {formatStudyPlanCategory(item)}
                 </option>
               ))}
             </select>

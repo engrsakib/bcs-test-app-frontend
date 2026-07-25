@@ -6,11 +6,13 @@ import {
   FaArrowLeft,
   FaChevronLeft,
   FaChevronRight,
+  FaPlus,
   FaSearch,
 } from "react-icons/fa";
 import { apiUrl } from "@/config/env";
 import getCookie from "@/util/GetCookie";
 import {
+  consumePendingExamQuestion,
   loadExamDraft,
   updateSelectedQuestions,
   type ExamQuestion,
@@ -35,8 +37,19 @@ export default function QuestionSelectorPage() {
 
   useEffect(() => {
     const draft = loadExamDraft();
-    if (draft?.selectedQuestions?.length) {
-      setSelected(draft.selectedQuestions);
+    let initialSelected = draft?.selectedQuestions ?? [];
+
+    const pendingQuestion = consumePendingExamQuestion();
+    if (
+      pendingQuestion &&
+      !initialSelected.some((q) => q._id === pendingQuestion._id)
+    ) {
+      initialSelected = [...initialSelected, pendingQuestion];
+      updateSelectedQuestions(initialSelected);
+    }
+
+    if (initialSelected.length) {
+      setSelected(initialSelected);
     }
   }, []);
 
@@ -106,6 +119,14 @@ export default function QuestionSelectorPage() {
 
   const handleBack = () => router.push(returnTo);
 
+  const handleCreateQuestion = () => {
+    updateSelectedQuestions(selected);
+    const currentUrl = `/dashboard/exam/select-questions?returnTo=${encodeURIComponent(returnTo)}&mode=${mode}`;
+    router.push(
+      `/dashboard/question/create-question?returnTo=${encodeURIComponent(currentUrl)}`,
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
@@ -154,7 +175,14 @@ export default function QuestionSelectorPage() {
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
             </div>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex flex-wrap gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleCreateQuestion}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+              >
+                <FaPlus size={12} /> Create New Question
+              </button>
               <button
                 type="button"
                 onClick={selectAllOnPage}

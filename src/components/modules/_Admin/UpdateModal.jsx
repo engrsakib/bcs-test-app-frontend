@@ -214,10 +214,9 @@ export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
               >
                 <option value="">Select Role</option>
+                <option value="founder">Founder</option>
                 <option value="admin">Admin</option>
-                <option value="super_admin">Super Admin</option>
-                <option value="moderator">Moderator</option>
-                <option value="content_manager">Content Manager</option>
+                <option value="editor">Editor</option>
               </select>
             </div>
 

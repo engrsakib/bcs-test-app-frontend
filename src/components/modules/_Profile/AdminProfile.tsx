@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Edit2, Phone, Briefcase, FileText, Shield, Calendar, X, Upload, Loader2 } from 'lucide-react';
 import { ENV } from '@/config/env';
 import getCookie from '@/util/GetCookie';
+import { ADMIN_ROLE_OPTIONS } from '@/constants/admin-roles';
 
 interface AdminData {
   _id: string;
@@ -367,9 +368,11 @@ export default function AdminProfile() {
                   onChange={(e) => setFormData({...formData, role: e.target.value})}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
                 >
-                  <option value="admin">Admin</option>
-                  <option value="content_manager">Content Manager</option>
-                  <option value="moderator">Moderator</option>
+                  {ADMIN_ROLE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 

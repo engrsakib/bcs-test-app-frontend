@@ -11,7 +11,6 @@ import {
   FaCheckDouble,
   FaPlus,
 } from "react-icons/fa";
-import { NegativeMark } from "./negativeMark";
 import { useRouter } from "next/navigation";
 import {
   saveExamDraft,
@@ -20,10 +19,8 @@ import {
 } from "@/lib/exam-draft-storage";
 
 const negativeMarkOptions = [
-  { label: "ZERO", value: 0 },
-  { label: "QUARTER", value: 0.25 },
-  { label: "HALF", value: 0.5 },
-  { label: "FULL", value: 1 },
+  { label: "0.25", value: 0.25 },
+  { label: "0.50", value: 0.5 },
 ];
 
 const Input = ({ label, id, icon, ...props }) => {
@@ -59,7 +56,7 @@ export default function CreateExamForm() {
     exam_name: "",
     exam_date_time: "",
     duration_minutes: "",
-    negative_mark: NegativeMark[0],
+    negative_mark: 0.25,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -155,7 +152,7 @@ export default function CreateExamForm() {
           exam_name: "",
           exam_date_time: "",
           duration_minutes: "",
-          negative_mark: 0,
+          negative_mark: 0.25,
         });
         router.push("/dashboard/exam/view-exam");
         setSelectedQuestions([]);

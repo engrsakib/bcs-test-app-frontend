@@ -1,7 +1,3 @@
-
-
-
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -13,39 +9,66 @@ import {
   ChevronRight,
   CheckCircle,
   XCircle,
+  GripVertical,
+  Loader2,
+  Filter,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ENV } from "@/config/env";
 import { notify } from "@/lib/toast";
+import { bookProxy } from "@/lib/book-api";
 import { confirmAction } from "@/components/ui/confirm-dialog";
 
-// COOKIE FUNCTION
-function getCookie(name: string) {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
-}
+type BookItem = {
+  _id: string;
+  book_number: number;
+  title: string;
+  description?: string;
+  is_published: boolean;
+  position?: number;
+  thumbnail_url: string;
+  price: number;
+  sold_platform: string;
+  buy_url: string;
+};
 
-
+type BookApiResponse = {
+  statusCode: number;
+  success: boolean;
+  message: string;
+  data: {
+    meta: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPage: number;
+    };
+    data: BookItem[];
+  };
+};
 
 export default function ViewAllBooks() {
   const router = useRouter();
 
-  const [books, setBooks] = useState<any[]>([]);
+  const [books, setBooks] = useState<BookItem[]>([]);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
+  const [draggedBookNumber, setDraggedBookNumber] = useState<number | null>(
+    null,
+  );
+  const [meta, setMeta] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPage: 1,
+  });
 
-  const token = getCookie("access_token");
-
-  // ============================
-  // PLATFORM BADGE (ENUM)
-  // ============================
   const getPlatformBadge = (platform: string) => {
     switch (platform) {
       case "rokomari":
@@ -54,14 +77,12 @@ export default function ViewAllBooks() {
             Rokomari
           </span>
         );
-
       case "wafi_life":
         return (
           <span className="px-3 py-1 rounded-full text-white text-sm bg-gradient-to-r from-purple-500 to-indigo-500">
             Wafi Life
           </span>
         );
-
       default:
         return (
           <span className="px-3 py-1 rounded-full text-white text-sm bg-gradient-to-r from-gray-500 to-gray-700">
@@ -71,31 +92,30 @@ export default function ViewAllBooks() {
     }
   };
 
-  // ============================
-  // LOAD BOOKS
-  // ============================
-  const getAllBooks = async () => {
+  const fetchBooks = async () => {
     try {
       setLoading(true);
 
-      const res = await fetch(
-        `${ENV.BASE_URL}/books?page=${page}&limit=${limit}&searchTerm=${search}`,
-        {
-          headers: {
-            Authorization: token || "",
-          },
-        }
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        searchTerm,
+      });
+
+      const { ok, data: result } = await bookProxy<BookApiResponse>(
+        `?${params.toString()}`,
+        { method: "GET" },
       );
 
-      const response = await res.json();
-      console.log("📌 API Response:", response);
+      if (!ok) {
+        throw new Error(result.message || "Failed to fetch books");
+      }
 
-      const safeBooks = [...(response?.data?.data || [])];
-
-      setBooks(safeBooks);
-      setTotal(response?.data?.meta?.total || safeBooks.length);
-    } catch (err: any) {
-      console.error("❌ ERROR:", err.message);
+      setBooks(result.data.data);
+      setMeta(result.data.meta);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      console.error("Fetch books error:", message);
       setBooks([]);
     } finally {
       setLoading(false);
@@ -103,12 +123,80 @@ export default function ViewAllBooks() {
   };
 
   useEffect(() => {
-    getAllBooks();
-  }, [page, limit, search]);
+    fetchBooks();
+  }, [page, limit, searchTerm]);
 
-  // ============================
-  // DELETE BOOK
-  // ============================
+  const buildReorderPayload = (items: BookItem[]) => {
+    const pageOffset = (page - 1) * limit;
+
+    return items.map((item, index) => ({
+      id: item.book_number,
+      position: pageOffset + index,
+    }));
+  };
+
+  const saveBookOrder = async (updatedBooks: BookItem[], activeItemId: string) => {
+    const previousBooks = books;
+
+    setBooks(updatedBooks);
+    setReorderingId(activeItemId);
+
+    try {
+      const { ok, data: result } = await bookProxy<{ message?: string }>(
+        "/reorder",
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            items: buildReorderPayload(updatedBooks),
+          }),
+        },
+      );
+
+      if (!ok) {
+        throw new Error(result?.message || "Failed to update order");
+      }
+
+      notify.success(
+        "Order updated successfully",
+        result?.message || "Book sequence saved",
+      );
+
+      fetchBooks();
+    } catch (error: unknown) {
+      setBooks(previousBooks);
+      const message =
+        error instanceof Error ? error.message : "Something went wrong";
+      notify.error("Order Update Failed", message);
+    } finally {
+      setReorderingId(null);
+      setDraggedBookNumber(null);
+    }
+  };
+
+  const moveBook = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
+
+    const updatedBooks = [...books];
+    const [movedItem] = updatedBooks.splice(fromIndex, 1);
+    updatedBooks.splice(toIndex, 0, movedItem);
+
+    saveBookOrder(updatedBooks, movedItem._id);
+  };
+
+  const handlePositionChange = (item: BookItem, nextIndex: number) => {
+    const currentIndex = books.findIndex((book) => book._id === item._id);
+    moveBook(currentIndex, nextIndex);
+  };
+
+  const handleDrop = (targetItem: BookItem) => {
+    const currentIndex = books.findIndex(
+      (book) => book.book_number === draggedBookNumber,
+    );
+    const nextIndex = books.findIndex((book) => book._id === targetItem._id);
+
+    moveBook(currentIndex, nextIndex);
+  };
+
   const handleDelete = async (book_number: number) => {
     const confirmed = await confirmAction({
       title: "Are you sure?",
@@ -120,102 +208,99 @@ export default function ViewAllBooks() {
     if (!confirmed) return;
 
     try {
-      const res = await fetch(`${ENV.BASE_URL}/books/${book_number}`, {
-        method: "DELETE",
-        headers: { Authorization: token || "" },
-      });
+      const { ok, data: result } = await bookProxy<{ message?: string }>(
+        `/${book_number}`,
+        { method: "DELETE" },
+      );
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message);
+      if (!ok) {
+        throw new Error(result?.message || "Failed to delete book");
       }
 
-      notify.success("Deleted!", "Book deleted successfully!");
-      getAllBooks();
-    } catch (err: any) {
-      notify.error("Error", err.message);
+      notify.success("Deleted!", result?.message || "Book deleted successfully!");
+      fetchBooks();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      notify.error("Error", message);
     }
   };
 
-  // ============================
-  // TOGGLE PUBLISH
-  // ============================
   const handleToggle = async (book_number: number) => {
     const id = notify.loading("Updating...");
 
     try {
-      const res = await fetch(`${ENV.BASE_URL}/books/${book_number}`, {
-        method: "PATCH",
-        headers: { Authorization: token || "" },
-      });
+      const { ok, data: result } = await bookProxy<{ message?: string }>(
+        `/${book_number}`,
+        { method: "PATCH" },
+      );
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message);
+      if (!ok) {
+        throw new Error(result?.message || "Failed to update publish status");
       }
 
       notify.dismiss(id);
-      notify.success("Updated!", "Publish status changed.");
-      getAllBooks();
-    } catch (err: any) {
+      notify.success("Updated!", result?.message || "Publish status changed.");
+      fetchBooks();
+    } catch (err: unknown) {
       notify.dismiss(id);
-      notify.error("Error", err.message);
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      notify.error("Error", message);
     }
   };
 
-  const totalPages = Math.ceil(total / limit);
+  const handleSearch = () => {
+    setPage(1);
+    setSearchTerm(searchInput);
+  };
 
-  // ============================
-  // UI START
-  // ============================
   return (
     <div className="p-6 min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50">
-
-      {/* HEADER */}
       <div className="bg-teal-600 text-white p-6 rounded-2xl shadow-lg mb-6">
         <h1 className="text-3xl font-bold">Browse and Manage Books</h1>
+        <p className="text-teal-100">Drag rows or use the order dropdown to set display sequence</p>
       </div>
 
-      {/* SEARCH + FILTER + ADD */}
       <div className="bg-white rounded-xl shadow-md p-5 flex flex-col gap-4">
-
-        {/* TOP ROW */}
         <div className="grid md:grid-cols-4 gap-4">
-
-          {/* SEARCH */}
-          <div className="flex items-center gap-2 border rounded-xl px-3">
-            <Search />
+          <div className="flex items-center gap-2 border rounded-xl px-3 md:col-span-2">
+            <Search size={18} className="text-gray-500" />
             <input
               type="text"
               placeholder="Search books..."
               className="py-3 outline-none w-full"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
 
-          {/* FILTER BUTTON */}
-          <button
-            className="border rounded-xl py-3 font-medium hover:bg-gray-100 transition"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            {showFilters ? "Hide Filters ▲" : "Show Filters ▼"}
-          </button>
-
-          {/* ADD NEW */}
           <button
             className="bg-teal-600 text-white rounded-xl py-3 font-semibold hover:bg-teal-700"
+            onClick={handleSearch}
+          >
+            Search
+          </button>
+
+          <button
+            className="border rounded-xl py-3 font-medium hover:bg-gray-100 transition flex items-center justify-center gap-2"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter size={18} />
+            Pagination
+            {showFilters ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            className="bg-teal-600 text-white rounded-xl px-6 py-3 font-semibold hover:bg-teal-700"
             onClick={() => router.push("/dashboard/my-book/create-book")}
           >
             + Add New Book
           </button>
         </div>
 
-        {/* COLLAPSIBLE FILTERS */}
         {showFilters && (
           <div className="border rounded-xl p-4 bg-gray-50 grid md:grid-cols-3 gap-4">
-
-            {/* PAGE */}
             <div>
               <label className="text-gray-700 font-semibold">Page</label>
               <input
@@ -227,7 +312,6 @@ export default function ViewAllBooks() {
               />
             </div>
 
-            {/* LIMIT */}
             <div>
               <label className="text-gray-700 font-semibold">Items Per Page</label>
               <select
@@ -246,182 +330,220 @@ export default function ViewAllBooks() {
               </select>
             </div>
 
-            {/* RESET */}
             <div className="flex items-end">
               <button
                 className="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600"
                 onClick={() => {
                   setPage(1);
                   setLimit(10);
-                  setSearch("");
+                  setSearchInput("");
+                  setSearchTerm("");
                 }}
               >
                 Reset Filters
               </button>
             </div>
-
           </div>
         )}
       </div>
 
-      {/* TABLE */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden mt-6">
-
-        <table className="w-full">
-          <thead className="bg-teal-600 text-white">
-            <tr>
-              <th className="py-3">ID</th>
-              <th className="py-3">Thumbnail</th>
-              <th className="py-3 text-left">Title</th>
-              <th className="py-3 text-left">Description</th>
-              <th className="py-3 text-left">Sold Platform</th>
-              <th className="py-3">Price</th>
-              <th className="py-3">Status</th>
-              <th className="py-3">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loading ? (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1100px]">
+            <thead className="bg-teal-600 text-white">
               <tr>
-                <td colSpan={8} className="text-center py-6">Loading...</td>
+                <th className="py-3 px-4 text-center">Order</th>
+                <th className="py-3 px-4 text-center">ID</th>
+                <th className="py-3 px-4 text-center">Thumbnail</th>
+                <th className="py-3 px-4 text-left">Title</th>
+                <th className="py-3 px-4 text-left">Description</th>
+                <th className="py-3 px-4 text-left">Sold Platform</th>
+                <th className="py-3 px-4 text-center">Price</th>
+                <th className="py-3 px-4 text-center">Status</th>
+                <th className="py-3 px-4 text-center">Actions</th>
               </tr>
-            ) : books.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="text-center py-6 text-gray-500">
-                  No books found
-                </td>
-              </tr>
-            ) : (
-              books.map((book) => (
-                <tr key={book.book_number} className="border-b hover:bg-gray-50">
+            </thead>
 
-                  {/* ID */}
-                  <td className="text-center py-4 font-semibold">
-                    {book.book_number}
-                  </td>
-
-                  {/* THUMB */}
-                  <td className="text-center py-4">
-                    {book.thumbnail_url?.trim() ? (
-                      <img
-                        src={book.thumbnail_url}
-                        alt={book.title || "Book thumbnail"}
-                        className="w-16 h-16 rounded-lg object-cover shadow mx-auto"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg bg-gray-100 text-gray-400 text-xs flex items-center justify-center mx-auto">
-                        No image
-                      </div>
-                    )}
-                  </td>
-
-                  {/* TITLE */}
-                  <td className="py-4 font-medium">
-                    {book.title
-                      ? book.title.split(" ").slice(0, 3).join(" ") +
-                      (book.title.split(" ").length > 3 ? "..." : "")
-                      : ""}
-                  </td>
-
-                  {/* DESCRIPTION */}
-                  <td className="py-4 text-gray-600 max-w-[260px]">
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: book.description
-                          ? book.description.split(" ").slice(0, 3).join(" ") +
-                          (book.description.split(" ").length > 3 ? "..." : "")
-                          : "",
-                      }}
-                    />
-                  </td>
-
-                  {/* PLATFORM */}
-                  <td className="py-4">{getPlatformBadge(book.sold_platform)}</td>
-
-                  {/* PRICE */}
-                  <td className="text-center">৳ {book.price}</td>
-
-                  {/* STATUS */}
-                  <td className="text-center">
-                    {book.is_published ? (
-                      <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm">
-                        Published
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-sm">
-                        Unpublished
-                      </span>
-                    )}
-                  </td>
-
-                  {/* ACTIONS */}
-                  <td className="text-center">
-                    <div className="flex gap-2 justify-center">
-
-                      {/* EDIT */}
-                      <button
-                        className="p-2 bg-blue-100 text-blue-600 rounded-lg"
-                        onClick={() =>
-                          router.push(`/dashboard/my-book/update-book/${book.book_number}`)
-                        }
-                      >
-                        <Edit size={18} />
-                      </button>
-
-                      {/* TOGGLE */}
-                      <button
-                        className="p-2 bg-teal-100 text-teal-600 rounded-lg"
-                        onClick={() => handleToggle(book.book_number)}
-                      >
-                        {book.is_published ? <XCircle size={18} /> : <CheckCircle size={18} />}
-                      </button>
-
-                      {/* DELETE */}
-                      <button
-                        className="p-2 bg-red-100 text-red-600 rounded-lg"
-                        onClick={() => handleDelete(book.book_number)}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="text-center py-10">
+                    <div className="flex items-center justify-center gap-2 text-teal-600">
+                      <Loader2 className="animate-spin" size={20} />
+                      Loading books...
                     </div>
                   </td>
-
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : books.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="text-center py-6 text-gray-500">
+                    No books found
+                  </td>
+                </tr>
+              ) : (
+                books.map((book, index) => (
+                  <tr
+                    key={book._id}
+                    draggable={!reorderingId}
+                    onDragStart={() => setDraggedBookNumber(book.book_number)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => handleDrop(book)}
+                    onDragEnd={() => setDraggedBookNumber(null)}
+                    className={`border-b transition-colors ${
+                      draggedBookNumber === book.book_number
+                        ? "bg-teal-50"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <GripVertical size={16} className="text-gray-400" />
+                        <select
+                          value={index}
+                          disabled={!!reorderingId}
+                          onChange={(e) =>
+                            handlePositionChange(book, Number(e.target.value))
+                          }
+                          className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm font-semibold text-gray-700 outline-none transition focus:border-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {books.map((item, optionIndex) => (
+                            <option key={item._id} value={optionIndex}>
+                              {(page - 1) * limit + optionIndex + 1}
+                            </option>
+                          ))}
+                        </select>
+                        {reorderingId === book._id && (
+                          <Loader2
+                            className="animate-spin text-teal-600"
+                            size={16}
+                          />
+                        )}
+                      </div>
+                    </td>
 
-        {/* PAGINATION */}
+                    <td className="text-center py-4 font-semibold">
+                      {book.book_number}
+                    </td>
+
+                    <td className="text-center py-4">
+                      {book.thumbnail_url?.trim() ? (
+                        <img
+                          src={book.thumbnail_url}
+                          alt={book.title || "Book thumbnail"}
+                          className="w-16 h-16 rounded-lg object-cover shadow mx-auto"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg bg-gray-100 text-gray-400 text-xs flex items-center justify-center mx-auto">
+                          No image
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="py-4 font-medium">
+                      {book.title
+                        ? book.title.split(" ").slice(0, 3).join(" ") +
+                          (book.title.split(" ").length > 3 ? "..." : "")
+                        : ""}
+                    </td>
+
+                    <td className="py-4 text-gray-600 max-w-[260px]">
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: book.description
+                            ? book.description.split(" ").slice(0, 3).join(" ") +
+                              (book.description.split(" ").length > 3
+                                ? "..."
+                                : "")
+                            : "",
+                        }}
+                      />
+                    </td>
+
+                    <td className="py-4">{getPlatformBadge(book.sold_platform)}</td>
+
+                    <td className="text-center">৳ {book.price}</td>
+
+                    <td className="text-center">
+                      {book.is_published ? (
+                        <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm">
+                          Published
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-sm">
+                          Unpublished
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="text-center">
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          className="p-2 bg-blue-100 text-blue-600 rounded-lg"
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/my-book/update-book/${book.book_number}`,
+                            )
+                          }
+                        >
+                          <Edit size={18} />
+                        </button>
+
+                        <button
+                          className="p-2 bg-teal-100 text-teal-600 rounded-lg"
+                          onClick={() => handleToggle(book.book_number)}
+                        >
+                          {book.is_published ? (
+                            <XCircle size={18} />
+                          ) : (
+                            <CheckCircle size={18} />
+                          )}
+                        </button>
+
+                        <button
+                          className="p-2 bg-red-100 text-red-600 rounded-lg"
+                          onClick={() => handleDelete(book.book_number)}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
         {books.length > 0 && (
           <div className="flex justify-between items-center p-4 border-t">
-
             <div>
-              Showing {(page - 1) * limit + 1} – {Math.min(page * limit, total)} of {total}
+              Showing {(page - 1) * limit + 1} –{" "}
+              {Math.min(page * limit, meta.total)} of {meta.total}
             </div>
 
             <div className="flex gap-2">
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className="p-2 border rounded-lg"
+                className="p-2 border rounded-lg disabled:opacity-40"
               >
                 <ChevronLeft />
               </button>
 
+              <span className="rounded-lg bg-teal-600 px-4 py-2 text-white">
+                {meta.page}
+              </span>
+
               <button
-                disabled={page >= totalPages}
+                disabled={page >= meta.totalPage}
                 onClick={() => setPage(page + 1)}
-                className="p-2 border rounded-lg"
+                className="p-2 border rounded-lg disabled:opacity-40"
               >
                 <ChevronRight />
               </button>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

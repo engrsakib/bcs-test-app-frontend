@@ -6,8 +6,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { User, Phone, Lock, Eye, EyeOff } from "lucide-react";
 import { ENV } from "@/config/env";
-
-const ROLES = ["founder", "super_admin", "admin", "moderator"];
+import { ADMIN_ROLE_OPTIONS } from "@/constants/admin-roles";
 
 const Register: React.FC = () => {
   const router = useRouter();
@@ -170,8 +169,10 @@ const Register: React.FC = () => {
             className="w-full border rounded-xl p-3 mt-1"
           >
             <option value="">Choose Role</option>
-            {ROLES.map((r) => (
-              <option key={r} value={r}>{r.toUpperCase()}</option>
+            {ADMIN_ROLE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
             ))}
           </select>
           {errors.role && <p className="text-red-500 text-sm">{errors.role}</p>}

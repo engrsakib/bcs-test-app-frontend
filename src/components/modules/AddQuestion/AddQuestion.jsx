@@ -4,7 +4,9 @@
 
 import { ENV } from '@/config/env';
 import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { notify } from '@/lib/toast';
+import { setPendingExamQuestion } from '@/lib/exam-draft-storage';
 
 // Fixed MathEditor Component
 const MathEditor = ({ value, onChange, readOnly = false }) => {
@@ -156,11 +158,15 @@ function getCookie(name) {
 }
 
 export default function CreateQuestionForm() { 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+
   const [allQuestions, setAllQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   
   const [title, setTitle] = useState('');
-  const [mark, setMark] = useState('');
+  const [mark, setMark] = useState('1');
   const [answerType, setAnswerType] = useState('mcq');
   const [questionType, setQuestionType] = useState('general');
   const [description, setDescription] = useState(''); 
@@ -334,6 +340,21 @@ export default function CreateQuestionForm() {
       "Your question is successfully saved to the API."
     );
 
+    const createdQuestion = result.data;
+
+    if (returnTo && createdQuestion?._id) {
+      setPendingExamQuestion({
+        _id: createdQuestion._id,
+        title: createdQuestion.title,
+        description: createdQuestion.description,
+        type: createdQuestion.type,
+        answerType: createdQuestion.answerType,
+        marks: createdQuestion.marks,
+      });
+      router.push(returnTo);
+      return;
+    }
+
     // LocalStorage update
     const newQuestion = {
       id: result.data.questionId || Date.now(),
@@ -354,7 +375,7 @@ export default function CreateQuestionForm() {
 
     // Reset form
     setTitle("");
-    setMark("");
+    setMark("1");
     setAnswerType("mcq");
     setQuestionType("general");
     setDescription("");
@@ -378,7 +399,14 @@ export default function CreateQuestionForm() {
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Create New Question</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Create New Question</h1>
+            {returnTo ? (
+              <p className="mt-1 text-sm text-gray-500">
+                After saving, you will return to question selection
+              </p>
+            ) : null}
+          </div>
           <span className="text-sm text-gray-500 bg-green-50 px-3 py-1 rounded-full">
             🟢  Active
           </span>
@@ -404,7 +432,12 @@ export default function CreateQuestionForm() {
           <Select
             label="Answer Type"
             value={answerType}
-            onChange={(e) => setAnswerType(e.target.value)}
+            onChange={(e) => {
+              const nextType = e.target.value;
+              setAnswerType(nextType);
+              // MCQ defaults to 1 mark; written stays empty for manual entry
+              setMark(nextType === 'mcq' ? '1' : '');
+            }}
           >
             <option value="mcq">MCQ (Fill in the Blanks)</option>
             <option value="written">Written</option>
