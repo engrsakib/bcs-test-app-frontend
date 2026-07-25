@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { studyPlanProxy } from "@/lib/study-plan-api";
+import { formatStudyPlanCategory } from "@/lib/study-plan-categories";
 
 type StudyPlanDetails = {
   _id: string;
@@ -33,8 +34,6 @@ type StudyPlanDetailsResponse = {
   message: string;
   data: StudyPlanDetails;
 };
-
-const formatCategory = (value: string) => value.replace(/_/g, " ");
 
 const formatStatus = (status: string) => {
   if (status === "active") return "ACTIVE";
@@ -179,7 +178,7 @@ export default function StudyPlanDetailsPage() {
                 </span>
 
                 <span className="rounded-full bg-purple-100 px-4 py-1.5 text-sm font-semibold text-purple-700">
-                  {formatCategory(studyPlan.category)}
+                  {formatStudyPlanCategory(studyPlan.category)}
                 </span>
               </div>
 
@@ -210,7 +209,7 @@ export default function StudyPlanDetailsPage() {
                     Category
                   </div>
                   <p className="mt-2 text-lg font-bold capitalize text-gray-900">
-                    {formatCategory(studyPlan.category)}
+                    {formatStudyPlanCategory(studyPlan.category)}
                   </p>
                 </div>
 
@@ -283,7 +282,7 @@ export default function StudyPlanDetailsPage() {
                 <div className="rounded-2xl border border-gray-100 p-4">
                   <p className="text-sm text-gray-500">Category</p>
                   <p className="mt-1 font-semibold text-gray-800">
-                    {formatCategory(studyPlan.category)}
+                    {formatStudyPlanCategory(studyPlan.category)}
                   </p>
                 </div>
               </div>

@@ -21,6 +21,12 @@ import { jwtDecode } from "jwt-decode";
 import UpdateAdminModal from "./UpdateModal";
 import ProfileModal from "./ProfileModal";
 import { ENV } from "@/config/env";
+import {
+  ADMIN_ROLE_GRADIENTS,
+  ADMIN_ROLE_LABELS,
+  ADMIN_ROLE_OPTIONS,
+  type AdminRole,
+} from "@/constants/admin-roles";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -63,63 +69,22 @@ interface DecodedToken {
   iat?: number;
 }
 
-type RoleType =
-  | "admin"
-  | "super_admin"
-  | "moderator"
-  | "content_manager"
-  | "user"
-  | "founder";
-
-const roleGradients: Record<RoleType, string> = {
-  admin: "bg-gradient-to-r from-blue-500 to-purple-600",
-  super_admin: "bg-gradient-to-r from-red-500 to-pink-600",
-  moderator: "bg-gradient-to-r from-green-500 to-teal-600",
-  content_manager: "bg-gradient-to-r from-orange-500 to-red-500",
-  user: "bg-gradient-to-r from-gray-500 to-gray-700",
-  founder: "bg-gradient-to-r from-yellow-500 to-orange-500",
-};
-
-const roleTextColors: Record<RoleType, string> = {
-  admin: "text-white",
-  super_admin: "text-white",
-  moderator: "text-white",
-  content_manager: "text-white",
-  user: "text-white",
-  founder: "text-white",
-};
-
-const roleDisplayNames: Record<RoleType, string> = {
-  admin: "Admin",
-  super_admin: "Super Admin",
-  moderator: "Moderator",
-  content_manager: "Content Manager",
-  user: "User",
-  founder: "Founder",
-};
-
 interface RoleBadgeProps {
   role: string;
 }
 
 const RoleBadge: React.FC<RoleBadgeProps> = ({ role }) => {
-  const isValidRole = (r: string): r is RoleType => {
-    return r in roleGradients;
-  };
+  const isKnownRole = (r: string): r is AdminRole => r in ADMIN_ROLE_LABELS;
 
-  const gradientClass = isValidRole(role)
-    ? roleGradients[role]
+  const gradientClass = isKnownRole(role)
+    ? ADMIN_ROLE_GRADIENTS[role]
     : "bg-gradient-to-r from-gray-500 to-gray-700";
 
-  const textColorClass = isValidRole(role)
-    ? roleTextColors[role]
-    : "text-white";
-
-  const displayName = isValidRole(role) ? roleDisplayNames[role] : role;
+  const displayName = isKnownRole(role) ? ADMIN_ROLE_LABELS[role] : role;
 
   return (
     <span
-      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${gradientClass} ${textColorClass} shadow-sm`}
+      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium text-white ${gradientClass} shadow-sm`}
     >
       {displayName}
     </span>
@@ -393,12 +358,11 @@ export default function AdminList() {
                 }
               >
                 <option value="">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="super_admin">Super Admin</option>
-                <option value="moderator">Moderator</option>
-                <option value="content_manager">Content Manager</option>
-                <option value="founder">Founder</option>
-                <option value="user">User</option>
+                {ADMIN_ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

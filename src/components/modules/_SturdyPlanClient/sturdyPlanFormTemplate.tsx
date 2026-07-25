@@ -15,20 +15,15 @@ import {
 } from "lucide-react";
 import { notify } from "@/lib/toast";
 import { studyPlanProxy } from "@/lib/study-plan-api";
+import {
+  formatStudyPlanCategory,
+  STUDY_PLAN_CATEGORY_OPTIONS,
+} from "@/lib/study-plan-categories";
 import { useRouter } from "next/navigation";
 
 const QuillEditor = dynamic(() => import("@/editor/QuilEditor"), {
   ssr: false,
 });
-
-const categoryOptions = [
-  "general",
-  "technical",
-  "exam",
-  "bcs_preparation",
-  "primary_teacher_preparation",
-  "teacher_nibondhon_preparation",
-];
 
 const statusOptions = ["inactive", "active", "admin_approval"];
 
@@ -246,9 +241,9 @@ const handleSubmit = async () => {
               className={inputClassName}
             >
               <option value="">Select category</option>
-              {categoryOptions.map((item) => (
+              {STUDY_PLAN_CATEGORY_OPTIONS.map((item) => (
                 <option key={item} value={item}>
-                  {item.replace(/_/g, " ")}
+                  {formatStudyPlanCategory(item)}
                 </option>
               ))}
             </select>

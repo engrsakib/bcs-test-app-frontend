@@ -19,6 +19,7 @@ import {
 import { useRouter } from "next/navigation";
 import { notify } from "@/lib/toast";
 import { studyPlanProxy } from "@/lib/study-plan-api";
+import { formatStudyPlanCategory } from "@/lib/study-plan-categories";
 import { confirmAction } from "@/components/ui/confirm-dialog";
 
 type StudyPlanItem = {
@@ -91,10 +92,6 @@ function stripHtml(html: string): string {
   temp.innerHTML = html;
   return temp.textContent || temp.innerText || "";
 }
-
-const formatCategory = (value: string) => {
-  return value.replace(/_/g, " ");
-};
 
 const formatStatus = (status: string) => {
   if (status === "active") return "ACTIVE";
@@ -519,7 +516,7 @@ export default function ViewAllStudyPlanTemplate() {
                           item.category,
                         )}`}
                       >
-                        {formatCategory(item.category)}
+                        {formatStudyPlanCategory(item.category)}
                       </span>
                     </td>
 

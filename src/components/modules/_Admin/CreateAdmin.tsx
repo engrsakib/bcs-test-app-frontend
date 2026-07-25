@@ -20,13 +20,10 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ENV } from "@/config/env";
-
-export const ROLES = {
-  FOUNDER: "founder",
-  SUPER_ADMIN: "super_admin",
-  ADMIN: "admin",
-  MODERATOR: "moderator",
-};
+import {
+  ADMIN_ROLES,
+  ADMIN_ROLE_OPTIONS,
+} from "@/constants/admin-roles";
 
 const AdminSchema = z.object({
   name: z
@@ -44,7 +41,10 @@ const AdminSchema = z.object({
     .min(6, "Password must be at least 6 characters")
     .nonempty("Password is required"),
 
-  role: z.string().nonempty("Please select a role"),
+  role: z.enum(
+    [ADMIN_ROLES.FOUNDER, ADMIN_ROLES.ADMIN, ADMIN_ROLES.EDITOR],
+    { required_error: "Please select a role" }
+  ),
 });
 
 type AdminFormType = z.infer<typeof AdminSchema>;
@@ -210,10 +210,11 @@ export default function CreateAdminForm() {
                 }`}
               >
                 <option value="">Select role</option>
-                <option value={ROLES.FOUNDER}>Founder</option>
-                <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
-                <option value={ROLES.ADMIN}>Admin</option>
-                <option value={ROLES.MODERATOR}>Moderator</option>
+                {ADMIN_ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
 

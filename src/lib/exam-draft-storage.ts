@@ -21,6 +21,7 @@ export interface ExamDraftSession {
 }
 
 const STORAGE_KEY = "exam-draft-session";
+const PENDING_QUESTION_KEY = "exam-pending-question";
 
 export function saveExamDraft(session: ExamDraftSession): void {
   if (typeof window === "undefined") return;
@@ -46,4 +47,21 @@ export function updateSelectedQuestions(questions: ExamQuestion[]): void {
 export function clearExamDraft(): void {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(STORAGE_KEY);
+}
+
+export function setPendingExamQuestion(question: ExamQuestion): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(PENDING_QUESTION_KEY, JSON.stringify(question));
+}
+
+export function consumePendingExamQuestion(): ExamQuestion | null {
+  if (typeof window === "undefined") return null;
+  const raw = sessionStorage.getItem(PENDING_QUESTION_KEY);
+  if (!raw) return null;
+  sessionStorage.removeItem(PENDING_QUESTION_KEY);
+  try {
+    return JSON.parse(raw) as ExamQuestion;
+  } catch {
+    return null;
+  }
 }
