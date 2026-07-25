@@ -43,7 +43,7 @@ const AdminSchema = z.object({
 
   role: z.enum(
     [ADMIN_ROLES.FOUNDER, ADMIN_ROLES.ADMIN, ADMIN_ROLES.EDITOR],
-    { required_error: "Please select a role" }
+    { message: "Please select a role" }
   ),
 });
 
