@@ -17,6 +17,7 @@ import {
   loadExamDraft,
   clearExamDraft,
 } from "@/lib/exam-draft-storage";
+import { parseDateTimeLocalToISO } from "@/lib/exam-datetime";
 
 const negativeMarkOptions = [
   { label: "0.25", value: 0.25 },
@@ -124,7 +125,7 @@ export default function CreateExamForm() {
     try {
       const payload = {
         exam_name: formData.exam_name,
-        exam_date_time: formData.exam_date_time,
+        exam_date_time: parseDateTimeLocalToISO(formData.exam_date_time),
         duration_minutes: parseInt(formData.duration_minutes),
         total_marks: totalMarks,
         questions: selectedQuestions.map((q) => q._id),

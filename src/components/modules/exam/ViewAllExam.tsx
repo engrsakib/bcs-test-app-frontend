@@ -23,6 +23,7 @@ import {
 } from "react-icons/fa";
 import { notify } from "@/lib/toast";
 import { confirmAction } from "@/components/ui/confirm-dialog";
+import { formatExamDateTime } from "@/lib/exam-datetime";
 
 // -----------------------------------------------------
 // Toggle Component
@@ -183,15 +184,6 @@ export default function ExamListPage() {
     }
   };
 
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
   // ============================================================
   // UI
   // ============================================================
@@ -263,7 +255,7 @@ export default function ExamListPage() {
                         {exam.exam_name}
                       </td>
                       <td className="px-6 py-4">
-                        {formatDate(exam.exam_date_time)}
+                        {formatExamDateTime(exam.exam_date_time)}
                       </td>
                       <td className="px-6 py-4">
                         {exam.duration_minutes} min

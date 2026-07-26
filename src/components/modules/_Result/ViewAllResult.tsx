@@ -5,6 +5,7 @@ import getCookie from "@/util/GetCookie";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { FaSearch, FaEye, FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import { formatExamDateTime } from "@/lib/exam-datetime";
 
 interface Exam {
   _id: string
@@ -147,14 +148,7 @@ export default function ViewAllResultsTemplate() {
     fetchResults(1);
   };
 
-  const formatDateTime = (t: any) =>
-    new Date(t).toLocaleString("en-US", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const formatDateTime = (t: string) => formatExamDateTime(t);
 
   // CLOSE DROPDOWN
   useEffect(() => {

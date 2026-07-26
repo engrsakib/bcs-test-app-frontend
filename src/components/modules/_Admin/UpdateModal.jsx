@@ -7,6 +7,9 @@
 
 import { useState } from "react";
 import { notify } from "@/lib/toast";
+import { ADMIN_ROLE_OPTIONS } from "@/constants/admin-roles";
+import PermissionSelector from "@/components/modules/_Admin/PermissionSelector";
+import { getPermissionsForRole, isSystemRole } from "@/constants/role-permissions";
 
 export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
   const [form, setForm] = useState({
@@ -21,6 +24,11 @@ export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
 
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedPermissions, setSelectedPermissions] = useState(
+    admin?.role && isSystemRole(admin.role)
+      ? getPermissionsForRole(admin.role)
+      : admin?.permissions || []
+  );
 
   const cloudinary_preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
   const cloudinary_name = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -214,10 +222,24 @@ export default function UpdateAdminModal({ admin, onClose, onUpdated }) {
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
               >
                 <option value="">Select Role</option>
-                <option value="founder">Founder</option>
-                <option value="admin">Admin</option>
-                <option value="editor">Editor</option>
+                {ADMIN_ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Role Permissions
+              </label>
+              <PermissionSelector
+                role={form.role}
+                selectedPermissions={selectedPermissions}
+                onChange={setSelectedPermissions}
+                compact
+              />
             </div>
 
             <div>
