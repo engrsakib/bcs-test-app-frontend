@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 
 import { BlockMath } from "react-katex";
+import { formatExamDate, formatExamTime } from "@/lib/exam-datetime";
 
 
 export default function ExamDetailsClient() {
@@ -108,10 +109,10 @@ export default function ExamDetailsClient() {
                 <div>
                   <p className="mb-1 text-sm font-medium text-green-100">Exam Date & Time</p>
                   <p className="text-base font-bold text-white">
-                    {new Date(exam.exam_date_time).toLocaleDateString()}
+                    {formatExamDate(exam.exam_date_time)}
                   </p>
                   <p className="text-sm text-green-100">
-                    {new Date(exam.exam_date_time).toLocaleTimeString()}
+                    {formatExamTime(exam.exam_date_time)}
                   </p>
                 </div>
               </div>

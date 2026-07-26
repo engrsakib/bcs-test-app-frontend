@@ -18,6 +18,10 @@ import {
   loadExamDraft,
   type ExamQuestion,
 } from "@/lib/exam-draft-storage";
+import {
+  parseDateTimeLocalToISO,
+  toDateTimeLocalValue,
+} from "@/lib/exam-datetime";
 
 interface ExamData {
   exam_name: string;
@@ -116,7 +120,7 @@ export default function UpdateExamClient() {
 
     const payload = {
       exam_name: examData.exam_name,
-      exam_date_time: examData.exam_date_time,
+      exam_date_time: parseDateTimeLocalToISO(examData.exam_date_time),
       duration_minutes: examData.duration_minutes,
       total_marks: totalMarks,
       questions: selectedQuestions.map((q) => q._id),
@@ -174,7 +178,7 @@ export default function UpdateExamClient() {
             id="examDate"
             type="datetime-local"
             icon={FaCalendarAlt}
-            value={examData.exam_date_time.slice(0, 16)}
+            value={toDateTimeLocalValue(examData.exam_date_time)}
             onChange={(e) =>
               setExamData({ ...examData, exam_date_time: e.target.value })
             }

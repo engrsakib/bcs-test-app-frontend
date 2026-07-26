@@ -10,6 +10,15 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
+import PermissionSelector from "@/components/modules/_Admin/PermissionSelector";
+import { ALL_PERMISSIONS } from "@/constants/permissions";
+import {
+  getPermissionsForRole,
+  isSystemRole,
+} from "@/constants/role-permissions";
+import type { AdminRole } from "@/constants/admin-roles";
+import { ADMIN_ROLE_OPTIONS } from "@/constants/admin-roles";
+import { PermissionEnum } from "@/constants/permissions";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -25,44 +34,6 @@ function getCookie(name: string): string | null {
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 
-enum PermissionEnum {
-  CREATE_STUDENT = "create_student",
-  VIEW_STUDENT = "view_student",
-  UPDATE_STUDENT = "update_student",
-  DELETE_STUDENT = "delete_student",
-  CREATE_EXAM = "create_exam",
-  VIEW_EXAM = "view_exam",
-  UPDATE_EXAM = "update_exam",
-  DELETE_EXAM = "delete_exam",
-  CREATE_QUESTION = "create_question",
-  VIEW_QUESTION = "view_question",
-  UPDATE_QUESTION = "update_question",
-  DELETE_QUESTION = "delete_question",
-  CREATE_BOOK = "create_book",
-  VIEW_BOOK = "view_book",
-  UPDATE_BOOK = "update_book",
-  DELETE_BOOK = "delete_book",
-  CREATE_GUIDELINE = "create_guideline",
-  VIEW_GUIDELINE = "view_guideline",
-  UPDATE_GUIDELINE = "update_guideline",
-  DELETE_GUIDELINE = "delete_guideline",
-  CREATE_STAFF = "create_staff",
-  VIEW_STAFF = "view_staff",
-  UPDATE_STAFF = "update_staff",
-  DELETE_STAFF = "delete_staff",
-  CHECK_RESULT = "check_result",
-  MANAGE_PERMISSIONS = "manage_permissions",
-}
-
-interface PermissionGroup {
-  title: string;
-  icon: string;
-  permissions: {
-    key: PermissionEnum;
-    label: string;
-  }[];
-}
-
 interface Admin {
   _id: string;
   name: string;
@@ -75,13 +46,19 @@ interface Admin {
   bio?: string;
 }
 
+interface LoggedInAdmin {
+  permissions?: string[];
+}
+
 export default function ManagePermissions() {
   const router = useRouter();
   const params = useParams();
   const adminId = params.id as string;
 
   const [adminInfo, setAdminInfo] = useState<Admin | null>(null);
+  const [selectedRole, setSelectedRole] = useState<AdminRole | "">("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [canManagePermissions, setCanManagePermissions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{
@@ -89,76 +66,8 @@ export default function ManagePermissions() {
     text: string;
   } | null>(null);
 
-  const permissionGroups: PermissionGroup[] = [
-    {
-      title: "Student",
-      icon: "👨‍🎓",
-      permissions: [
-        { key: PermissionEnum.CREATE_STUDENT, label: "Create Student" },
-        { key: PermissionEnum.VIEW_STUDENT, label: "View Student" },
-        { key: PermissionEnum.UPDATE_STUDENT, label: "Update Student" },
-        { key: PermissionEnum.DELETE_STUDENT, label: "Delete Student" },
-      ],
-    },
-    {
-      title: "Exam",
-      icon: "📝",
-      permissions: [
-        { key: PermissionEnum.CREATE_EXAM, label: "Create Exam" },
-        { key: PermissionEnum.VIEW_EXAM, label: "View Exam" },
-        { key: PermissionEnum.UPDATE_EXAM, label: "Update Exam" },
-        { key: PermissionEnum.DELETE_EXAM, label: "Delete Exam" },
-      ],
-    },
-    {
-      title: "Question",
-      icon: "❓",
-      permissions: [
-        { key: PermissionEnum.CREATE_QUESTION, label: "Create Question" },
-        { key: PermissionEnum.VIEW_QUESTION, label: "View Question" },
-        { key: PermissionEnum.UPDATE_QUESTION, label: "Update Question" },
-        { key: PermissionEnum.DELETE_QUESTION, label: "Delete Question" },
-      ],
-    },
-    {
-      title: "Book",
-      icon: "📚",
-      permissions: [
-        { key: PermissionEnum.CREATE_BOOK, label: "Create Book" },
-        { key: PermissionEnum.VIEW_BOOK, label: "View Book" },
-        { key: PermissionEnum.UPDATE_BOOK, label: "Update Book" },
-        { key: PermissionEnum.DELETE_BOOK, label: "Delete Book" },
-      ],
-    },
-    {
-      title: "Guideline",
-      icon: "📋",
-      permissions: [
-        { key: PermissionEnum.CREATE_GUIDELINE, label: "Create Guideline" },
-        { key: PermissionEnum.VIEW_GUIDELINE, label: "View Guideline" },
-        { key: PermissionEnum.UPDATE_GUIDELINE, label: "Update Guideline" },
-        { key: PermissionEnum.DELETE_GUIDELINE, label: "Delete Guideline" },
-      ],
-    },
-    {
-      title: "Staff",
-      icon: "👥",
-      permissions: [
-        { key: PermissionEnum.CREATE_STAFF, label: "Create Staff" },
-        { key: PermissionEnum.VIEW_STAFF, label: "View Staff" },
-        { key: PermissionEnum.UPDATE_STAFF, label: "Update Staff" },
-        { key: PermissionEnum.DELETE_STAFF, label: "Delete Staff" },
-      ],
-    },
-    {
-      title: "Other Permissions",
-      icon: "⚙️",
-      permissions: [
-        { key: PermissionEnum.CHECK_RESULT, label: "Check Result" },
-        { key: PermissionEnum.MANAGE_PERMISSIONS, label: "Manage Permissions" },
-      ],
-    },
-  ];
+  const permissionsLocked =
+    selectedRole !== "" && isSystemRole(selectedRole) && !canManagePermissions;
 
   useEffect(() => {
     if (adminId) {
@@ -166,21 +75,10 @@ export default function ManagePermissions() {
     }
   }, [adminId]);
 
-const fetchPermissionsForId = async (id: string) => {
-  try {
-    setLoading(true);
-    setMessage(null);
-    setAdminInfo(null);
-
-    const accessToken = getCookie("access_token");
-
-    if (!accessToken) {
-      setMessage({ type: "error", text: "Please login first" });
-      router.push("/login");
-      return;
-    }
-
-    const res = await fetch(`${BASE_URL}/admin/${id}`, {
+  const fetchLoggedInAdminPermissions = async (
+    accessToken: string
+  ): Promise<string[]> => {
+    const res = await fetch(`${BASE_URL}/admin/auth`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -190,61 +88,104 @@ const fetchPermissionsForId = async (id: string) => {
       cache: "no-store",
     });
 
-    if (res.status === 401) {
-      setMessage({
-        type: "error",
-        text: "Session expired. Please login again",
-      });
-      router.push("/login");
-      return;
+    if (!res.ok) {
+      return [];
     }
 
     const json = await res.json();
+    const loggedInAdmin = json.data as LoggedInAdmin | undefined;
 
-    if (!json.success) {
-      setMessage({
-        type: "error",
-        text: json.message || "Failed to load admin details",
-      });
-      return;
-    }
-
-    // API directly data dey, array na
-    const adminData: Admin = json.data;
-
-    setAdminInfo(adminData);
-    setSelectedPermissions(adminData.permissions || []);
-  } catch (e) {
-    console.error("Error fetching permissions:", e);
-    setMessage({ type: "error", text: "Failed to load permissions" });
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const handleTogglePermission = (permission: string) => {
-    setSelectedPermissions((prev) =>
-      prev.includes(permission)
-        ? prev.filter((p) => p !== permission)
-        : [...prev, permission]
-    );
+    return Array.isArray(loggedInAdmin?.permissions)
+      ? loggedInAdmin.permissions
+      : [];
   };
 
-  const handleToggleGroup = (group: PermissionGroup) => {
-    const groupPermissions = group.permissions.map((p) => p.key);
-    const allSelected = groupPermissions.every((p) =>
-      selectedPermissions.includes(p)
-    );
+  const fetchPermissionsForId = async (id: string) => {
+    try {
+      setLoading(true);
+      setMessage(null);
+      setAdminInfo(null);
 
-    if (allSelected) {
-      setSelectedPermissions((prev) =>
-        prev.filter((p) => !groupPermissions.includes(p as PermissionEnum))
-      );
-    } else {
-      setSelectedPermissions((prev) => [
-        ...prev,
-        ...groupPermissions.filter((p) => !prev.includes(p)),
+      const accessToken = getCookie("access_token");
+
+      if (!accessToken) {
+        setMessage({ type: "error", text: "Please login first" });
+        router.push("/login");
+        return;
+      }
+
+      const [loggedInPermissions, res] = await Promise.all([
+        fetchLoggedInAdminPermissions(accessToken),
+        fetch(`${BASE_URL}/admin/${id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: accessToken,
+          },
+          credentials: "include",
+          cache: "no-store",
+        }),
       ]);
+
+      const hasManagePermission = loggedInPermissions.includes(
+        PermissionEnum.MANAGE_PERMISSIONS
+      );
+      setCanManagePermissions(hasManagePermission);
+
+      if (res.status === 401) {
+        setMessage({
+          type: "error",
+          text: "Session expired. Please login again",
+        });
+        router.push("/login");
+        return;
+      }
+
+      const json = await res.json();
+
+      if (!json.success) {
+        setMessage({
+          type: "error",
+          text: json.message || "Failed to load admin details",
+        });
+        return;
+      }
+
+      const adminData: Admin = json.data;
+
+      setAdminInfo(adminData);
+      setSelectedRole(adminData.role as AdminRole);
+
+      const storedPermissions = adminData.permissions || [];
+      const roleDefaults =
+        adminData.role && isSystemRole(adminData.role)
+          ? getPermissionsForRole(adminData.role)
+          : [];
+
+      if (
+        adminData.role &&
+        isSystemRole(adminData.role) &&
+        !hasManagePermission
+      ) {
+        setSelectedPermissions(roleDefaults);
+      } else if (storedPermissions.length === 0 && roleDefaults.length > 0) {
+        setSelectedPermissions(roleDefaults);
+      } else {
+        setSelectedPermissions(storedPermissions);
+      }
+    } catch (e) {
+      console.error("Error fetching permissions:", e);
+      setMessage({ type: "error", text: "Failed to load permissions" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRoleChange = (role: AdminRole) => {
+    setSelectedRole(role);
+
+    if (isSystemRole(role)) {
+      setSelectedPermissions(getPermissionsForRole(role));
     }
   };
 
@@ -261,6 +202,37 @@ const fetchPermissionsForId = async (id: string) => {
         return;
       }
 
+      const roleChanged = Boolean(
+        selectedRole && adminInfo && selectedRole !== adminInfo.role
+      );
+
+      if (roleChanged && selectedRole) {
+        const roleRes = await fetch(`${BASE_URL}/admin/update-staff/${adminId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: accessToken,
+          },
+          credentials: "include",
+          body: JSON.stringify({ role: selectedRole }),
+        });
+
+        const roleJson = await roleRes.json();
+
+        if (!roleJson.success) {
+          setMessage({
+            type: "error",
+            text: roleJson.message || "Failed to update admin role",
+          });
+          return;
+        }
+      }
+
+      const permissionsToSave =
+        selectedRole && isSystemRole(selectedRole) && !canManagePermissions
+          ? getPermissionsForRole(selectedRole)
+          : selectedPermissions;
+
       const res = await fetch(`${BASE_URL}/permissions`, {
         method: "PATCH",
         headers: {
@@ -270,11 +242,9 @@ const fetchPermissionsForId = async (id: string) => {
         credentials: "include",
         body: JSON.stringify({
           id: adminId,
-          permissions: selectedPermissions,
+          permissions: permissionsToSave,
         }),
       });
-
-      console.log("Update permission", res)
 
       if (res.status === 401) {
         setMessage({
@@ -288,9 +258,20 @@ const fetchPermissionsForId = async (id: string) => {
       const json = await res.json();
 
       if (json.success) {
+        setAdminInfo((current) =>
+          current
+            ? {
+                ...current,
+                role: selectedRole || current.role,
+                permissions: permissionsToSave,
+              }
+            : current
+        );
         setMessage({
           type: "success",
-          text: "Permissions saved successfully!",
+          text: roleChanged
+            ? "Role and permissions saved successfully!"
+            : "Permissions saved successfully!",
         });
       } else {
         setMessage({
@@ -306,39 +287,31 @@ const fetchPermissionsForId = async (id: string) => {
     }
   };
 
-  const getGroupProgress = (group: PermissionGroup) => {
-    const total = group.permissions.length;
-    const selected = group.permissions.filter((p) =>
-      selectedPermissions.includes(p.key)
-    ).length;
-    return { selected, total, percentage: (selected / total) * 100 };
-  };
-
-  const totalPermissionCount = Object.values(PermissionEnum).length;
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
       <div className="mb-6 md:mb-8">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+          className="mb-4 flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="h-5 w-5" />
           <span>Back to Admin List</span>
         </button>
 
-        <div className="flex items-center gap-3 mb-2">
-          <Shield className="w-8 h-8 text-green-800" />
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+        <div className="mb-2 flex items-center gap-3">
+          <Shield className="h-8 w-8 text-green-800" />
+          <h1 className="text-3xl font-bold text-gray-900 md:text-4xl">
             Manage Permissions
           </h1>
         </div>
 
-        <p className="text-gray-600">Configure access permissions for admin users</p>
+        <p className="text-gray-600">
+          Configure access permissions for admin users
+        </p>
       </div>
 
       {adminInfo && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 mb-6">
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:p-6">
           <div className="flex items-center gap-4">
             <img
               src={
@@ -346,163 +319,94 @@ const fetchPermissionsForId = async (id: string) => {
                 "https://cdn-icons-png.flaticon.com/512/149/149071.png"
               }
               alt={adminInfo.name}
-              className="w-14 h-14 rounded-full object-cover border"
+              className="h-14 w-14 rounded-full border object-cover"
             />
             <div>
               <h2 className="text-xl font-bold text-gray-900">{adminInfo.name}</h2>
               <p className="text-sm text-gray-600">{adminInfo.phone_number}</p>
-              <p className="text-sm text-gray-500">
-                {adminInfo.role} • {adminInfo.status}
-              </p>
+              <p className="text-sm text-gray-500">{adminInfo.status}</p>
             </div>
+          </div>
+
+          <div className="mt-4 border-t border-gray-100 pt-4">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Role
+            </label>
+            {canManagePermissions ? (
+              <select
+                value={selectedRole}
+                onChange={(e) => handleRoleChange(e.target.value as AdminRole)}
+                className="w-full max-w-xs rounded-lg border border-gray-300 bg-white p-3 focus:border-green-500 focus:ring-2 focus:ring-green-500"
+              >
+                {ADMIN_ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm font-medium capitalize text-gray-800">
+                {selectedRole}
+              </p>
+            )}
           </div>
         </div>
       )}
 
       {message && (
         <div
-          className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
+          className={`mb-6 flex items-center gap-3 rounded-lg p-4 ${
             message.type === "success"
-              ? "bg-green-50 text-green-800 border border-green-200"
-              : "bg-red-50 text-red-800 border border-red-200"
+              ? "border border-green-200 bg-green-50 text-green-800"
+              : "border border-red-200 bg-red-50 text-red-800"
           }`}
         >
           {message.type === "success" ? (
-            <CheckCircle2 className="w-5 h-5" />
+            <CheckCircle2 className="h-5 w-5" />
           ) : (
-            <XCircle className="w-5 h-5" />
+            <XCircle className="h-5 w-5" />
           )}
           <span>{message.text}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+        <div className="rounded-lg border border-gray-200 bg-white p-12 shadow-sm">
           <div className="flex flex-col items-center justify-center">
-            <Loader2 className="w-12 h-12 text-green-800 animate-spin mb-4" />
+            <Loader2 className="mb-4 h-12 w-12 animate-spin text-green-800" />
             <p className="text-gray-600">Loading permissions...</p>
           </div>
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Permissions Selected</p>
-                <p className="text-3xl font-bold text-green-800">
-                  {selectedPermissions.length}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600 mb-1">Out of</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {totalPermissionCount}
-                </p>
-              </div>
-            </div>
+          <PermissionSelector
+            role={selectedRole}
+            selectedPermissions={selectedPermissions}
+            onChange={setSelectedPermissions}
+            readOnly={permissionsLocked}
+            lockToRole={!canManagePermissions}
+            syncOnRoleChange={false}
+          />
 
-            <div className="mt-4 bg-gray-200 rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-green-800 h-full transition-all duration-300"
-                style={{
-                  width: `${(selectedPermissions.length / totalPermissionCount) * 100}%`,
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {permissionGroups.map((group) => {
-              const progress = getGroupProgress(group);
-              const allSelected = progress.selected === progress.total;
-
-              return (
-                <div
-                  key={group.title}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
-                >
-                  <div className="bg-gradient-to-r from-green-800 to-green-700 p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{group.icon}</span>
-                        <div>
-                          <h3 className="text-lg font-semibold text-white">
-                            {group.title}
-                          </h3>
-                          <p className="text-green-100 text-sm">
-                            {progress.selected} of {progress.total} selected
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleToggleGroup(group)}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                          allSelected
-                            ? "bg-white text-green-800 hover:bg-green-50"
-                            : "bg-green-900 text-white hover:bg-green-950"
-                        }`}
-                      >
-                        {allSelected ? "Deselect All" : "Select All"}
-                      </button>
-                    </div>
-
-                    <div className="mt-3 bg-green-900 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className="bg-white h-full transition-all duration-300"
-                        style={{ width: `${progress.percentage}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="p-4 space-y-2">
-                    {group.permissions.map((permission) => {
-                      const isSelected = selectedPermissions.includes(permission.key);
-
-                      return (
-                        <label
-                          key={permission.key}
-                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleTogglePermission(permission.key)}
-                            className="w-5 h-5 text-green-800 border-gray-300 rounded focus:ring-2 focus:ring-green-800 cursor-pointer"
-                          />
-                          <span className="flex-1 text-gray-700 group-hover:text-gray-900 font-medium">
-                            {permission.label}
-                          </span>
-                          {isSelected && (
-                            <CheckCircle2 className="w-5 h-5 text-green-800" />
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="sticky bottom-6 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="sticky bottom-6 mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-lg">
+            <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
               <div className="text-sm text-gray-600">
-                {selectedPermissions.length} permission(s) selected
+                {selectedPermissions.length} of {ALL_PERMISSIONS.length}{" "}
+                permission(s) selected
               </div>
               <button
                 onClick={handleSavePermissions}
-                disabled={saving}
-                className="w-full sm:w-auto px-8 py-3 bg-green-800 text-white rounded-lg hover:bg-green-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium text-lg shadow-md hover:shadow-lg"
+                disabled={saving || !selectedRole}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-800 px-8 py-3 text-lg font-medium text-white shadow-md transition-colors hover:bg-green-900 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="w-5 h-5" />
+                    <Save className="h-5 w-5" />
                     Save Permissions
                   </>
                 )}

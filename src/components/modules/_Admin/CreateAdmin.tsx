@@ -12,6 +12,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Phone, User2, Lock, ShieldCheck } from "lucide-react";
 import { notify } from "@/lib/toast";
@@ -23,7 +24,9 @@ import { ENV } from "@/config/env";
 import {
   ADMIN_ROLES,
   ADMIN_ROLE_OPTIONS,
+  type AdminRole,
 } from "@/constants/admin-roles";
+import PermissionSelector from "@/components/modules/_Admin/PermissionSelector";
 
 const AdminSchema = z.object({
   name: z
@@ -62,17 +65,21 @@ function getCookie(name: string): string | null {
 
 export default function CreateAdminForm() {
   const router = useRouter();
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<AdminFormType>({
     resolver: zodResolver(AdminSchema),
     mode: "onChange",
     reValidateMode: "onChange",
   });
+
+  const selectedRole = watch("role") as AdminRole | "";
 
   const onSubmit = async (data: AdminFormType) => {
     try {
@@ -99,6 +106,7 @@ export default function CreateAdminForm() {
       if (result.success) {
         notify.success("Success!", "Admin Create Successfully");
         reset();
+        setSelectedPermissions([]);
       } else {
         notify.error("Error", result.message || "Failed to create admin!");
       }
@@ -221,6 +229,18 @@ export default function CreateAdminForm() {
             {errors.role && (
               <span className="text-red-500 text-sm">{errors.role.message}</span>
             )}
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-3 block font-semibold text-gray-700">
+              Role Permissions
+            </label>
+            <PermissionSelector
+              role={selectedRole}
+              selectedPermissions={selectedPermissions}
+              onChange={setSelectedPermissions}
+              compact
+            />
           </div>
 
           <div className="md:col-span-2 mt-4">
