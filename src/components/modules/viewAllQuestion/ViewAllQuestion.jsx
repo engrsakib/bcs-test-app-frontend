@@ -96,11 +96,24 @@ export default function ViewAllQuestions() {
 
   const [filters, setFilters] = useState({
     searchTerm: "",
+    category_number: "",
     page: 1,
     limit: 10,
     sortBy: "createdAt",
     sortOrder: "desc",
   });
+
+  const [appliedFilters, setAppliedFilters] = useState({
+    searchTerm: "",
+    category_number: "",
+    page: 1,
+    limit: 10,
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
+
+  const [topics, setTopics] = useState([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
 
   const dropdownRef = useRef(null);
 
@@ -116,31 +129,66 @@ export default function ViewAllQuestions() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const fetchTopics = async () => {
+      try {
+        setTopicsLoading(true);
+        const accessToken = getCookie("access_token");
+        const res = await fetch(apiUrl("/question-study-topic/dropdown"), {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Authorization: accessToken || "",
+          },
+        });
+        const result = await res.json();
+        if (result.success && Array.isArray(result.data)) {
+          setTopics(result.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch study topics", error);
+      } finally {
+        setTopicsLoading(false);
+      }
+    };
+
+    fetchTopics();
+  }, []);
+
+  const buildQuestionQuery = (params) => {
+    const query = new URLSearchParams({
+      page: String(params.page),
+      limit: String(params.limit),
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+    });
+
+    if (params.searchTerm?.trim()) {
+      query.set("searchTerm", params.searchTerm.trim());
+    }
+
+    if (params.category_number) {
+      query.set("category_number", String(params.category_number));
+    }
+
+    return query;
+  };
+
   // ====================== FETCH QUESTIONS FROM SERVER ======================
-  const fetchQuestions = async () => {
+  const fetchQuestions = async (params = appliedFilters) => {
     try {
       setLoading(true);
 
-      const query = new URLSearchParams({
-        searchTerm: filters.searchTerm,
-        page: filters.page,
-        limit: filters.limit,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
-      }).toString();
-
+      const query = buildQuestionQuery(params);
       const accessToken = getCookie("access_token");
 
-      const res = await fetch(`${apiUrl("/question/")}?${query}`, {
+      const res = await fetch(`${apiUrl("/question/")}?${query.toString()}`, {
         method: "GET",
         credentials: "include",
         headers: {
           Authorization: accessToken || "",
         },
-        // cache:"force-cache",
-        next:{
-          revalidate:10
-        }
+        cache: "no-store",
       });
 
       const result = await res.json();
@@ -148,17 +196,48 @@ export default function ViewAllQuestions() {
       if (result.success) {
         setQuestions(result.data.data);
         setMeta(result.data.meta);
+      } else {
+        notify.error("Error", result.message || "Failed to fetch questions");
       }
     } catch (error) {
       console.log("Fetch Failed", error);
+      notify.error("Error", "Failed to fetch questions");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchQuestions();
-  }, [filters.page, filters.limit, filters.sortBy, filters.sortOrder]);
+    fetchQuestions(appliedFilters);
+  }, [appliedFilters]);
+
+  const handleSearch = () => {
+    setAppliedFilters({
+      ...filters,
+      page: 1,
+    });
+    setFilters((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const handleTopicFilterChange = (categoryNumber) => {
+    const nextFilters = {
+      ...filters,
+      category_number: categoryNumber,
+      page: 1,
+    };
+    setFilters(nextFilters);
+    setAppliedFilters(nextFilters);
+  };
+
+  const clearTopicFilter = () => {
+    handleTopicFilterChange("");
+  };
+
+  const handlePaginationChange = (updates) => {
+    const nextFilters = { ...filters, ...updates };
+    setFilters(nextFilters);
+    setAppliedFilters(nextFilters);
+  };
 
   // ====================== DELETE QUESTION ======================
   const handleDelete = async (id) => {
@@ -194,14 +273,39 @@ export default function ViewAllQuestions() {
   };
 
   const handleEditQuestion = (q) => {
-    setSelectedQuestion({ ...q });
+    const categoryId = q.category_id?._id || q.category_id || "";
+    setSelectedQuestion({ ...q, category_id: categoryId });
     setViewMode("edit");
   };
 
+  const getTopicName = (q) => {
+    if (q.category_id && typeof q.category_id === "object") {
+      return q.category_id.name || "—";
+    }
+    const topic = topics.find((t) => t._id === q.category_id);
+    return topic?.name || "—";
+  };
+
   const handleUpdateQuestion = async () => {
+    if (!selectedQuestion.category_id) {
+      notify.warning("Missing Topic", "Please select a study topic");
+      return;
+    }
+
     try {
       setUpdateLoading(true);
       const accessToken = getCookie("access_token");
+
+      const payload = {
+        title: selectedQuestion.title,
+        description: selectedQuestion.description,
+        type: selectedQuestion.type,
+        answerType: selectedQuestion.answerType,
+        marks: selectedQuestion.marks,
+        mathFormula: selectedQuestion.mathFormula,
+        answer: selectedQuestion.answer,
+        category_id: selectedQuestion.category_id,
+      };
 
       const res = await fetch(apiUrl(`/question/${selectedQuestion.questionId}`), {
         method: "PATCH",
@@ -210,7 +314,7 @@ export default function ViewAllQuestions() {
           "Content-Type": "application/json",
           Authorization: accessToken || "",
         },
-        body: JSON.stringify(selectedQuestion),
+        body: JSON.stringify(payload),
       });
 
       const result = await res.json();
@@ -264,37 +368,69 @@ export default function ViewAllQuestions() {
         {/* Search and Filter Section */}
         <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
           {/* Search Bar */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 relative">
-              <input
-                placeholder="Search by title, description..."
-                value={filters.searchTerm}
-                onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
+          <div className="flex flex-col gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 relative">
+                <input
+                  placeholder="Search by title, description..."
+                  value={filters.searchTerm}
+                  onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
-                    fetchQuestions();
+                    handleSearch();
                   }
                 }}
-                className="w-full border border-gray-300 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 pr-10"
-              />
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  className="w-full border border-gray-300 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 pr-10"
+                />
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              </div>
+
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              >
+                <Filter size={18} />
+                Filters
+              </button>
+
+              <button
+                onClick={handleSearch}
+                className="flex items-center gap-2 px-6 py-3 bg-green-800 text-white rounded-lg hover:bg-green-700 transition"
+              >
+                <Search size={18} />
+                Search
+              </button>
             </div>
 
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-            >
-              <Filter size={18} />
-              Filters
-            </button>
-
-            <button
-              onClick={fetchQuestions}
-              className="flex items-center gap-2 px-6 py-3 bg-green-800 text-white rounded-lg hover:bg-green-700 transition"
-            >
-              <Search size={18} />
-              Search
-            </button>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                Filter by Question Topic
+              </label>
+              <select
+                value={filters.category_number}
+                onChange={(e) => handleTopicFilterChange(e.target.value)}
+                disabled={topicsLoading}
+                className="w-full sm:max-w-xs border border-gray-300 px-3 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white disabled:opacity-60"
+              >
+                <option value="">
+                  {topicsLoading ? "Loading topics..." : "All topics"}
+                </option>
+                {topics.map((topic) => (
+                  <option key={topic._id} value={topic.category_number}>
+                    {topic.name}
+                  </option>
+                ))}
+              </select>
+              {filters.category_number ? (
+                <button
+                  type="button"
+                  onClick={clearTopicFilter}
+                  className="text-sm text-green-700 hover:text-green-900 underline"
+                >
+                  Clear topic filter
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {/* Filter Options */}
@@ -306,7 +442,9 @@ export default function ViewAllQuestions() {
                   type="number"
                   min="1"
                   value={filters.page}
-                  onChange={(e) => setFilters({ ...filters, page: Number(e.target.value) })}
+                  onChange={(e) =>
+                    handlePaginationChange({ page: Number(e.target.value) })
+                  }
                   className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
@@ -315,7 +453,12 @@ export default function ViewAllQuestions() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Limit</label>
                 <select
                   value={filters.limit}
-                  onChange={(e) => setFilters({ ...filters, limit: Number(e.target.value) })}
+                  onChange={(e) =>
+                    handlePaginationChange({
+                      limit: Number(e.target.value),
+                      page: 1,
+                    })
+                  }
                   className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value={5}>5</option>
@@ -330,7 +473,9 @@ export default function ViewAllQuestions() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
                 <select
                   value={filters.sortBy}
-                  onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+                  onChange={(e) =>
+                    handlePaginationChange({ sortBy: e.target.value, page: 1 })
+                  }
                   className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="createdAt">Created At</option>
@@ -344,7 +489,9 @@ export default function ViewAllQuestions() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Sort Order</label>
                 <select
                   value={filters.sortOrder}
-                  onChange={(e) => setFilters({ ...filters, sortOrder: e.target.value })}
+                  onChange={(e) =>
+                    handlePaginationChange({ sortOrder: e.target.value, page: 1 })
+                  }
                   className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="desc">Descending</option>
@@ -362,6 +509,7 @@ export default function ViewAllQuestions() {
               <tr>
                 <th className="p-4 text-left text-sm font-semibold text-gray-700">ID</th>
                 <th className="p-4 text-left text-sm font-semibold text-gray-700">Title</th>
+                <th className="p-4 text-left text-sm font-semibold text-gray-700">Topic</th>
                 <th className="p-4 text-left text-sm font-semibold text-gray-700">Description</th>
                 <th className="p-4 text-sm font-semibold text-gray-700">Type</th>
                 <th className="p-4 text-sm font-semibold text-gray-700">Answer Type</th>
@@ -376,13 +524,13 @@ export default function ViewAllQuestions() {
       <tbody>
   {loading ? (
     <tr>
-      <td colSpan={7} className="text-center py-10">
+      <td colSpan={8} className="text-center py-10">
         <Loader2 className="mx-auto animate-spin text-green-600" size={32} />
       </td>
     </tr>
   ) : questions.length === 0 ? (
     <tr>
-      <td colSpan={7} className="text-center py-10 text-gray-500">
+      <td colSpan={8} className="text-center py-10 text-gray-500">
         No Question is Available
       </td>
     </tr>
@@ -391,6 +539,7 @@ export default function ViewAllQuestions() {
           <tr key={q._id} className="border-b border-gray-200 hover:bg-gray-50 transition">
                     <td className="p-4 text-gray-600">{q.questionId}</td>
                     <td className="p-4 text-gray-800">{truncateText(q.title, 40)}</td>
+                    <td className="p-4 text-gray-700 text-sm">{getTopicName(q)}</td>
                     <td className="p-4 text-gray-600 text-sm">{truncateText(q.description, 50)}</td>
                     <td className="p-4 text-center">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeGradient(q.type)}`}>
@@ -472,14 +621,14 @@ export default function ViewAllQuestions() {
           <div className="flex gap-3">
             <button
               disabled={meta.page <= 1}
-              onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
+              onClick={() => handlePaginationChange({ page: filters.page - 1 })}
               className="px-5 py-2 border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-100 transition"
             >
               Prev
             </button>
             <button
               disabled={meta.page >= Math.ceil(meta.total / meta.limit)}
-              onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
+              onClick={() => handlePaginationChange({ page: filters.page + 1 })}
               className="px-5 py-2 border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-100 transition"
             >
               Next
@@ -527,6 +676,11 @@ export default function ViewAllQuestions() {
             <div>
               <p className="text-sm text-gray-500 mb-1">Description</p>
               <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{selectedQuestion.description}</p>
+            </div>
+
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Study Topic</p>
+              <p className="text-lg text-gray-800">{getTopicName(selectedQuestion)}</p>
             </div>
 
             <div className="flex gap-4">
@@ -670,6 +824,27 @@ export default function ViewAllQuestions() {
               >
                 <option value="general">General</option>
                 <option value="math">Math</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Study Topic *</label>
+              <select
+                value={selectedQuestion.category_id || ""}
+                onChange={(e) =>
+                  setSelectedQuestion({
+                    ...selectedQuestion,
+                    category_id: e.target.value,
+                  })
+                }
+                className="w-full border border-gray-300 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">Select topic</option>
+                {topics.map((topic) => (
+                  <option key={topic._id} value={topic._id}>
+                    {topic.name} ({topic.category_number})
+                  </option>
+                ))}
               </select>
             </div>
 

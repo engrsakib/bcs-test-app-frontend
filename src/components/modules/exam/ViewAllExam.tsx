@@ -25,6 +25,36 @@ import { notify } from "@/lib/toast";
 import { confirmAction } from "@/components/ui/confirm-dialog";
 import { formatExamDateTime } from "@/lib/exam-datetime";
 
+function isExamStartTimePassed(examDateTime: string): boolean {
+  const time = new Date(examDateTime).getTime();
+  return !Number.isNaN(time) && time <= Date.now();
+}
+
+function getExamStatus(exam: {
+  is_completed: boolean;
+  is_started: boolean;
+  is_published: boolean;
+  exam_date_time: string;
+}) {
+  if (exam.is_completed) {
+    return { label: "Completed", className: "bg-green-600 text-white" };
+  }
+
+  if (exam.is_started) {
+    return { label: "Live", className: "bg-yellow-500 text-white" };
+  }
+
+  if (isExamStartTimePassed(exam.exam_date_time)) {
+    return { label: "Starting…", className: "bg-orange-500 text-white" };
+  }
+
+  if (exam.is_published) {
+    return { label: "Scheduled", className: "bg-blue-600 text-white" };
+  }
+
+  return { label: "Draft", className: "bg-gray-500 text-white" };
+}
+
 // -----------------------------------------------------
 // Toggle Component
 // -----------------------------------------------------
@@ -69,8 +99,14 @@ export default function ExamListPage() {
   // Fetch Exams
   // -----------------------------------------------------
   useEffect(() => {
-    fetchExams(1, "");
-  }, []);
+    fetchExams(page, searchTerm);
+
+    const refreshInterval = setInterval(() => {
+      fetchExams(page, searchTerm);
+    }, 30000);
+
+    return () => clearInterval(refreshInterval);
+  }, [page, searchTerm]);
 
   const handleCreateExam = () => {
   router.push("/dashboard/exam/view-exam");
@@ -264,23 +300,16 @@ export default function ExamListPage() {
 
                       {/* Status Logic */}
                       <td className="px-6 py-4">
-                        {exam.is_completed ? (
-                          <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-full">
-                            Completed
-                          </span>
-                        ) : exam.is_started ? (
-                          <span className="px-3 py-1 bg-yellow-500 text-white text-xs rounded-full">
-                            Started
-                          </span>
-                        ) : exam.is_published ? (
-                          <span className="px-3 py-1 bg-blue-600 text-white text-xs rounded-full">
-                            Published
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-full">
-                            Draft
-                          </span>
-                        )}
+                        {(() => {
+                          const status = getExamStatus(exam);
+                          return (
+                            <span
+                              className={`px-3 py-1 text-xs rounded-full ${status.className}`}
+                            >
+                              {status.label}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* ACTION BUTTONS */}

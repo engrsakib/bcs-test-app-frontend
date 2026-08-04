@@ -5,6 +5,7 @@
 import { ENV } from '@/config/env';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { notify } from '@/lib/toast';
 import { setPendingExamQuestion } from '@/lib/exam-draft-storage';
 
@@ -169,7 +170,10 @@ export default function CreateQuestionForm() {
   const [mark, setMark] = useState('1');
   const [answerType, setAnswerType] = useState('mcq');
   const [questionType, setQuestionType] = useState('general');
-  const [description, setDescription] = useState(''); 
+  const [categoryId, setCategoryId] = useState('');
+  const [topics, setTopics] = useState([]);
+  const [topicsLoading, setTopicsLoading] = useState(true);
+  const [description, setDescription] = useState('');
   const [mathFormula, setMathFormula] = useState(''); 
   const [blanks, setBlanks] = useState([
     { id: 1, options: ['', '', '', ''], correctAnswer: '' },
@@ -201,6 +205,27 @@ export default function CreateQuestionForm() {
     const newBlanks = blanks.filter((_, i) => i !== index);
     setBlanks(newBlanks);
   };
+
+  useEffect(() => {
+    const fetchTopics = async () => {
+      try {
+        setTopicsLoading(true);
+        const response = await fetch('/api/proxy/question-study-topic/dropdown', {
+          credentials: 'include',
+        });
+        const result = await response.json();
+        if (response.ok && Array.isArray(result.data)) {
+          setTopics(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch study topics', error);
+      } finally {
+        setTopicsLoading(false);
+      }
+    };
+
+    fetchTopics();
+  }, []);
 
   // const handleSubmit = async (e) => {
   //   e.preventDefault();
@@ -290,16 +315,25 @@ export default function CreateQuestionForm() {
 
       const handleSubmit = async (e) => {
   e.preventDefault();
+
+  if (!categoryId) {
+    notify.warning('Missing Topic', 'Please select a study topic');
+    return;
+  }
+
   setLoading(true);
 
   try {
+    const resolvedTitle = title.trim() || '   ';
+
     const apiPayload = {
-      title,
+      title: resolvedTitle,
       description: description || undefined,
       type: questionType.toLowerCase(),
       mathFormula: questionType === 'math' ? mathFormula : undefined,
       answerType: answerType.toLowerCase(),
       marks: parseInt(mark),
+      category_id: categoryId,
       answer: answerType === 'mcq'
         ? {
             options: blanks.flatMap(blank =>
@@ -378,6 +412,7 @@ export default function CreateQuestionForm() {
     setMark("1");
     setAnswerType("mcq");
     setQuestionType("general");
+    setCategoryId("");
     setDescription("");
     setMathFormula("");
     setBlanks([{ id: 1, options: ["", "", "", ""], correctAnswer: "" }]);
@@ -414,12 +449,11 @@ export default function CreateQuestionForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
-            label="Question Title"
+            label="Question Title (Optional)"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter question title..."
-            required
+            placeholder="Optional — defaults to blank if empty"
           />
           <Input
             label="Mark"
@@ -450,6 +484,35 @@ export default function CreateQuestionForm() {
             <option value="general">General</option>
             <option value="math">Math</option>
           </Select>
+          <div>
+            <Select
+              label="Study Topic *"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              required
+              disabled={topicsLoading}
+            >
+              <option value="">
+                {topicsLoading ? 'Loading topics...' : 'Select topic'}
+              </option>
+              {topics.map((topic) => (
+                <option key={topic._id} value={topic._id}>
+                  {topic.name} ({topic.category_number})
+                </option>
+              ))}
+            </Select>
+            {!topicsLoading && topics.length === 0 && (
+              <p className="mt-1 text-sm text-amber-600">
+                No topics found.{' '}
+                <Link
+                  href="/dashboard/question/question-study-topic/create"
+                  className="underline font-medium"
+                >
+                  Create one first
+                </Link>
+              </p>
+            )}
+          </div>
         </div>
 
         <div>
