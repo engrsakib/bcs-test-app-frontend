@@ -7,8 +7,9 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: "/api/v1/:path*", 
-        destination: "https://mcq-analysis-apps-server.onrender.com/api/v1/:path*", 
+        source: "/api/v1/:path*",
+        destination:
+          "https://mcq-analysis-apps-server.onrender.com/api/v1/:path*",
       },
     ];
   },

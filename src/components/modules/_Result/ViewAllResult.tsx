@@ -1,8 +1,9 @@
 "use client";
 
+import ExportResultModal from "@/components/modules/_Result/ExportResultModal";
 import { ENV } from "@/config/env";
 import getCookie from "@/util/GetCookie";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { FaSearch, FaEye, FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { formatExamDateTime } from "@/lib/exam-datetime";
@@ -45,6 +46,7 @@ export default function ViewAllResultsTemplate() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     const loadAllExams = async () => {
@@ -166,8 +168,19 @@ export default function ViewAllResultsTemplate() {
       <div className="max-w-full mx-auto">
         {/* HEADER */}
         <div className="bg-white p-6 rounded-xl shadow mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Exam Results</h1>
-          <p className="text-gray-600">Search and view all student results</p>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Exam Results</h1>
+              <p className="text-gray-600">Search and view all student results</p>
+            </div>
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border-2 border-green-600 text-green-700 font-semibold hover:bg-green-50 transition-colors"
+            >
+              <Download className="w-5 h-5" />
+              Export Merit List
+            </button>
+          </div>
 
           {/* FILTERS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
@@ -397,6 +410,15 @@ export default function ViewAllResultsTemplate() {
           )}
         </div>
       </div>
+
+      {showExportModal && (
+        <ExportResultModal
+          allExams={allExams}
+          initialExamNumber={selectedExamNumber}
+          initialExamSearch={examSearch}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
     </div>
   );
 }

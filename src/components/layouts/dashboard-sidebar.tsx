@@ -25,6 +25,10 @@ const links = [
     subLinks: [
       { name: "Create Question", href: "/dashboard/question/create-question" },
       { name: "View All Question", href: "/dashboard/question/view-question" },
+      {
+        name: "View Study Topics",
+        href: "/dashboard/question/question-study-topic",
+      },
     ],
   },
   {

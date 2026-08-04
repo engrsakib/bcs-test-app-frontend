@@ -5,6 +5,14 @@ export interface ExamQuestion {
   type: string;
   answerType: string;
   marks: number;
+  category_id?:
+    | string
+    | {
+        _id: string;
+        name: string;
+        category_number?: number;
+        type?: string;
+      };
 }
 
 export interface ExamFormDraft {

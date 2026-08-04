@@ -14,6 +14,17 @@ const answerColors: Record<string, string> = {
   written: "bg-orange-100 text-orange-800",
 };
 
+function getTopicName(question: ExamQuestion) {
+  if (
+    question.category_id &&
+    typeof question.category_id === "object" &&
+    "name" in question.category_id
+  ) {
+    return question.category_id.name;
+  }
+  return null;
+}
+
 interface QuestionCardProps {
   question: ExamQuestion;
   isSelected: boolean;
@@ -25,6 +36,8 @@ export default function QuestionCard({
   isSelected,
   onToggle,
 }: QuestionCardProps) {
+  const topicName = getTopicName(question);
+
   return (
     <div
       role="button"
@@ -70,6 +83,11 @@ export default function QuestionCard({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2 mt-3">
+        {topicName ? (
+          <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-800">
+            {topicName}
+          </span>
+        ) : null}
         <span
           className={`px-2 py-0.5 text-xs rounded-full capitalize ${
             typeColors[question.type] ?? "bg-gray-100 text-gray-800"
