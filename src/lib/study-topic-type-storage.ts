@@ -72,6 +72,17 @@ export function removePendingStudyTopicType(id: string): void {
   savePendingStudyTopicTypes(remaining);
 }
 
+export function removePendingStudyTopicTypeByValue(value: string): void {
+  const remaining = loadPendingStudyTopicTypes().filter(
+    (item) => item.value !== value
+  );
+  savePendingStudyTopicTypes(remaining);
+}
+
+export function getPendingStudyTopicTypeId(value: string): string | undefined {
+  return loadPendingStudyTopicTypes().find((item) => item.value === value)?.id;
+}
+
 export function mergeStudyTopicTypeOptions(
   remote: StudyTopicTypeItem[],
   pending: PendingStudyTopicType[] = loadPendingStudyTopicTypes()
@@ -87,6 +98,9 @@ export function mergeStudyTopicTypeOptions(
       merged.set(item.value, {
         value: item.value,
         label: item.label,
+        isDefault: false,
+        isPending: true,
+        pendingId: item.id,
       });
     }
   }

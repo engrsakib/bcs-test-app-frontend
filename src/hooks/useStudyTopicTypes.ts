@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DEFAULT_STUDY_TOPIC_TYPE_OPTIONS } from "@/constants/study-topic-types";
 import {
   createStudyTopicType,
+  deleteStudyTopicType,
   fetchStudyTopicTypes,
   type StudyTopicTypeItem,
 } from "@/lib/study-topic-type-api";
@@ -10,10 +12,19 @@ import {
   addPendingStudyTopicType,
   loadPendingStudyTopicTypes,
   mergeStudyTopicTypeOptions,
+  removePendingStudyTopicType,
+  removePendingStudyTopicTypeByValue,
   slugifyStudyTopicTypeLabel,
   syncPendingStudyTopicTypesToServer,
 } from "@/lib/study-topic-type-storage";
 import { notify } from "@/lib/toast";
+
+const FALLBACK_TYPES: StudyTopicTypeItem[] = DEFAULT_STUDY_TOPIC_TYPE_OPTIONS.map(
+  (option) => ({
+    ...option,
+    isDefault: true,
+  })
+);
 
 function isNetworkOrServerError(error: unknown): boolean {
   if (!(error instanceof Error)) return true;
@@ -28,16 +39,31 @@ function isNetworkOrServerError(error: unknown): boolean {
   );
 }
 
+export function isCustomStudyTopicType(option: StudyTopicTypeItem): boolean {
+  return option.isDefault === false || option.isPending === true;
+}
+
 export function useStudyTopicTypes() {
-  const [options, setOptions] = useState<StudyTopicTypeItem[]>([]);
+  const [options, setOptions] = useState<StudyTopicTypeItem[]>(FALLBACK_TYPES);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
   const refresh = useCallback(async () => {
-    const remote = await fetchStudyTopicTypes();
-    const pending = loadPendingStudyTopicTypes();
-    setOptions(mergeStudyTopicTypeOptions(remote, pending));
-    return remote;
+    try {
+      const remote = await fetchStudyTopicTypes();
+      const pending = loadPendingStudyTopicTypes();
+      const merged = mergeStudyTopicTypeOptions(
+        remote.length ? remote : FALLBACK_TYPES,
+        pending
+      );
+      setOptions(merged);
+      return merged;
+    } catch {
+      const pending = loadPendingStudyTopicTypes();
+      const merged = mergeStudyTopicTypeOptions(FALLBACK_TYPES, pending);
+      setOptions(merged);
+      return merged;
+    }
   }, []);
 
   const syncPendingTypes = useCallback(async () => {
@@ -60,10 +86,11 @@ export function useStudyTopicTypes() {
       try {
         await syncPendingTypes();
         if (!active) return;
-        await refresh();
       } catch {
         if (!active) return;
-        setOptions(mergeStudyTopicTypeOptions([], loadPendingStudyTopicTypes()));
+        setOptions(
+          mergeStudyTopicTypeOptions(FALLBACK_TYPES, loadPendingStudyTopicTypes())
+        );
       } finally {
         if (active) setLoading(false);
       }
@@ -81,7 +108,7 @@ export function useStudyTopicTypes() {
       active = false;
       window.removeEventListener("online", handleOnline);
     };
-  }, [refresh, syncPendingTypes]);
+  }, [syncPendingTypes]);
 
   const addType = useCallback(
     async (label: string): Promise<StudyTopicTypeItem | null> => {
@@ -100,7 +127,7 @@ export function useStudyTopicTypes() {
       );
 
       if (duplicate) {
-        notify.warning("Duplicate Type", "This study topic type already exists");
+        notify.warning("Duplicate Type", "This type already exists");
         return null;
       }
 
@@ -117,8 +144,14 @@ export function useStudyTopicTypes() {
           return null;
         }
 
-        addPendingStudyTopicType(trimmed, value);
-        const localType = { label: trimmed, value };
+        const pending = addPendingStudyTopicType(trimmed, value);
+        const localType: StudyTopicTypeItem = {
+          label: trimmed,
+          value,
+          isDefault: false,
+          isPending: true,
+          pendingId: pending.id,
+        };
         setOptions((prev) => mergeStudyTopicTypeOptions([...prev, localType]));
         notify.info(
           "Saved Locally",
@@ -128,6 +161,35 @@ export function useStudyTopicTypes() {
       }
     },
     [options, refresh]
+  );
+
+  const deleteType = useCallback(
+    async (option: StudyTopicTypeItem): Promise<boolean> => {
+      if (!isCustomStudyTopicType(option)) {
+        notify.warning("Cannot Delete", "Default types cannot be removed");
+        return false;
+      }
+
+      try {
+        if (option.isPending && option.pendingId) {
+          removePendingStudyTopicType(option.pendingId);
+        } else if (option.isPending) {
+          removePendingStudyTopicTypeByValue(option.value);
+        } else {
+          await deleteStudyTopicType(option.value);
+        }
+
+        await refresh();
+        notify.success("Type Deleted", `"${option.label}" removed`);
+        return true;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to delete type";
+        notify.error("Delete Failed", message);
+        return false;
+      }
+    },
+    [refresh]
   );
 
   const getLabel = useCallback(
@@ -144,6 +206,7 @@ export function useStudyTopicTypes() {
     loading,
     syncing,
     addType,
+    deleteType,
     refresh,
     syncPendingTypes,
     getLabel,

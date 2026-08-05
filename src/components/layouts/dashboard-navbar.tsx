@@ -62,11 +62,20 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const notifListRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const notificationsEnabled = !loadingAdmin && Boolean(admin);
-  const { notifications, unreadCount, isLoading, markAsRead } =
-    useNotifications(notificationsEnabled);
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    error,
+    markAsRead,
+    loadMore,
+  } = useNotifications(notificationsEnabled);
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -152,6 +161,18 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
     }
   };
 
+  const handleNotificationScroll = () => {
+    const container = notifListRef.current;
+    if (!container || isLoadingMore || !hasMore) return;
+
+    const remaining =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+
+    if (remaining < 80) {
+      void loadMore();
+    }
+  };
+
   return (
     <header className="h-16 border-b border-emerald-200/70 bg-white/95 backdrop-blur flex items-center justify-between px-4 md:px-6 shadow-sm">
       <div className="flex items-center gap-3">
@@ -193,10 +214,16 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
                   <p className="text-xs text-slate-500">
                     {isLoading
                       ? "Loading notifications..."
-                      : `You have ${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
+                      : error
+                        ? "Could not load notifications"
+                        : `You have ${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
                   </p>
                 </div>
-                <div className="max-h-96 overflow-y-auto">
+                <div
+                  ref={notifListRef}
+                  onScroll={handleNotificationScroll}
+                  className="max-h-96 overflow-y-auto"
+                >
                   {!isLoading && notifications.length === 0 && (
                     <div className="px-4 py-8 text-center text-sm text-slate-500">
                       No notifications yet
@@ -229,6 +256,16 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
                       </div>
                     );
                   })}
+                  {isLoadingMore && (
+                    <div className="px-4 py-3 text-center text-xs text-slate-500">
+                      Loading more...
+                    </div>
+                  )}
+                  {!isLoadingMore && hasMore && notifications.length > 0 && (
+                    <div className="px-4 py-2 text-center text-xs text-slate-400">
+                      Scroll for more
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
