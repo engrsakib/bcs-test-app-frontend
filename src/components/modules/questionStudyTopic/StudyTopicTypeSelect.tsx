@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import { Loader2, Plus, X } from "lucide-react";
-import { useStudyTopicTypes } from "@/hooks/useStudyTopicTypes";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronDown, Loader2, Plus, Trash2 } from "lucide-react";
+import { confirmAction } from "@/components/ui/confirm-dialog";
+import {
+  isCustomStudyTopicType,
+  useStudyTopicTypes,
+} from "@/hooks/useStudyTopicTypes";
+import type { StudyTopicTypeItem } from "@/lib/study-topic-type-api";
 
 type StudyTopicTypeSelectProps = {
   name?: string;
@@ -21,10 +26,33 @@ export default function StudyTopicTypeSelect({
   disabled = false,
   className = "",
 }: StudyTopicTypeSelectProps) {
-  const { options, loading, syncing, addType } = useStudyTopicTypes();
-  const [showAddForm, setShowAddForm] = useState(false);
+  const { options, loading, syncing, addType, deleteType } = useStudyTopicTypes();
+  const [open, setOpen] = useState(false);
+  const [showAddInput, setShowAddInput] = useState(false);
   const [newTypeLabel, setNewTypeLabel] = useState("");
   const [adding, setAdding] = useState(false);
+  const [deletingValue, setDeletingValue] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selectedLabel =
+    options.find((option) => option.value === value)?.label ||
+    (loading ? "Loading types..." : "Select type");
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+        setShowAddInput(false);
+        setNewTypeLabel("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleAddType = async () => {
     setAdding(true);
@@ -34,106 +62,163 @@ export default function StudyTopicTypeSelect({
       if (created) {
         onChange(created.value);
         setNewTypeLabel("");
-        setShowAddForm(false);
+        setShowAddInput(false);
+        setOpen(false);
       }
     } finally {
       setAdding(false);
     }
   };
 
-  const handleAddKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddType();
+  const handleDeleteType = async (
+    event: React.MouseEvent,
+    option: StudyTopicTypeItem
+  ) => {
+    event.stopPropagation();
+
+    const confirmed = await confirmAction({
+      title: "Delete type?",
+      description: `Remove "${option.label}" from the type list?`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive",
+    });
+
+    if (!confirmed) return;
+
+    setDeletingValue(option.value);
+
+    try {
+      const deleted = await deleteType(option);
+      if (deleted && value === option.value) {
+        onChange("");
+      }
+    } finally {
+      setDeletingValue(null);
     }
   };
 
-  return (
-    <div className={className}>
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <select
-            name={name}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            disabled={disabled || loading}
-            required={required}
-            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60 appearance-none pr-10"
-          >
-            <option value="">
-              {loading ? "Loading types..." : "Select type"}
-            </option>
-            {options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          {(loading || syncing) && (
-            <Loader2
-              className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-indigo-500"
-              size={16}
-            />
-          )}
-        </div>
+  const handleSelect = (optionValue: string) => {
+    onChange(optionValue);
+    setOpen(false);
+    setShowAddInput(false);
+    setNewTypeLabel("");
+  };
 
+  return (
+    <div className={className} ref={containerRef}>
+      <input type="hidden" name={name} value={value} required={required} />
+
+      <div className="relative">
         <button
           type="button"
-          onClick={() => setShowAddForm((prev) => !prev)}
+          onClick={() => !disabled && !loading && setOpen((prev) => !prev)}
           disabled={disabled || loading}
-          title="Add new type"
-          className="shrink-0 inline-flex items-center justify-center w-12 h-12 border border-indigo-200 rounded-xl text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 disabled:opacity-60 transition-colors"
+          className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60 bg-white text-left flex items-center justify-between gap-3"
         >
-          <Plus size={20} />
-        </button>
-      </div>
-
-      {showAddForm && (
-        <div className="mt-3 p-4 border border-indigo-100 rounded-xl bg-indigo-50/50 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-700">Add new type</p>
-            <button
-              type="button"
-              onClick={() => {
-                setShowAddForm(false);
-                setNewTypeLabel("");
-              }}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <input
-            type="text"
-            value={newTypeLabel}
-            onChange={(e) => setNewTypeLabel(e.target.value)}
-            onKeyDown={handleAddKeyDown}
-            placeholder='e.g. "Phonetics", "Essay Writing"'
-            className="w-full border rounded-xl px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            autoFocus
-          />
-
-          <button
-            type="button"
-            onClick={handleAddType}
-            disabled={adding || !newTypeLabel.trim()}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-2.5 font-medium flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            {adding ? (
-              <>
-                <Loader2 className="animate-spin" size={16} />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Plus size={16} />
-                Add Type
-              </>
+          <span className={value ? "text-gray-900" : "text-gray-500"}>
+            {selectedLabel}
+          </span>
+          <span className="flex items-center gap-2 shrink-0">
+            {(loading || syncing) && (
+              <Loader2 className="animate-spin text-indigo-500" size={16} />
             )}
-          </button>
-        </div>
-      )}
+            <ChevronDown
+              size={18}
+              className={`text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
+            />
+          </span>
+        </button>
+
+        {open && (
+          <div className="absolute z-20 mt-2 w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+            <div className="max-h-60 overflow-y-auto py-1">
+              {options.map((option) => (
+                <div
+                  key={option.value}
+                  className={`flex items-center gap-2 px-3 py-2.5 hover:bg-indigo-50 ${
+                    value === option.value ? "bg-indigo-50/70" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleSelect(option.value)}
+                    className="flex-1 text-left text-sm text-gray-800"
+                  >
+                    {option.label}
+                  </button>
+
+                  {isCustomStudyTopicType(option) && (
+                    <button
+                      type="button"
+                      onClick={(event) => handleDeleteType(event, option)}
+                      disabled={deletingValue === option.value}
+                      title="Delete type"
+                      className="shrink-0 p-1.5 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-60"
+                    >
+                      {deletingValue === option.value ? (
+                        <Loader2 className="animate-spin" size={14} />
+                      ) : (
+                        <Trash2 size={14} />
+                      )}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-gray-100 p-2">
+              {showAddInput ? (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={newTypeLabel}
+                    onChange={(e) => setNewTypeLabel(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddType();
+                      }
+                    }}
+                    placeholder='e.g. "Phonetics"'
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddType}
+                      disabled={adding || !newTypeLabel.trim()}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-medium disabled:opacity-60"
+                    >
+                      {adding ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddInput(false);
+                        setNewTypeLabel("");
+                      }}
+                      className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAddInput(true)}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                >
+                  <Plus size={16} />
+                  Add new type
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

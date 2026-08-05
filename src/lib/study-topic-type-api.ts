@@ -12,6 +12,8 @@ export type StudyTopicTypeItem = {
   label: string;
   position?: number;
   isDefault?: boolean;
+  isPending?: boolean;
+  pendingId?: string;
 };
 
 export async function studyTopicTypeProxy<T = unknown>(
@@ -83,4 +85,18 @@ export async function createStudyTopicType(payload: {
   }
 
   return data.data;
+}
+
+export async function deleteStudyTopicType(value: string): Promise<void> {
+  const { ok, data, status } = await studyTopicTypeProxy<{
+    message?: string;
+  }>(`/${encodeURIComponent(value)}`, {
+    method: "DELETE",
+  });
+
+  if (!ok) {
+    const error = new Error(data?.message || "Failed to delete study topic type");
+    (error as Error & { status?: number }).status = status;
+    throw error;
+  }
 }

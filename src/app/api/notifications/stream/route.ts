@@ -1,21 +1,30 @@
 import { cookies } from "next/headers";
-import { SERVER_API_BASE_URL } from "@/config/env";
+import { runtimeEnv } from "@/server/config/runtime-env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+function getAccessToken(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  return (
+    cookieStore.get("access_token")?.value ||
+    cookieStore.get("cbd_atkn_91f2a")?.value ||
+    null
+  );
+}
+
 export async function GET() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("access_token")?.value;
+  const token = getAccessToken(cookieStore);
 
   if (!token) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const upstream = await fetch(`${SERVER_API_BASE_URL}/notifications/stream`, {
+  const upstream = await fetch(`${runtimeEnv.backendBaseUrl}/notifications/stream`, {
     headers: {
       Authorization: token,
       Accept: "text/event-stream",
+      "Cache-Control": "no-cache",
     },
     cache: "no-store",
   });
