@@ -7,6 +7,14 @@ import {
   Menu,
   Award,
   BookOpen,
+  HelpCircle,
+  UserPlus,
+  Users,
+  FileText,
+  Video,
+  ClipboardList,
+  GraduationCap,
+  LucideIcon,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -15,29 +23,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { confirmAction } from "@/components/ui/confirm-dialog";
 import { notify } from "@/lib/toast";
 import { ENV } from "@/config/env";
+import { useNotifications } from "@/hooks/useNotifications";
 
 type DashboardNavbarProps = {
   onMenuClick?: () => void;
 };
 
-const notificationsData = [
-  {
-    id: 1,
-    icon: Award,
-    title: "New Achievement Unlocked!",
-    description: "You've completed 50 MCQ questions.",
-    time: "5 minutes ago",
-    read: false,
-  },
-  {
-    id: 2,
-    icon: BookOpen,
-    title: "New Exam Available",
-    description: "Physics Chapter 5 exam is now available",
-    time: "1 hour ago",
-    read: false,
-  },
-];
+const MODULE_ICONS: Record<string, LucideIcon> = {
+  exam: BookOpen,
+  result: Award,
+  question: HelpCircle,
+  user: UserPlus,
+  admin: Users,
+  "question-study-topic": GraduationCap,
+  "study-plan": ClipboardList,
+  books: FileText,
+  guideline: FileText,
+  youtube: Video,
+};
+
+function getNotificationIcon(module: string): LucideIcon {
+  return MODULE_ICONS[module] || Bell;
+}
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -56,7 +63,10 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const unreadCount = notificationsData.filter((n) => !n.read).length;
+
+  const notificationsEnabled = !loadingAdmin && Boolean(admin);
+  const { notifications, unreadCount, isLoading, markAsRead } =
+    useNotifications(notificationsEnabled);
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -136,6 +146,12 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
     }
   };
 
+  const handleNotificationClick = (id: string, isRead: boolean) => {
+    if (!isRead) {
+      void markAsRead(id);
+    }
+  };
+
   return (
     <header className="h-16 border-b border-emerald-200/70 bg-white/95 backdrop-blur flex items-center justify-between px-4 md:px-6 shadow-sm">
       <div className="flex items-center gap-3">
@@ -159,7 +175,7 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
             <Bell className="w-6 h-6" />
             {unreadCount > 0 && (
               <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {unreadCount}
+                {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </button>
@@ -175,28 +191,38 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
                 <div className="px-4 py-3 border-b bg-slate-50">
                   <h3 className="font-semibold text-slate-800">Notifications</h3>
                   <p className="text-xs text-slate-500">
-                    You have {unreadCount} unread notifications
+                    {isLoading
+                      ? "Loading notifications..."
+                      : `You have ${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
                   </p>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  {notificationsData.map((n) => {
-                    const IconComp = n.icon;
+                  {!isLoading && notifications.length === 0 && (
+                    <div className="px-4 py-8 text-center text-sm text-slate-500">
+                      No notifications yet
+                    </div>
+                  )}
+                  {notifications.map((n) => {
+                    const IconComp = getNotificationIcon(n.module);
                     return (
                       <div
-                        key={n.id}
+                        key={n._id}
+                        onClick={() => handleNotificationClick(n._id, n.isRead)}
                         className={`px-4 py-3 border-b hover:bg-slate-50 transition cursor-pointer ${
-                          !n.read ? "bg-blue-50/50" : ""
+                          !n.isRead ? "bg-blue-50/50" : ""
                         }`}
                       >
                         <div className="flex gap-3">
-                          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
                             <IconComp className="w-5 h-5 text-emerald-600" />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <h4 className="text-sm font-semibold text-slate-900">
                               {n.title}
                             </h4>
-                            <p className="text-xs text-slate-600">{n.description}</p>
+                            <p className="text-xs text-slate-600 line-clamp-2">
+                              {n.description}
+                            </p>
                             <p className="text-xs text-slate-500 mt-1">{n.time}</p>
                           </div>
                         </div>

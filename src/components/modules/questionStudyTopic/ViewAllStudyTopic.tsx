@@ -19,10 +19,7 @@ import { useRouter } from "next/navigation";
 import { notify } from "@/lib/toast";
 import { confirmAction } from "@/components/ui/confirm-dialog";
 import { questionStudyTopicProxy } from "@/lib/question-study-topic-api";
-import {
-  STUDY_TOPIC_TYPE_OPTIONS,
-  formatStudyTopicType,
-} from "@/constants/study-topic-types";
+import { useStudyTopicTypes } from "@/hooks/useStudyTopicTypes";
 
 type StudyTopicItem = {
   _id: string;
@@ -51,6 +48,7 @@ type StudyTopicApiResponse = {
 
 export default function ViewAllStudyTopic() {
   const router = useRouter();
+  const { options: typeOptions, getLabel } = useStudyTopicTypes();
 
   const [topics, setTopics] = useState<StudyTopicItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -269,7 +267,7 @@ export default function ViewAllStudyTopic() {
             className="border rounded-xl px-3 py-3"
           >
             <option value="">All types</option>
-            {STUDY_TOPIC_TYPE_OPTIONS.map((option) => (
+            {typeOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -392,7 +390,7 @@ export default function ViewAllStudyTopic() {
                     </td>
                     <td className="p-3 font-medium">{item.name}</td>
                     <td className="p-3 capitalize">
-                      {formatStudyTopicType(item.type)}
+                      {getLabel(item.type)}
                     </td>
                     <td className="p-3 text-sm text-gray-500">
                       {formatDate(item.createdAt)}
