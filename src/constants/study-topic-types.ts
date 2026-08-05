@@ -1,4 +1,4 @@
-export const STUDY_TOPIC_TYPE_OPTIONS = [
+export const DEFAULT_STUDY_TOPIC_TYPE_OPTIONS = [
   { value: "grammar", label: "Grammar" },
   { value: "vocabulary", label: "Vocabulary" },
   { value: "comprehension", label: "Comprehension" },
@@ -6,6 +6,14 @@ export const STUDY_TOPIC_TYPE_OPTIONS = [
   { value: "general", label: "General" },
 ] as const;
 
-export const formatStudyTopicType = (value: string) =>
-  STUDY_TOPIC_TYPE_OPTIONS.find((o) => o.value === value)?.label ??
+export type StudyTopicTypeOption = {
+  value: string;
+  label: string;
+};
+
+export const formatStudyTopicType = (
+  value: string,
+  options: StudyTopicTypeOption[] = [...DEFAULT_STUDY_TOPIC_TYPE_OPTIONS]
+) =>
+  options.find((option) => option.value === value)?.label ??
   value.replace(/_/g, " ");

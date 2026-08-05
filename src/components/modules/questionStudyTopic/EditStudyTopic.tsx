@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { notify } from "@/lib/toast";
 import { questionStudyTopicProxy } from "@/lib/question-study-topic-api";
-import { STUDY_TOPIC_TYPE_OPTIONS } from "@/constants/study-topic-types";
+import { syncPendingStudyTopicTypesToServer } from "@/lib/study-topic-type-storage";
+import StudyTopicTypeSelect from "./StudyTopicTypeSelect";
 
 export default function EditStudyTopic() {
   const { category_number } = useParams<{ category_number: string }>();
@@ -78,6 +79,8 @@ export default function EditStudyTopic() {
     setSubmitting(true);
 
     try {
+      await syncPendingStudyTopicTypesToServer();
+
       const { ok, data: result } = await questionStudyTopicProxy<{
         message?: string;
       }>(`/${category_number}`, {
@@ -156,20 +159,10 @@ export default function EditStudyTopic() {
             <Type size={16} />
             Type *
           </label>
-          <select
-            name="type"
+          <StudyTopicTypeSelect
             value={formData.type}
-            onChange={handleInputChange}
-            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            required
-          >
-            <option value="">Select type</option>
-            {STUDY_TOPIC_TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={(type) => setFormData((prev) => ({ ...prev, type }))}
+          />
         </div>
 
         <button
