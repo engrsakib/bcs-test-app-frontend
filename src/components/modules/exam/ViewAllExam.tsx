@@ -34,8 +34,18 @@ function getExamStatus(exam: {
   is_completed: boolean;
   is_started: boolean;
   is_published: boolean;
+  is_practice_mode?: boolean;
+  results_published?: boolean;
   exam_date_time: string;
 }) {
+  if (exam.is_practice_mode) {
+    return { label: "Practice", className: "bg-purple-600 text-white" };
+  }
+
+  if (exam.is_completed && !exam.results_published) {
+    return { label: "Finalizing", className: "bg-amber-600 text-white" };
+  }
+
   if (exam.is_completed) {
     return { label: "Completed", className: "bg-green-600 text-white" };
   }
