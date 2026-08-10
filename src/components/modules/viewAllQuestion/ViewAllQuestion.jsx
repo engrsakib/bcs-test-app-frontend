@@ -23,55 +23,8 @@ import {
 } from "lucide-react";
 import { notify } from "@/lib/toast";
 import { apiUrl } from "@/config/env";
-
-function MathEditor({ value, onChange, readOnly = false }) {
-  const mathEditorRef = useRef(null);
-
-  useEffect(() => {
-    const scriptId = "mathlive-script";
-    if (document.getElementById(scriptId)) return;
-
-    const script = document.createElement("script");
-    script.id = scriptId;
-    script.src = "https://unpkg.com/mathlive?module";
-    script.type = "module";
-    script.async = true;
-    document.head.appendChild(script);
-  }, []);
-
-  useEffect(() => {
-    const checkReady = setInterval(() => {
-      if (window.MathfieldElement && mathEditorRef.current) {
-        clearInterval(checkReady);
-
-        const mathField = mathEditorRef.current;
-
-        const handleChange = (evt) => {
-          const newValue = evt.target.getValue
-            ? evt.target.getValue()
-            : evt.target.value;
-          onChange(newValue);
-        };
-
-        mathField.addEventListener("input", handleChange);
-        mathField.addEventListener("change", handleChange);
-
-        return () => {
-          mathField.removeEventListener("input", handleChange);
-          mathField.removeEventListener("change", handleChange);
-        };
-      }
-    }, 200);
-
-    return () => clearInterval(checkReady);
-  }, [onChange]);
-
-  return (
-    <math-field ref={mathEditorRef} readOnly={readOnly}>
-      {value}
-    </math-field>
-  );
-}
+import MathEditor from "@/components/shared/MathEditor";
+import MathPreview from "@/components/shared/MathPreview";
 
 // ====================== COOKIE HELPER ======================
 function getCookie(name) {
@@ -302,10 +255,17 @@ export default function ViewAllQuestions() {
         type: selectedQuestion.type,
         answerType: selectedQuestion.answerType,
         marks: selectedQuestion.marks,
-        mathFormula: selectedQuestion.mathFormula,
+        mathFormula:
+          selectedQuestion.type === "math"
+            ? selectedQuestion.mathFormula || ""
+            : undefined,
         answer: selectedQuestion.answer,
         category_id: selectedQuestion.category_id,
       };
+
+      Object.keys(payload).forEach(
+        (key) => payload[key] === undefined && delete payload[key]
+      );
 
       const res = await fetch(apiUrl(`/question/${selectedQuestion.questionId}`), {
         method: "PATCH",
@@ -698,11 +658,11 @@ export default function ViewAllQuestions() {
               </div>
             </div>
 
-            {selectedQuestion.mathFormula && (
+            {selectedQuestion.type === "math" && selectedQuestion.mathFormula && (
               <div>
                 <p className="text-sm text-gray-500 mb-2">Math Formula</p>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <MathEditor value={selectedQuestion.mathFormula} readOnly />
+                  <MathPreview value={selectedQuestion.mathFormula} />
                 </div>
               </div>
             )}
@@ -720,10 +680,16 @@ export default function ViewAllQuestions() {
                           : "bg-gray-50 border border-gray-200"
                       }`}
                     >
-                      <span className="font-semibold text-gray-700">{i + 1}.</span>
-                      <span className="text-gray-800">{opt}</span>
+                      <span className="font-semibold text-gray-700 shrink-0">{i + 1}.</span>
+                      {selectedQuestion.type === "math" ? (
+                        <MathPreview value={opt} className="flex-1" />
+                      ) : (
+                        <span className="text-gray-800">{opt}</span>
+                      )}
                       {String(i + 1) === selectedQuestion.answer.correctAnswer && (
-                        <span className="ml-auto text-green-600 font-bold text-sm">✓ Correct Answer</span>
+                        <span className="ml-auto text-green-600 font-bold text-sm shrink-0">
+                          ✓ Correct Answer
+                        </span>
                       )}
                     </div>
                   ))}
@@ -868,23 +834,41 @@ export default function ViewAllQuestions() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">Answer Options</label>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {selectedQuestion.answer.options.map((opt, i) => (
-                    <div key={i} className="flex gap-2">
-                      <input
-                        value={opt}
-                        onChange={(e) => {
-                          const newOpt = [...selectedQuestion.answer.options];
-                          newOpt[i] = e.target.value;
-                          setSelectedQuestion({
-                            ...selectedQuestion,
-                            answer: { ...selectedQuestion.answer, options: newOpt },
-                          });
-                        }}
-                        className="flex-1 border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                        placeholder={`Option ${i + 1}`}
-                      />
+                    <div key={i} className="flex gap-2 items-start">
+                      <div className="flex-1">
+                        {selectedQuestion.type === "math" ? (
+                          <MathEditor
+                            label={`Option ${i + 1}`}
+                            value={opt}
+                            onChange={(value) => {
+                              const newOpt = [...selectedQuestion.answer.options];
+                              newOpt[i] = value;
+                              setSelectedQuestion({
+                                ...selectedQuestion,
+                                answer: { ...selectedQuestion.answer, options: newOpt },
+                              });
+                            }}
+                          />
+                        ) : (
+                          <input
+                            value={opt}
+                            onChange={(e) => {
+                              const newOpt = [...selectedQuestion.answer.options];
+                              newOpt[i] = e.target.value;
+                              setSelectedQuestion({
+                                ...selectedQuestion,
+                                answer: { ...selectedQuestion.answer, options: newOpt },
+                              });
+                            }}
+                            className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            placeholder={`Option ${i + 1}`}
+                          />
+                        )}
+                      </div>
                       <button
+                        type="button"
                         onClick={() => {
                           const newOpt = selectedQuestion.answer.options.filter(
                             (_, idx) => idx !== i
@@ -894,7 +878,7 @@ export default function ViewAllQuestions() {
                             answer: { ...selectedQuestion.answer, options: newOpt },
                           });
                         }}
-                        className="px-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                        className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition shrink-0"
                       >
                         <Trash2 size={18} />
                       </button>

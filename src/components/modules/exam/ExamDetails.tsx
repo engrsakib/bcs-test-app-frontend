@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import { BlockMath } from "react-katex";
 import { formatExamDate, formatExamTime } from "@/lib/exam-datetime";
+import MathPreview from "@/components/shared/MathPreview";
 
 interface ExamQuestion {
   _id: string;
@@ -151,7 +152,11 @@ function QuestionViewer({
                         {OPTION_LABELS[optionIndex] ?? optionIndex + 1}
                       </span>
                       <span className="flex-1 [overflow-wrap:anywhere] [word-break:keep-all]">
-                        {option}
+                        {question.type === "math" ? (
+                          <MathPreview value={option} />
+                        ) : (
+                          option
+                        )}
                       </span>
                     </div>
                   </li>
