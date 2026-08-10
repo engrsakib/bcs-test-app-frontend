@@ -8,6 +8,7 @@ import {
   MeritExportRow,
 } from "@/lib/export-merit-list";
 import { formatExamDateTime } from "@/lib/exam-datetime";
+import { preloadPdfFonts } from "@/lib/pdf-font";
 import { notify } from "@/lib/toast";
 import getCookie from "@/util/GetCookie";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
@@ -64,6 +65,12 @@ export default function ExportResultModal({
       ) ?? null,
     [allExams, selectedExamNumber],
   );
+
+  useEffect(() => {
+    preloadPdfFonts().catch(() => {
+      // Font preload is best-effort; export will retry and surface errors.
+    });
+  }, []);
 
   useEffect(() => {
     if (selectedExam) {
@@ -224,7 +231,9 @@ export default function ExportResultModal({
             data.exam_date_time,
             formatExamDateTime,
           ),
-        subtitle: `${data.exam_name} • ${formatExamDateTime(data.exam_date_time)}`,
+        examName: data.exam_name,
+        examDateTime: data.exam_date_time,
+        totalParticipants: data.totalRanked,
         rows: data.rows,
         includePhone,
         examNumber: data.exam_number,
@@ -235,7 +244,7 @@ export default function ExportResultModal({
       if (format === "csv") {
         exportMeritListCsv(exportOptions);
       } else {
-        exportMeritListPdf(exportOptions);
+        await exportMeritListPdf(exportOptions);
       }
 
       notify.success(`${format.toUpperCase()} exported successfully.`);

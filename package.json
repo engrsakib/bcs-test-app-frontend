@@ -18,6 +18,7 @@
     "framer-motion": "^12.23.24",
     "html-react-parser": "^5.2.17",
     "html-to-text": "^9.0.5",
+    "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "jodit": "^4.9.16",
