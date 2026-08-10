@@ -8,115 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { notify } from '@/lib/toast';
 import { setPendingExamQuestion } from '@/lib/exam-draft-storage';
-
-// Fixed MathEditor Component
-const MathEditor = ({ value, onChange, readOnly = false }) => {
-  const mathEditorRef = React.useRef(null);
-  const [isLoaded, setIsLoaded] = React.useState(false);
-
-  React.useEffect(() => {
-    const scriptId = 'mathlive-script';
-    
-    if (window.MathfieldElement) {
-      setIsLoaded(true);
-      return;
-    }
-
-    if (document.getElementById(scriptId)) {
-      const checkInterval = setInterval(() => {
-        if (window.MathfieldElement) {
-          setIsLoaded(true);
-          clearInterval(checkInterval);
-        }
-      }, 100);
-      return () => clearInterval(checkInterval);
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = 'https://unpkg.com/mathlive';
-    script.async = true;
-    
-    script.onload = () => {
-      console.log('✅ MathLive loaded');
-      setIsLoaded(true);
-    };
-    
-    document.head.appendChild(script);
-  }, []);
-
-  React.useEffect(() => {
-    if (!isLoaded || !mathEditorRef.current) return;
-
-    const mathField = mathEditorRef.current;
-
-    if (value && mathField.setValue) {
-      mathField.setValue(value);
-    }
-
-    if (mathField.setOptions) {
-      mathField.setOptions({
-        virtualKeyboardMode: 'manual',
-        smartMode: true,
-      });
-    }
-
-    const handleInput = () => {
-      if (mathField.getValue && !readOnly) {
-        onChange(mathField.getValue());
-      }
-    };
-
-    mathField.addEventListener('input', handleInput);
-    mathField.addEventListener('change', handleInput);
-
-    return () => {
-      mathField.removeEventListener('input', handleInput);
-      mathField.removeEventListener('change', handleInput);
-    };
-  }, [isLoaded, onChange, readOnly]);
-
-  React.useEffect(() => {
-    if (!isLoaded || !mathEditorRef.current) return;
-    
-    const mathField = mathEditorRef.current;
-    if (mathField.getValue && mathField.setValue) {
-      const currentVal = mathField.getValue();
-      if (currentVal !== value && value !== undefined) {
-        mathField.setValue(value || '');
-      }
-    }
-  }, [value, isLoaded]);
-
-  if (!isLoaded) {
-    return (
-      <div className="w-full p-4 border border-gray-300 rounded-md bg-gray-50 text-center text-gray-500">
-        Loading Math Editor...
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <math-field 
-        ref={mathEditorRef}
-        read-only={readOnly ? 'true' : undefined}
-        style={{
-          display: 'block',
-          border: '1px solid #d1d5db',
-          borderRadius: '0.375rem',
-          padding: '0.5rem 0.75rem',
-          fontSize: '1.125rem',
-          background: '#ffffff',
-          width: '100%',
-          minHeight: '3rem'
-        }}
-      >
-        {value || ''}
-      </math-field>
-    </>
-  );
-};
+import MathEditor from '@/components/shared/MathEditor';
 
 const QUESTIONS_STORAGE_KEY = 'allQuestions';
 const API_URL = `${ENV.BASE_URL}/question/`;
@@ -571,23 +463,34 @@ export default function CreateQuestionForm() {
                   )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {blank.options.map((option, optionIndex) => (
-                    <Input
-                      key={optionIndex}
-                      label={`Option ${optionIndex + 1}`}
-                      type="text"
-                      value={option}
-                      onChange={(e) =>
-                        handleBlankOptionChange(
-                          blankIndex,
-                          optionIndex,
-                          e.target.value
-                        )
-                      }
-                      placeholder={`Enter option ${optionIndex + 1}`}
-                      required
-                    />
-                  ))}
+                  {blank.options.map((option, optionIndex) =>
+                    questionType === 'math' ? (
+                      <MathEditor
+                        key={optionIndex}
+                        label={`Option ${optionIndex + 1}`}
+                        value={option}
+                        onChange={(value) =>
+                          handleBlankOptionChange(blankIndex, optionIndex, value)
+                        }
+                      />
+                    ) : (
+                      <Input
+                        key={optionIndex}
+                        label={`Option ${optionIndex + 1}`}
+                        type="text"
+                        value={option}
+                        onChange={(e) =>
+                          handleBlankOptionChange(
+                            blankIndex,
+                            optionIndex,
+                            e.target.value
+                          )
+                        }
+                        placeholder={`Enter option ${optionIndex + 1}`}
+                        required
+                      />
+                    )
+                  )}
                 </div>
                 <div className="mt-4">
                   <Select
@@ -599,13 +502,15 @@ export default function CreateQuestionForm() {
                     required
                   >
                     <option value="">Choose correct answer</option>
-                    {blank.options.map((opt, index) => (
-                      opt && (
+                    {blank.options.map((opt, index) =>
+                      opt.trim() ? (
                         <option key={index} value={index + 1}>
-                          {opt}
+                          {questionType === 'math'
+                            ? `Option ${index + 1}`
+                            : opt}
                         </option>
-                      )
-                    ))}
+                      ) : null
+                    )}
                   </Select>
                 </div>
               </div>
