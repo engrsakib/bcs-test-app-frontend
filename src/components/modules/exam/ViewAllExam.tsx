@@ -55,26 +55,45 @@ function getExamStatus(exam: {
   return { label: "Draft", className: "bg-gray-500 text-white" };
 }
 
+interface ExamStatusModalExam {
+  _id?: string;
+  exam_number: number;
+  exam_name?: string;
+  is_published: boolean;
+  is_started: boolean;
+  is_completed: boolean;
+  exam_date_time?: string;
+}
+
 // -----------------------------------------------------
 // Toggle Component
 // -----------------------------------------------------
 const Toggle = ({
   enabled,
   onChange,
+  label,
 }: {
   enabled: boolean;
   onChange: (value: boolean) => void;
+  label: string;
 }) => (
-  <div
+  <button
+    type="button"
+    role="switch"
+    aria-checked={enabled}
+    aria-label={label}
     onClick={() => onChange(!enabled)}
-    className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition ${enabled ? "bg-green-500" : "bg-gray-300"
-      }`}
+    className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition shrink-0 ${
+      enabled ? "bg-green-500" : "bg-gray-300"
+    }`}
   >
-    <div
-      className={`bg-white w-6 h-6 rounded-full shadow transform transition ${enabled ? "translate-x-7" : ""
-        }`}
+    <span
+      aria-hidden="true"
+      className={`bg-white w-6 h-6 rounded-full shadow transform transition-transform duration-200 ${
+        enabled ? "translate-x-6" : "translate-x-0"
+      }`}
     />
-  </div>
+  </button>
 );
 
 export default function ExamListPage() {
@@ -89,7 +108,9 @@ export default function ExamListPage() {
   const limit = 10;
 
   // Modal States
-  const [selectedExam, setSelectedExam] = useState<any>(null);
+  const [selectedExam, setSelectedExam] = useState<ExamStatusModalExam | null>(
+    null,
+  );
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
 
@@ -101,12 +122,16 @@ export default function ExamListPage() {
   useEffect(() => {
     fetchExams(page, searchTerm);
 
+    if (showModal) {
+      return;
+    }
+
     const refreshInterval = setInterval(() => {
       fetchExams(page, searchTerm);
     }, 30000);
 
     return () => clearInterval(refreshInterval);
-  }, [page, searchTerm]);
+  }, [page, searchTerm, showModal]);
 
   const handleCreateExam = () => {
   router.push("/dashboard/exam/view-exam");
@@ -179,9 +204,21 @@ export default function ExamListPage() {
   };
 
   // OPEN MODAL
-  const openStatusModal = (exam: any) => {
-    setSelectedExam(exam);
+  const openStatusModal = (exam: ExamStatusModalExam) => {
+    setSelectedExam({
+      ...exam,
+      is_published: Boolean(exam.is_published),
+      is_started: Boolean(exam.is_started),
+      is_completed: Boolean(exam.is_completed),
+    });
     setShowModal(true);
+  };
+
+  const updateExamStatusField = (
+    field: "is_published" | "is_started" | "is_completed",
+    value: boolean,
+  ) => {
+    setSelectedExam((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
   // UPDATE STATUS API
@@ -189,9 +226,9 @@ export default function ExamListPage() {
     if (!selectedExam) return;
 
     const payload = {
-      is_published: selectedExam.is_published,
-      is_started: selectedExam.is_started,
-      is_completed: selectedExam.is_completed,
+      is_published: Boolean(selectedExam.is_published),
+      is_started: Boolean(selectedExam.is_started),
+      is_completed: Boolean(selectedExam.is_completed),
     };
 
     try {
@@ -204,17 +241,20 @@ export default function ExamListPage() {
             Authorization: getCookie("access_token") || "",
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       const result = await response.json();
 
       if (result.success) {
         notify.success("Status Updated!", undefined, { duration: 1500 });
-
         setShowModal(false);
+        setSelectedExam(null);
         fetchExams(page, searchTerm);
+        return;
       }
+
+      notify.error(result.message || "Failed to update exam status.");
     } catch (error) {
       notify.error("Update Failed!");
     }
@@ -385,39 +425,48 @@ export default function ExamListPage() {
       {/* MODAL */}
       {showModal && selectedExam && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+          <div
+            className="bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="text-2xl font-bold mb-2 text-gray-800">
               Update Exam Status
             </h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Manual changes are saved immediately and will not be overwritten
+              by the automatic scheduler.
+            </p>
 
             <div className="space-y-6">
-              {/* FIXED INDEPENDENT TOGGLE LOGIC */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <span className="text-lg font-medium">Published</span>
                 <Toggle
+                  label="Published"
                   enabled={selectedExam.is_published}
-                  onChange={(v) =>
-                    setSelectedExam({ ...selectedExam, is_published: v })
+                  onChange={(value) =>
+                    updateExamStatusField("is_published", value)
                   }
                 />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <span className="text-lg font-medium">Started</span>
                 <Toggle
+                  label="Started"
                   enabled={selectedExam.is_started}
-                  onChange={(v) =>
-                    setSelectedExam({ ...selectedExam, is_started: v })
+                  onChange={(value) =>
+                    updateExamStatusField("is_started", value)
                   }
                 />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <span className="text-lg font-medium">Completed</span>
                 <Toggle
+                  label="Completed"
                   enabled={selectedExam.is_completed}
-                  onChange={(v) =>
-                    setSelectedExam({ ...selectedExam, is_completed: v })
+                  onChange={(value) =>
+                    updateExamStatusField("is_completed", value)
                   }
                 />
               </div>
@@ -425,13 +474,18 @@ export default function ExamListPage() {
 
             <div className="mt-8 flex justify-end gap-3">
               <button
-                onClick={() => setShowModal(false)}
+                type="button"
+                onClick={() => {
+                  setShowModal(false);
+                  setSelectedExam(null);
+                }}
                 className="px-5 py-2 rounded-lg border"
               >
                 Cancel
               </button>
 
               <button
+                type="button"
                 onClick={updateStatus}
                 className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow"
               >
