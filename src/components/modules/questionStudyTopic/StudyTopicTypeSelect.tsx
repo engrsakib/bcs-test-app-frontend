@@ -16,6 +16,7 @@ type StudyTopicTypeSelectProps = {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  placeholder?: string;
 };
 
 export default function StudyTopicTypeSelect({
@@ -25,6 +26,7 @@ export default function StudyTopicTypeSelect({
   required = false,
   disabled = false,
   className = "",
+  placeholder = "Select subject (optional)",
 }: StudyTopicTypeSelectProps) {
   const { options, loading, syncing, addType, deleteType } = useStudyTopicTypes();
   const [open, setOpen] = useState(false);
@@ -36,7 +38,7 @@ export default function StudyTopicTypeSelect({
 
   const selectedLabel =
     options.find((option) => option.value === value)?.label ||
-    (loading ? "Loading types..." : "Select type");
+    (loading ? "Loading subjects..." : placeholder);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

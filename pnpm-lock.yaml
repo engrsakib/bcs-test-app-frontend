@@ -38,6 +38,9 @@ importers:
       html-to-text:
         specifier: ^9.0.5
         version: 9.0.5
+      html2canvas:
+        specifier: ^1.4.1
+        version: 1.4.1
       jodit:
         specifier: ^4.9.16
         version: 4.10.3
@@ -1979,8 +1982,7 @@ snapshots:
     dependencies:
       core-js: 1.2.7
 
-  base64-arraybuffer@1.0.2:
-    optional: true
+  base64-arraybuffer@1.0.2: {}
 
   baseline-browser-mapping@2.10.0: {}
 
@@ -2044,7 +2046,6 @@ snapshots:
   css-line-break@2.1.0:
     dependencies:
       utrie: 1.0.2
-    optional: true
 
   csstype@3.2.3: {}
 
@@ -2229,7 +2230,6 @@ snapshots:
     dependencies:
       css-line-break: 2.1.0
       text-segmentation: 1.0.3
-    optional: true
 
   htmlparser2@10.1.0:
     dependencies:
@@ -2811,7 +2811,6 @@ snapshots:
   text-segmentation@1.0.3:
     dependencies:
       utrie: 1.0.2
-    optional: true
 
   tslib@2.8.1: {}
 
@@ -2828,7 +2827,6 @@ snapshots:
   utrie@1.0.2:
     dependencies:
       base64-arraybuffer: 1.0.2
-    optional: true
 
   w3c-keyname@2.2.8: {}
 

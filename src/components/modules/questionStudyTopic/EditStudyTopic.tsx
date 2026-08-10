@@ -72,20 +72,20 @@ export default function EditStudyTopic() {
       return notify.warning("Missing Name", "Please enter a topic name");
     }
 
-    if (!formData.type) {
-      return notify.warning("Missing Type", "Please select a topic type");
-    }
-
     setSubmitting(true);
 
     try {
       await syncPendingStudyTopicTypesToServer();
 
+      const payload: { name: string; type?: string } = { name };
+      const subjectName = formData.type.trim();
+      payload.type = subjectName || "";
+
       const { ok, data: result } = await questionStudyTopicProxy<{
         message?: string;
       }>(`/${category_number}`, {
         method: "PATCH",
-        body: JSON.stringify({ name, type: formData.type }),
+        body: JSON.stringify(payload),
       });
 
       if (!ok) {
@@ -142,7 +142,7 @@ export default function EditStudyTopic() {
         <div>
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
             <Tag size={16} />
-            Category Name *
+            Topic Name *
           </label>
           <input
             type="text"
@@ -157,11 +157,12 @@ export default function EditStudyTopic() {
         <div>
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
             <Type size={16} />
-            Type *
+            Subject Name
           </label>
           <StudyTopicTypeSelect
             value={formData.type}
             onChange={(type) => setFormData((prev) => ({ ...prev, type }))}
+            placeholder="Select subject (optional)"
           />
         </div>
 
