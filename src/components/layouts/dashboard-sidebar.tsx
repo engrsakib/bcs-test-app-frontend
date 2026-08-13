@@ -10,6 +10,7 @@ import {
   Link2,
   ChevronDown,
   Plane,
+  CalendarDays,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -91,6 +92,15 @@ const links = [
     subLinks: [
       { name: "Create Plan", href: "/dashboard/sturdy-plan/create-plan" },
       { name: "View Plans", href: "/dashboard/sturdy-plan/view-plan" },
+    ],
+  },
+  {
+    name: "Exam Routine",
+    icon: CalendarDays,
+    basePath: "/dashboard/exam-routine",
+    subLinks: [
+      { name: "Create Routine", href: "/dashboard/exam-routine/create-routine" },
+      { name: "View Routines", href: "/dashboard/exam-routine/view-routine" },
     ],
   },
   { name: "Profile", href: "/dashboard/profile", icon: Link2 },
