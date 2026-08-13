@@ -13,6 +13,7 @@ import {
   FileText,
   Video,
   ClipboardList,
+  CalendarDays,
   GraduationCap,
   LucideIcon,
 } from "lucide-react";
@@ -37,6 +38,7 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   admin: Users,
   "question-study-topic": GraduationCap,
   "study-plan": ClipboardList,
+  "exam-routine": CalendarDays,
   books: FileText,
   guideline: FileText,
   youtube: Video,
