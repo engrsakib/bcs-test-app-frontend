@@ -72,6 +72,7 @@ interface ExamStatusModalExam {
   is_published: boolean;
   is_started: boolean;
   is_completed: boolean;
+  is_practice_mode?: boolean;
   exam_date_time?: string;
 }
 
@@ -220,12 +221,13 @@ export default function ExamListPage() {
       is_published: Boolean(exam.is_published),
       is_started: Boolean(exam.is_started),
       is_completed: Boolean(exam.is_completed),
+      is_practice_mode: Boolean(exam.is_practice_mode),
     });
     setShowModal(true);
   };
 
   const updateExamStatusField = (
-    field: "is_published" | "is_started" | "is_completed",
+    field: "is_published" | "is_started" | "is_completed" | "is_practice_mode",
     value: boolean,
   ) => {
     setSelectedExam((prev) => (prev ? { ...prev, [field]: value } : prev));
@@ -239,6 +241,7 @@ export default function ExamListPage() {
       is_published: Boolean(selectedExam.is_published),
       is_started: Boolean(selectedExam.is_started),
       is_completed: Boolean(selectedExam.is_completed),
+      is_practice_mode: Boolean(selectedExam.is_practice_mode),
     };
 
     try {
@@ -477,6 +480,23 @@ export default function ExamListPage() {
                   enabled={selectedExam.is_completed}
                   onChange={(value) =>
                     updateExamStatusField("is_completed", value)
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <span className="text-lg font-medium">Test Mode</span>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Practice mode. Auto-enables 360 seconds after exam
+                    completion if left off.
+                  </p>
+                </div>
+                <Toggle
+                  label="Test Mode"
+                  enabled={Boolean(selectedExam.is_practice_mode)}
+                  onChange={(value) =>
+                    updateExamStatusField("is_practice_mode", value)
                   }
                 />
               </div>

@@ -152,14 +152,9 @@ export default function EditExamRoutinePage() {
     if (!formData.title.trim()) {
       return notify.warning("Missing Title", "Please enter title");
     }
-    if (!formData.category.trim()) {
-      return notify.warning("Missing Category", "Please select category");
-    }
+
     if (!formData.exam_routine_url.trim()) {
       return notify.warning("Missing Routine URL", "Please enter routine URL");
-    }
-    if (!formData.description.trim()) {
-      return notify.warning("Missing Description", "Please write description");
     }
 
     const confirmed = await confirmAction({

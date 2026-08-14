@@ -22,9 +22,14 @@ import {
   parseDateTimeLocalToISO,
   toDateTimeLocalValue,
 } from "@/lib/exam-datetime";
+import {
+  DEFAULT_EXAM_SUBJECT,
+  EXAM_SUBJECTS,
+} from "@/lib/exam-subjects";
 
 interface ExamData {
   exam_name: string;
+  subject?: string;
   exam_date_time: string;
   duration_minutes: number;
   total_marks: number;
@@ -106,6 +111,7 @@ export default function UpdateExamClient() {
         exam_date_time: examData.exam_date_time,
         duration_minutes: String(examData.duration_minutes),
         negative_mark: 0,
+        subject: examData.subject ?? DEFAULT_EXAM_SUBJECT,
       },
     });
     router.push(
@@ -120,6 +126,7 @@ export default function UpdateExamClient() {
 
     const payload = {
       exam_name: examData.exam_name,
+      subject: examData.subject ?? DEFAULT_EXAM_SUBJECT,
       exam_date_time: parseDateTimeLocalToISO(examData.exam_date_time),
       duration_minutes: examData.duration_minutes,
       total_marks: totalMarks,
@@ -197,6 +204,29 @@ export default function UpdateExamClient() {
               })
             }
           />
+
+          <div>
+            <label
+              htmlFor="subject"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Subject
+            </label>
+            <select
+              id="subject"
+              value={examData.subject ?? DEFAULT_EXAM_SUBJECT}
+              onChange={(e) =>
+                setExamData({ ...examData, subject: e.target.value })
+              }
+              className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 bg-white text-gray-900"
+            >
+              {EXAM_SUBJECTS.map((subject) => (
+                <option key={subject} value={subject}>
+                  {subject}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <Input
             label="Total Marks (Auto)"
