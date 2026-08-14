@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Plane,
   CalendarDays,
+  Megaphone,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -65,6 +66,21 @@ const links = [
     subLinks: [
       { name: "Create Guideline", href: "/dashboard/guideline/add-guideline" },
       { name: "View All Guideline", href: "/dashboard/guideline/view-guideline" },
+    ],
+  },
+  {
+    name: "Announcements",
+    icon: Megaphone,
+    basePath: "/dashboard/announcements",
+    subLinks: [
+      {
+        name: "Create Announcement",
+        href: "/dashboard/announcements/create-announcement",
+      },
+      {
+        name: "View Announcements",
+        href: "/dashboard/announcements/view-announcements",
+      },
     ],
   },
   {
