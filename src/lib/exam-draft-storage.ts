@@ -20,6 +20,7 @@ export interface ExamFormDraft {
   exam_date_time: string;
   duration_minutes: string;
   negative_mark: number;
+  subject: string;
 }
 
 export interface ExamDraftSession {

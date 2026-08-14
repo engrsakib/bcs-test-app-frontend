@@ -18,6 +18,10 @@ import {
   clearExamDraft,
 } from "@/lib/exam-draft-storage";
 import { parseDateTimeLocalToISO } from "@/lib/exam-datetime";
+import {
+  DEFAULT_EXAM_SUBJECT,
+  EXAM_SUBJECTS,
+} from "@/lib/exam-subjects";
 
 const negativeMarkOptions = [
   { label: "0.25", value: 0.25 },
@@ -58,6 +62,7 @@ export default function CreateExamForm() {
     exam_date_time: "",
     duration_minutes: "",
     negative_mark: 0.25,
+    subject: DEFAULT_EXAM_SUBJECT,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -125,6 +130,7 @@ export default function CreateExamForm() {
     try {
       const payload = {
         exam_name: formData.exam_name,
+        subject: formData.subject,
         exam_date_time: parseDateTimeLocalToISO(formData.exam_date_time),
         duration_minutes: parseInt(formData.duration_minutes),
         total_marks: totalMarks,
@@ -154,6 +160,7 @@ export default function CreateExamForm() {
           exam_date_time: "",
           duration_minutes: "",
           negative_mark: 0.25,
+          subject: DEFAULT_EXAM_SUBJECT,
         });
         router.push("/dashboard/exam/view-exam");
         setSelectedQuestions([]);
@@ -228,6 +235,27 @@ export default function CreateExamForm() {
             onChange={handleInputChange}
             required
           />
+          <div>
+            <label
+              htmlFor="subject"
+              className="block mb-1 text-sm font-medium text-gray-700"
+            >
+              Subject
+            </label>
+            <select
+              id="subject"
+              name="subject"
+              value={formData.subject}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              {EXAM_SUBJECTS.map((subject) => (
+                <option key={subject} value={subject}>
+                  {subject}
+                </option>
+              ))}
+            </select>
+          </div>
           <Input
             label="Total Marks (Auto-calculated)"
             id="total_marks"
@@ -236,25 +264,33 @@ export default function CreateExamForm() {
             value={totalMarks}
             disabled
           />
+          <div>
+            <label
+              htmlFor="negative_mark"
+              className="block mb-1 text-sm font-medium text-gray-700"
+            >
+              Negative Mark
+            </label>
+            <select
+              id="negative_mark"
+              name="negative_mark"
+              value={formData.negative_mark}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  negative_mark: Number(e.target.value),
+                })
+              }
+              className="block w-full px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              {negativeMarkOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-
-        <select
-          name="negative_mark"
-          value={formData.negative_mark}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              negative_mark: Number(e.target.value),
-            })
-          }
-          className="block w-6/12 px-3 py-2 mt-3 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-        >
-          {negativeMarkOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
 
         <div className="mt-8">
           <div className="flex items-center justify-between">

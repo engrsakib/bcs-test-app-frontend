@@ -8,35 +8,14 @@ import {
   FaCalendarAlt,
   FaCheckDouble,
   FaClock,
+  FaFilePdf,
 } from "react-icons/fa";
-import { BlockMath } from "react-katex";
 import { formatExamDate, formatExamTime } from "@/lib/exam-datetime";
 import MathPreview from "@/components/shared/MathPreview";
+import { exportExamPdf, type ExamExportData } from "@/lib/export-exam-pdf";
+import { notify } from "@/lib/toast";
 
-interface ExamQuestion {
-  _id: string;
-  title: string;
-  description?: string;
-  marks: number;
-  questionId: string | number;
-  type?: string;
-  answerType?: string;
-  mathFormula?: string;
-  answer?: {
-    options?: string[];
-    correctAnswer?: string | number;
-  };
-  blanks?: string[];
-}
-
-interface ExamDetails {
-  exam_name: string;
-  exam_number: number;
-  exam_date_time: string;
-  duration_minutes: number;
-  total_marks: number;
-  questions: ExamQuestion[];
-}
+type ExamDetails = ExamExportData;
 
 const OPTION_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
@@ -64,7 +43,7 @@ function QuestionViewer({
   index,
   total,
 }: {
-  question: ExamQuestion;
+  question: ExamExportData["questions"][number];
   index: number;
   total: number;
 }) {
@@ -104,7 +83,7 @@ function QuestionViewer({
               Math Formula
             </h5>
             <div className="overflow-x-auto text-center">
-              <BlockMath math={question.mathFormula} />
+              <MathPreview value={question.mathFormula} />
             </div>
           </section>
         ) : null}
@@ -206,6 +185,7 @@ export default function ExamDetailsClient() {
 
   const [exam, setExam] = useState<ExamDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const questionRefs = useRef<Array<HTMLElement | null>>([]);
 
@@ -282,6 +262,30 @@ export default function ExamDetailsClient() {
       ? ((activeQuestionIndex + 1) / totalQuestions) * 100
       : 0;
 
+  const handleExportPdf = async () => {
+    if (!exam || exportingPdf) return;
+
+    setExportingPdf(true);
+    const toastId = notify.loading(
+      "Generating PDF…",
+      "Bangla, English & LaTeX rendering",
+    );
+
+    try {
+      await exportExamPdf(exam);
+      notify.dismiss(toastId);
+      notify.success("PDF downloaded", "Exam question paper saved.");
+    } catch (error) {
+      notify.dismiss(toastId);
+      notify.error(
+        "Export failed",
+        error instanceof Error ? error.message : undefined,
+      );
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   if (!examNumber) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-emerald-50 to-teal-100">
@@ -345,6 +349,23 @@ export default function ExamDetailsClient() {
               <p className="font-mono text-lg text-green-100">
                 #{exam.exam_number}
               </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleExportPdf}
+                disabled={exportingPdf || totalQuestions === 0}
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-md transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <FaFilePdf size={16} />
+                {exportingPdf ? "Exporting…" : "Export PDF"}
+              </button>
+              <a
+                href={`/dashboard/exam/export-pdf?exam=${exam.exam_number}`}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+              >
+                Open Export Page
+              </a>
             </div>
           </div>
 

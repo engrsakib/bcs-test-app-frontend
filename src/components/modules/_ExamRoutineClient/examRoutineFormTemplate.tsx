@@ -127,12 +127,6 @@ const CreateExamRoutine = () => {
         "Please enter exam routine file URL"
       );
     }
-    if (!formData.category) {
-      return notify.warning("Missing Category", "Please select a category");
-    }
-    if (!formData.post_date) {
-      return notify.warning("Missing Post Date", "Please select post date");
-    }
 
     try {
       setSubmitting(true);
@@ -146,9 +140,11 @@ const CreateExamRoutine = () => {
           title,
           description: formData.description || "",
           thumbnail_url: formData.thumbnail_url || "",
-          category: formData.category,
+          category: formData.category || undefined,
           exam_routine_url: routineUrl,
-          post_date: new Date(formData.post_date).toISOString(),
+          post_date: formData.post_date
+            ? new Date(formData.post_date).toISOString()
+            : undefined,
         }),
       });
 
