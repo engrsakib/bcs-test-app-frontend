@@ -12,6 +12,7 @@ import {
   Plane,
   CalendarDays,
   Megaphone,
+  FileText,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -108,6 +109,15 @@ const links = [
     subLinks: [
       { name: "Create Plan", href: "/dashboard/sturdy-plan/create-plan" },
       { name: "View Plans", href: "/dashboard/sturdy-plan/view-plan" },
+    ],
+  },
+  {
+    name: "Exam Solution",
+    icon: FileText,
+    basePath: "/dashboard/exam-solution",
+    subLinks: [
+      { name: "Create Solution", href: "/dashboard/exam-solution/create-solution" },
+      { name: "View Solutions", href: "/dashboard/exam-solution/view-solution" },
     ],
   },
   {

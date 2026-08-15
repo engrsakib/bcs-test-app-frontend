@@ -31,187 +31,373 @@ export interface ExamExportData {
 
 const A4_WIDTH_MM = 210;
 const PAGE_WIDTH_PX = 794;
-const OPTION_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
+const PAGE_HEIGHT_PX = Math.round(PAGE_WIDTH_PX * (297 / 210));
+const PAGE_PADDING_X = 32;
+const PAGE_PADDING_TOP = 24;
+const PAGE_PADDING_BOTTOM = 36;
+const FOOTER_HEIGHT = 28;
+const CONTENT_WIDTH = PAGE_WIDTH_PX - PAGE_PADDING_X * 2;
+const COLUMN_GAP = 16;
+const COLUMN_WIDTH = Math.floor((CONTENT_WIDTH - COLUMN_GAP) / 2);
+const CONTENT_PAGE_HEIGHT =
+  PAGE_HEIGHT_PX - PAGE_PADDING_TOP - PAGE_PADDING_BOTTOM - FOOTER_HEIGHT;
+const COMPACT_FONT_PX = 10.5;
+const META_FONT_PX = 9.5;
+const TITLE_FONT_PX = 15;
+const BANGLA_OPTION_LABELS = ["ক", "খ", "গ", "ঘ"];
 const KATEX_CSS =
   "https://cdn.jsdelivr.net/npm/katex@0.16.27/dist/katex.min.css";
+const PRIMARY = "#1565C0";
+const BORDER = "#d1d5db";
+const MUTED = "#6b7280";
+const TEXT = "#111827";
 
-function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+const BASE_TEXT_STYLE = `
+  font-family: '${PDF_FONT_FAMILY}', sans-serif;
+  line-height: 1.55;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+`;
+
+function getOptionLabel(index: number): string {
+  return index < BANGLA_OPTION_LABELS.length
+    ? BANGLA_OPTION_LABELS[index]
+    : String.fromCharCode(65 + index);
 }
 
-function chunkQuestions<T>(items: T[], perPage: number): T[][] {
-  if (!items.length) return [];
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += perPage) {
-    chunks.push(items.slice(i, i + perPage));
-  }
-  return chunks;
+function isMcqQuestion(question: ExamExportQuestion): boolean {
+  return (
+    question.answerType === "mcq" ||
+    (question.answer?.options?.length ?? 0) > 0
+  );
 }
 
-function buildExamSummaryHtml(exam: ExamExportData): string {
-  const items = [
-    ["Exam Number", `#${exam.exam_number}`],
-    ["Date", formatExamDate(exam.exam_date_time)],
-    ["Time", formatExamTime(exam.exam_date_time)],
-    ["Duration", `${exam.duration_minutes} minutes`],
-    ["Total Marks", String(exam.total_marks)],
-    ["Total Questions", String(exam.questions.length)],
+function buildMetaTable(exam: ExamExportData, generatedAt: string): string {
+  const rows = [
+    ["Date", formatExamDate(exam.exam_date_time), "Time", formatExamTime(exam.exam_date_time)],
+    ["Duration", `${exam.duration_minutes} minutes`, "Total Questions", String(exam.questions.length)],
+    ["Total Marks", String(exam.total_marks), "Exam No.", `#${exam.exam_number}`],
   ];
 
-  return `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 18px;margin-bottom:20px;">
-    ${items
+  return `<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:${META_FONT_PX}px;">
+    ${rows
       .map(
-        ([label, value]) =>
-          `<div style="display:flex;gap:12px;margin-bottom:8px;font-size:14px;line-height:1.5;">
-            <span style="min-width:130px;font-weight:700;color:#166534;">${escapeHtml(label)}:</span>
-            <span style="color:#374151;flex:1;word-break:break-word;">${escapeHtml(value)}</span>
-          </div>`,
+        ([l1, v1, l2, v2]) =>
+          `<tr>
+            <td style="width:22%;padding:5px 8px;color:${MUTED};vertical-align:top;">${escapeHtml(l1)}</td>
+            <td style="width:28%;padding:5px 8px;color:${TEXT};font-weight:600;vertical-align:top;">${escapeHtml(v1)}</td>
+            <td style="width:22%;padding:5px 8px;color:${MUTED};vertical-align:top;">${escapeHtml(l2)}</td>
+            <td style="width:28%;padding:5px 8px;color:${TEXT};font-weight:600;vertical-align:top;">${escapeHtml(v2)}</td>
+          </tr>`,
       )
       .join("")}
+    <tr>
+      <td colspan="4" style="padding:8px 8px 0;color:${MUTED};font-size:8.5px;border-top:1px solid #eef2f7;">
+        Generated on ${escapeHtml(generatedAt)}
+      </td>
+    </tr>
+  </table>`;
+}
+
+function buildFullHeaderHtml(exam: ExamExportData, generatedAt: string): string {
+  return `<div style="width:${CONTENT_WIDTH}px;margin-bottom:14px;">
+    <div style="height:4px;background:${PRIMARY};border-radius:999px;margin-bottom:12px;"></div>
+    <div style="border:1px solid ${BORDER};border-radius:8px;overflow:hidden;background:#fff;">
+      <div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e5e7eb;text-align:center;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:0.14em;color:${PRIMARY};">EXAM QUESTION PAPER</div>
+      </div>
+      <div style="padding:14px 16px 12px;">
+        <div style="text-align:center;font-size:${TITLE_FONT_PX}px;font-weight:700;line-height:1.45;color:${TEXT};margin-bottom:4px;">
+          ${renderContentHtml(exam.exam_name)}
+        </div>
+        ${buildMetaTable(exam, generatedAt)}
+      </div>
+    </div>
   </div>`;
 }
 
-function buildQuestionHtml(
+function buildContinuationHeaderHtml(exam: ExamExportData): string {
+  return `<div style="width:${CONTENT_WIDTH}px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">
+    <div style="font-size:11px;font-weight:700;color:${TEXT};line-height:1.4;">${renderContentHtml(exam.exam_name)}</div>
+    <div style="font-size:9px;color:${MUTED};margin-top:2px;">Exam #${escapeHtml(exam.exam_number)} · Continued</div>
+  </div>`;
+}
+
+function buildSectionTitleHtml(): string {
+  return `<div style="width:${CONTENT_WIDTH}px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ${PRIMARY};">
+    <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:${PRIMARY};">Questions</span>
+  </div>`;
+}
+
+function buildQuestionNumberBadge(number: number): string {
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:${PRIMARY};color:#fff;font-size:9px;font-weight:700;flex-shrink:0;">${number}</span>`;
+}
+
+function buildOptionsHtml(
   question: ExamExportQuestion,
-  index: number,
-  total: number,
+  maxWidth: number,
 ): string {
   const options = question.answer?.options ?? [];
-  const correctAnswer = String(question.answer?.correctAnswer ?? "");
-  const isMath = question.type === "math";
+  if (!options.length) {
+    return `<p style="margin:6px 0 0;font-size:${META_FONT_PX}px;color:${MUTED};font-style:italic;">No options available</p>`;
+  }
 
+  const isMath = question.type === "math";
+  const useGrid =
+    options.length === 4 &&
+    options.every((option) => option.trim().length <= 42);
+
+  const renderOption = (option: string, index: number, width: string) => {
+    const label = getOptionLabel(index);
+    const optionContent = renderContentHtml(option, {
+      forceMath: isMath || undefined,
+    });
+
+    return `<td style="width:${width};padding:3px 4px 3px 0;vertical-align:top;">
+      <div style="display:flex;align-items:flex-start;gap:4px;font-size:${COMPACT_FONT_PX}px;line-height:1.55;color:${TEXT};">
+        <span style="font-weight:700;color:${PRIMARY};flex-shrink:0;min-width:18px;">(${label})</span>
+        <span style="flex:1;">${optionContent}</span>
+      </div>
+    </td>`;
+  };
+
+  const half = "50%";
+
+  if (useGrid) {
+    return `<table style="width:100%;border-collapse:collapse;margin-top:6px;table-layout:fixed;">
+      <tr>${renderOption(options[0], 0, half)}${renderOption(options[1], 1, half)}</tr>
+      <tr>${renderOption(options[2], 2, half)}${renderOption(options[3], 3, half)}</tr>
+    </table>`;
+  }
+
+  return `<table style="width:100%;border-collapse:collapse;margin-top:6px;table-layout:fixed;">
+    ${options
+      .map(
+        (option, index) =>
+          `<tr>${renderOption(option, index, "100%")}</tr>`,
+      )
+      .join("")}
+  </table>`;
+}
+
+function buildMcqBlockHtml(
+  question: ExamExportQuestion,
+  index: number,
+): string {
+  const isMath = question.type === "math";
   const titleHtml = renderContentHtml(question.title, {
     forceMath: isMath || undefined,
   });
 
-  const descriptionHtml = question.description?.trim()
-    ? `<div style="margin-top:10px;font-size:14px;line-height:1.7;color:#4b5563;word-break:break-word;">${renderContentHtml(question.description)}</div>`
-    : "";
-
   const formulaHtml = question.mathFormula?.trim()
-    ? `<div style="margin-top:12px;padding:12px 14px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;text-align:center;overflow-x:auto;">
-        <div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:8px;">Math Formula</div>
+    ? `<div style="margin-top:5px;padding:6px 8px;background:#f8fbff;border:1px solid #dbeafe;border-radius:4px;">
         ${renderContentHtml(question.mathFormula, { forceMath: true, displayMode: true })}
       </div>`
     : "";
 
-  const optionsHtml =
-    options.length > 0
-      ? `<ul style="list-style:none;margin:14px 0 0;padding:0;">
-          ${options
-            .map((option, optionIndex) => {
-              const label = OPTION_LABELS[optionIndex] ?? String(optionIndex + 1);
-              const optionNumber = String(optionIndex + 1);
-              const isCorrect =
-                correctAnswer === optionNumber || correctAnswer === option;
-              const optionContent = renderContentHtml(option, {
-                forceMath: isMath || undefined,
-              });
-
-              return `<li style="margin-bottom:8px;padding:10px 12px;border-radius:8px;border:1px solid ${isCorrect ? "#34d399" : "#d1fae5"};background:${isCorrect ? "#ecfdf5" : "#ffffff"};">
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <span style="flex-shrink:0;width:26px;height:26px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:${isCorrect ? "#059669" : "#d1fae5"};color:${isCorrect ? "#fff" : "#065f46"};">${label}</span>
-                  <span style="flex:1;font-size:14px;line-height:1.7;word-break:break-word;">${optionContent}</span>
-                </div>
-              </li>`;
-            })
-            .join("")}
-        </ul>`
-      : `<p style="margin-top:12px;font-size:13px;color:#6b7280;font-style:italic;">No options available</p>`;
-
-  const blanksHtml =
-    question.blanks && question.blanks.length > 0
-      ? `<div style="margin-top:12px;padding:12px;border:1px solid #e9d5ff;border-radius:8px;background:#faf5ff;">
-          <div style="font-size:12px;font-weight:700;color:#7e22ce;margin-bottom:6px;">Blanks</div>
-          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6;color:#374151;">
-            ${question.blanks.map((b) => `<li>${renderContentHtml(b)}</li>`).join("")}
-          </ul>
-        </div>`
-      : "";
-
-  return `<article style="margin-bottom:22px;padding:16px 18px;border:1px solid #d1fae5;border-radius:12px;background:#ffffff;page-break-inside:avoid;">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;">
-      <span style="display:inline-block;padding:6px 12px;border-radius:999px;background:#16a34a;color:#fff;font-size:12px;font-weight:700;">Question ${index + 1} of ${total}</span>
-      <span style="display:inline-block;padding:6px 12px;border-radius:999px;background:#059669;color:#fff;font-size:12px;font-weight:700;">${question.marks} Mark${question.marks === 1 ? "" : "s"}</span>
+  return `<div class="pdf-block pdf-mcq" style="width:${COLUMN_WIDTH}px;padding:8px 9px;border:1px solid ${BORDER};border-radius:6px;background:#fff;box-sizing:border-box;">
+    <div style="display:flex;align-items:flex-start;gap:6px;">
+      ${buildQuestionNumberBadge(index + 1)}
+      <div style="flex:1;font-size:${COMPACT_FONT_PX}px;font-weight:600;line-height:1.55;color:${TEXT};">${titleHtml}</div>
     </div>
-    <div style="font-size:16px;font-weight:700;line-height:1.65;color:#111827;word-break:break-word;">${titleHtml}</div>
-    ${descriptionHtml}
     ${formulaHtml}
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #ecfdf5;">
-      <div style="font-size:12px;font-weight:700;color:#047857;margin-bottom:8px;">Answer Options</div>
-      ${optionsHtml}
-      <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #d1fae5;font-size:13px;">
-        <span style="font-weight:700;color:#065f46;">Correct Answer:</span>
-        <span style="margin-left:8px;padding:4px 10px;border-radius:6px;background:#059669;color:#fff;font-weight:700;">${escapeHtml(correctAnswer || "—")}</span>
-      </div>
-      ${blanksHtml}
-    </div>
-    <div style="margin-top:10px;font-size:11px;color:#6b7280;">ID: ${escapeHtml(question.questionId)} · Type: ${escapeHtml(question.type || "—")} · Answer: ${escapeHtml(question.answerType || "—")}</div>
-  </article>`;
-}
-
-function buildPageHtml(
-  exam: ExamExportData,
-  pageQuestions: ExamExportQuestion[],
-  pageIndex: number,
-  totalPages: number,
-  questionOffset: number,
-): string {
-  const showHeader = pageIndex === 0;
-  const totalQuestions = exam.questions.length;
-
-  const headerHtml = showHeader
-    ? `<div style="height:4px;background:#16a34a;border-radius:999px;margin-bottom:18px;"></div>
-       <div style="text-align:center;margin-bottom:6px;font-size:12px;color:#6b7280;">Exam Question Paper</div>
-       <h1 style="margin:0 0 16px;text-align:center;font-size:24px;line-height:1.45;font-weight:700;color:#1f2937;word-break:break-word;">${escapeHtml(exam.exam_name)}</h1>
-       ${buildExamSummaryHtml(exam)}
-       <div style="height:1px;background:#e5e7eb;margin-bottom:18px;"></div>`
-    : `<div style="margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">
-         <div style="font-size:13px;font-weight:700;color:#374151;">${escapeHtml(exam.exam_name)}</div>
-         <div style="font-size:11px;color:#6b7280;margin-top:4px;">Exam #${escapeHtml(exam.exam_number)} · Continued</div>
-       </div>`;
-
-  const questionsHtml = pageQuestions
-    .map((q, i) => buildQuestionHtml(q, questionOffset + i, totalQuestions))
-    .join("");
-
-  return `<div class="exam-pdf-page" style="width:${PAGE_WIDTH_PX}px;padding:36px 44px 48px;box-sizing:border-box;font-family:'${PDF_FONT_FAMILY}',sans-serif;background:#fff;color:#1f2937;">
-    ${headerHtml}
-    ${questionsHtml}
-    <div style="margin-top:18px;text-align:center;font-size:12px;color:#6b7280;">Page ${pageIndex + 1} of ${totalPages}</div>
+    ${buildOptionsHtml(question, COLUMN_WIDTH - 18)}
   </div>`;
 }
 
-async function createIsolatedRenderFrame(
-  html: string,
-): Promise<{ iframe: HTMLIFrameElement; pageElement: HTMLElement }> {
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("aria-hidden", "true");
-  iframe.style.position = "fixed";
-  iframe.style.left = "-10000px";
-  iframe.style.top = "0";
-  iframe.style.width = `${PAGE_WIDTH_PX}px`;
-  iframe.style.height = "2400px";
-  iframe.style.border = "none";
-  document.body.appendChild(iframe);
+function buildWrittenBlockHtml(
+  question: ExamExportQuestion,
+  index: number,
+): string {
+  const titleHtml = renderContentHtml(`${question.title}`, {
+    forceMath: question.type === "math" || undefined,
+  });
 
-  const frameDoc = iframe.contentDocument;
-  const frameWindow = iframe.contentWindow;
+  const descriptionHtml = question.description?.trim()
+    ? `<div style="margin-top:6px;font-size:${META_FONT_PX}px;line-height:1.55;color:#4b5563;">${renderContentHtml(question.description)}</div>`
+    : "";
 
-  if (!frameDoc || !frameWindow) {
-    document.body.removeChild(iframe);
-    throw new Error("Failed to create isolated PDF render frame.");
+  return `<div class="pdf-block pdf-written" style="width:${CONTENT_WIDTH}px;padding:10px 12px;border:1px solid #94a3b8;border-radius:6px;background:#fff;box-sizing:border-box;">
+    <div style="display:flex;align-items:flex-start;gap:6px;">
+      ${buildQuestionNumberBadge(index + 1)}
+      <div style="flex:1;">
+        <div style="font-size:${COMPACT_FONT_PX}px;font-weight:600;line-height:1.55;color:${TEXT};">${titleHtml}</div>
+        <div style="margin-top:2px;font-size:8.5px;font-weight:700;color:#64748b;letter-spacing:0.04em;">WRITTEN QUESTION · ${question.marks} MARK${question.marks === 1 ? "" : "S"}</div>
+      </div>
+    </div>
+    ${descriptionHtml}
+    <div style="margin-top:10px;font-size:${META_FONT_PX}px;font-weight:600;color:#475569;">Answer</div>
+    <div style="margin-top:5px;min-height:52px;border:1px dashed #cbd5e1;border-radius:4px;background:#fafafa;"></div>
+  </div>`;
+}
+
+function buildQuestionRowHtml(left: string, right?: string): string {
+  return `<div class="pdf-block pdf-row" style="width:${CONTENT_WIDTH}px;display:flex;align-items:stretch;gap:${COLUMN_GAP}px;">
+    ${left}
+    ${right ?? `<div style="width:${COLUMN_WIDTH}px;flex-shrink:0;"></div>`}
+  </div>`;
+}
+
+function buildContentBlocks(exam: ExamExportData): string[] {
+  const blocks: string[] = [buildSectionTitleHtml()];
+  const questions = exam.questions;
+  let index = 0;
+
+  while (index < questions.length) {
+    const question = questions[index];
+
+    if (!isMcqQuestion(question)) {
+      blocks.push(buildWrittenBlockHtml(question, index));
+      index += 1;
+      continue;
+    }
+
+    const left = buildMcqBlockHtml(question, index);
+    const nextIndex = index + 1;
+
+    if (
+      nextIndex < questions.length &&
+      isMcqQuestion(questions[nextIndex])
+    ) {
+      blocks.push(
+        buildQuestionRowHtml(left, buildMcqBlockHtml(questions[nextIndex], nextIndex)),
+      );
+      index += 2;
+    } else {
+      blocks.push(buildQuestionRowHtml(left));
+      index += 1;
+    }
   }
 
-  frameDoc.open();
-  frameDoc.write(`<!DOCTYPE html>
+  return blocks;
+}
+
+function buildPageFooterHtml(
+  generatedAt: string,
+  pageNumber: number,
+  totalPages: number,
+): string {
+  return `<div style="width:${CONTENT_WIDTH}px;height:${FOOTER_HEIGHT}px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #e5e7eb;padding-top:8px;margin-top:auto;font-size:8px;color:${MUTED};">
+    <span>Generated: ${escapeHtml(generatedAt)}</span>
+    <span>Page ${pageNumber} of ${totalPages}</span>
+  </div>`;
+}
+
+function buildPageShell(contentHtml: string, footerHtml: string): string {
+  return `<div class="pdf-page" style="width:${PAGE_WIDTH_PX}px;height:${PAGE_HEIGHT_PX}px;padding:${PAGE_PADDING_TOP}px ${PAGE_PADDING_X}px ${PAGE_PADDING_BOTTOM}px;box-sizing:border-box;display:flex;flex-direction:column;background:#fff;${BASE_TEXT_STYLE}">
+    <div style="flex:1;min-height:0;">${contentHtml}</div>
+    ${footerHtml}
+  </div>`;
+}
+
+function paginateBlocks(
+  blockHeights: number[],
+  headerHeight: number,
+  continuationHeaderHeight: number,
+): number[][] {
+  const pages: number[][] = [];
+  let currentPage: number[] = [];
+  let usedHeight = headerHeight + 8;
+
+  const startNewPage = (withContinuation: boolean) => {
+    if (currentPage.length) {
+      pages.push(currentPage);
+    }
+    currentPage = [];
+    usedHeight = (withContinuation ? continuationHeaderHeight : 0) + 8;
+  };
+
+  blockHeights.forEach((height, index) => {
+    const blockGap = currentPage.length ? 10 : 0;
+    const nextHeight = usedHeight + blockGap + height;
+
+    if (nextHeight > CONTENT_PAGE_HEIGHT && currentPage.length > 0) {
+      startNewPage(true);
+    }
+
+    if (height > CONTENT_PAGE_HEIGHT && currentPage.length === 0) {
+      currentPage.push(index);
+      startNewPage(true);
+      return;
+    }
+
+    usedHeight += blockGap + height;
+    currentPage.push(index);
+  });
+
+  if (currentPage.length) {
+    pages.push(currentPage);
+  }
+
+  if (!pages.length) {
+    pages.push([]);
+  }
+
+  return pages;
+}
+
+async function measureHtmlBlocks(
+  frameDoc: Document,
+  blocks: string[],
+): Promise<number[]> {
+  const host = frameDoc.createElement("div");
+  host.style.cssText = `position:fixed;left:-20000px;top:0;width:${PAGE_WIDTH_PX}px;visibility:hidden;pointer-events:none;${BASE_TEXT_STYLE}`;
+  frameDoc.body.appendChild(host);
+
+  const heights: number[] = [];
+
+  for (const block of blocks) {
+    host.innerHTML = block;
+    heights.push(host.offsetHeight);
+  }
+
+  frameDoc.body.removeChild(host);
+  return heights;
+}
+
+async function buildPagedDocumentHtml(
+  frameDoc: Document,
+  exam: ExamExportData,
+  generatedAt: string,
+): Promise<string> {
+  const fullHeader = buildFullHeaderHtml(exam, generatedAt);
+  const continuationHeader = buildContinuationHeaderHtml(exam);
+  const contentBlocks = buildContentBlocks(exam);
+
+  const [headerHeight, continuationHeight, ...blockHeights] =
+    await measureHtmlBlocks(frameDoc, [
+      fullHeader,
+      continuationHeader,
+      ...contentBlocks,
+    ]);
+
+  const pages = paginateBlocks(
+    blockHeights,
+    headerHeight,
+    continuationHeight,
+  );
+  const totalPages = pages.length;
+
+  return pages
+    .map((indices, pageIndex) => {
+      const header =
+        pageIndex === 0 ? fullHeader : continuationHeader;
+      const body = indices.map((i) => contentBlocks[i]).join("");
+      const footer = buildPageFooterHtml(
+        generatedAt,
+        pageIndex + 1,
+        totalPages,
+      );
+
+      return buildPageShell(`${header}${body}`, footer);
+    })
+    .join("");
+}
+
+function buildFrameDocument(pagesHtml: string): string {
+  return `<!DOCTYPE html>
 <html lang="bn">
 <head>
 <meta charset="utf-8">
@@ -227,51 +413,85 @@ html, body {
   margin: 0;
   padding: 0;
   background: #ffffff;
-  color: #1f2937;
+  color: ${TEXT};
   font-family: "${PDF_FONT_FAMILY}", sans-serif;
 }
 *, *::before, *::after { box-sizing: border-box; }
-.pdf-text, .pdf-math { word-break: break-word; overflow-wrap: anywhere; }
-.katex { font-size: 1.05em; }
-.katex-display { margin: 0.5em 0; overflow-x: auto; overflow-y: hidden; }
+.pdf-text, .pdf-math {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
+  line-height: 1.55;
+}
+.katex { font-size: 1em; max-width: 100%; }
+.katex-display {
+  margin: 0.35em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+}
+.pdf-page + .pdf-page { margin-top: 0; }
 </style>
 </head>
-<body>${html}</body>
-</html>`);
+<body>${pagesHtml}</body>
+</html>`;
+}
+
+async function createRenderFrame(
+  pagesHtml: string,
+): Promise<{ iframe: HTMLIFrameElement; pageElements: HTMLElement[] }> {
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.cssText = `position:fixed;left:-20000px;top:0;width:${PAGE_WIDTH_PX}px;height:${PAGE_HEIGHT_PX * 40}px;border:none;`;
+  document.body.appendChild(iframe);
+
+  const frameDoc = iframe.contentDocument;
+  if (!frameDoc) {
+    document.body.removeChild(iframe);
+    throw new Error("Failed to create PDF render frame.");
+  }
+
+  frameDoc.open();
+  frameDoc.write(buildFrameDocument(pagesHtml));
   frameDoc.close();
 
   await frameDoc.fonts.load(`16px "${PDF_FONT_FAMILY}"`);
   await frameDoc.fonts.ready;
+  await new Promise((resolve) => setTimeout(resolve, 220));
 
-  await new Promise((resolve) => setTimeout(resolve, 120));
+  const pageElements = Array.from(
+    frameDoc.querySelectorAll<HTMLElement>(".pdf-page"),
+  );
 
-  const pageElement = frameDoc.body.firstElementChild as HTMLElement | null;
-  if (!pageElement) {
+  if (!pageElements.length) {
     document.body.removeChild(iframe);
-    throw new Error("Failed to prepare PDF page content.");
+    throw new Error("Failed to prepare PDF pages.");
   }
 
-  return { iframe, pageElement };
+  return { iframe, pageElements };
 }
 
-async function renderPageToPdf(
+async function renderPagesToPdf(
   doc: jsPDF,
-  html: string,
-  pageIndex: number,
+  pageElements: HTMLElement[],
 ): Promise<void> {
-  const { iframe, pageElement } = await createIsolatedRenderFrame(html);
+  const scale = 2;
 
-  try {
+  for (let pageIndex = 0; pageIndex < pageElements.length; pageIndex++) {
+    const pageElement = pageElements[pageIndex];
+
     const canvas = await html2canvas(pageElement, {
-      scale: 2,
+      scale,
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
       width: PAGE_WIDTH_PX,
+      height: PAGE_HEIGHT_PX,
       windowWidth: PAGE_WIDTH_PX,
+      windowHeight: PAGE_HEIGHT_PX,
     });
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+    const imgData = canvas.toDataURL("image/jpeg", 0.94);
     const imgHeightMm = (canvas.height * A4_WIDTH_MM) / canvas.width;
 
     if (pageIndex > 0) {
@@ -279,8 +499,6 @@ async function renderPageToPdf(
     }
 
     doc.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, imgHeightMm);
-  } finally {
-    document.body.removeChild(iframe);
   }
 }
 
@@ -298,25 +516,51 @@ export async function exportExamPdf(exam: ExamExportData): Promise<void> {
     );
   }
 
-  const questionChunks = chunkQuestions(exam.questions, 1);
-  const totalPages = questionChunks.length;
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const generatedAt = new Date().toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-  let questionOffset = 0;
+  const measureIframe = document.createElement("iframe");
+  measureIframe.style.cssText =
+    "position:fixed;left:-20000px;top:0;width:794px;height:200px;border:none;";
+  document.body.appendChild(measureIframe);
 
-  for (let pageIndex = 0; pageIndex < questionChunks.length; pageIndex++) {
-    const pageQuestions = questionChunks[pageIndex];
-    const html = buildPageHtml(
-      exam,
-      pageQuestions,
-      pageIndex,
-      totalPages,
-      questionOffset,
-    );
-
-    await renderPageToPdf(doc, html, pageIndex);
-    questionOffset += pageQuestions.length;
+  const measureDoc = measureIframe.contentDocument;
+  if (!measureDoc) {
+    document.body.removeChild(measureIframe);
+    throw new Error("Failed to prepare PDF layout.");
   }
 
-  doc.save(`exam-${exam.exam_number}-questions.pdf`);
+  measureDoc.open();
+  measureDoc.write(
+    buildFrameDocument(`<div style="width:${PAGE_WIDTH_PX}px;${BASE_TEXT_STYLE}"></div>`),
+  );
+  measureDoc.close();
+  await measureDoc.fonts.load(`16px "${PDF_FONT_FAMILY}"`);
+  await measureDoc.fonts.ready;
+
+  const pagesHtml = await buildPagedDocumentHtml(
+    measureDoc,
+    exam,
+    generatedAt,
+  );
+  document.body.removeChild(measureIframe);
+
+  const { iframe, pageElements } = await createRenderFrame(pagesHtml);
+
+  try {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+    await renderPagesToPdf(doc, pageElements);
+    doc.save(`exam-${exam.exam_number}-question-paper.pdf`);
+  } finally {
+    document.body.removeChild(iframe);
+  }
 }
