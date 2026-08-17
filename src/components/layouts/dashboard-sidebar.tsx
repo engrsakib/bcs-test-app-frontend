@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Megaphone,
   FileText,
+  MessageSquare,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -112,7 +113,7 @@ const links = [
     ],
   },
   {
-    name: "Exam Solution",
+    name: "Model Test Solution",
     icon: FileText,
     basePath: "/dashboard/exam-solution",
     subLinks: [
@@ -128,6 +129,11 @@ const links = [
       { name: "Create Routine", href: "/dashboard/exam-routine/create-routine" },
       { name: "View Routines", href: "/dashboard/exam-routine/view-routine" },
     ],
+  },
+  {
+    name: "BulkSMS BD",
+    icon: MessageSquare,
+    href: "/dashboard/sms",
   },
   { name: "Profile", href: "/dashboard/profile", icon: Link2 },
 ];

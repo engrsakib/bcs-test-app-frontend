@@ -72,7 +72,7 @@ export default function ExamSolutionDetailsPage() {
         });
 
       if (!ok) {
-        throw new Error(result?.message || "Failed to fetch exam solution details");
+        throw new Error(result?.message || "Failed to fetch model test solution details");
       }
 
       setExamSolution(result.data);
@@ -94,7 +94,7 @@ export default function ExamSolutionDetailsPage() {
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 p-6 flex items-center justify-center">
         <div className="flex items-center gap-3 rounded-2xl bg-white px-6 py-5 shadow-lg text-teal-700">
           <Loader2 className="animate-spin" size={22} />
-          <span className="font-semibold">Loading exam solution details...</span>
+          <span className="font-semibold">Loading model test solution details...</span>
         </div>
       </div>
     );
@@ -141,7 +141,7 @@ export default function ExamSolutionDetailsPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 font-semibold text-white shadow-sm hover:bg-teal-700"
           >
             <ExternalLink size={18} />
-            Open Exam Solution
+            Open Model Test Solution
           </a>
         </div>
 
@@ -180,7 +180,7 @@ export default function ExamSolutionDetailsPage() {
               </h1>
 
               <p className="mt-4 text-gray-600 leading-7">
-                This exam solution contains structured preparation material and
+                This model test solution contains structured preparation material and
                 guidance for learners. You can preview the main information
                 below and open the linked resource for the full content.
               </p>
@@ -189,7 +189,7 @@ export default function ExamSolutionDetailsPage() {
                 <div className="rounded-2xl bg-teal-50 p-4">
                   <div className="flex items-center gap-2 text-teal-700 font-semibold">
                     <Hash size={18} />
-                    Exam Solution Number
+                    Model Test Solution Number
                   </div>
                   <p className="mt-2 text-lg font-bold text-gray-900">
                     #{examSolution.exam_solution_number}
@@ -231,7 +231,7 @@ export default function ExamSolutionDetailsPage() {
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Description</h2>
                 <p className="text-sm text-gray-500">
-                  Detailed content of this exam solution
+                  Detailed content of this model test solution
                 </p>
               </div>
             </div>
@@ -267,7 +267,7 @@ export default function ExamSolutionDetailsPage() {
             <div className="rounded-3xl bg-gradient-to-br from-teal-600 to-emerald-600 p-6 text-white shadow-xl">
               <h3 className="text-xl font-bold">Resource Access</h3>
               <p className="mt-2 text-teal-100 leading-7">
-                Open the attached exam solution file or external resource to view
+                Open the attached model test solution file or external resource to view
                 the full material.
               </p>
 
@@ -278,7 +278,7 @@ export default function ExamSolutionDetailsPage() {
                 className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 font-semibold text-teal-700 hover:bg-teal-50"
               >
                 <ExternalLink size={18} />
-                Open Full Exam Solution
+                Open Full Model Test Solution
               </a>
             </div>
           </div>
