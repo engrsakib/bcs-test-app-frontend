@@ -183,13 +183,13 @@ export default function ViewAllExamSolutionTemplate() {
       );
 
       if (!ok) {
-        throw new Error(result.message || "Failed to fetch exam solutions");
+        throw new Error(result.message || "Failed to fetch model test solutions");
       }
 
       setExamSolutions(result.data.data);
       setMeta(result.data.meta);
     } catch (error) {
-      console.error("Fetch exam solution error:", error);
+      console.error("Fetch model test solution error:", error);
       setExamSolutions([]);
     } finally {
       setLoading(false);
@@ -295,8 +295,8 @@ export default function ViewAllExamSolutionTemplate() {
   return (
     <div className="min-h-screen bg-linear-to-br from-teal-50 to-emerald-50 p-6">
       <div className="mb-6 rounded-2xl bg-linear-to-r from-teal-600 to-emerald-600 p-6 text-white shadow-lg">
-        <h1 className="text-3xl font-bold">All Exam Solutions</h1>
-        <p className="text-teal-100">Browse and manage exam solutions</p>
+        <h1 className="text-3xl font-bold">All Model Test Solutions</h1>
+        <p className="text-teal-100">Browse and manage model test solutions</p>
       </div>
 
       <div className="space-y-4 rounded-xl bg-white p-5 shadow-md">
@@ -375,7 +375,7 @@ export default function ViewAllExamSolutionTemplate() {
               <tr>
                 <th className="py-3 px-4 text-center">Order</th>
                 <th className="py-3 px-4 text-center">Plan No</th>
-                <th className="py-3 px-4 text-left">Exam Solution</th>
+                <th className="py-3 px-4 text-left">Model Test Solution</th>
                 <th className="py-3 px-4 text-center">Status</th>
                 <th className="py-3 px-4 text-center">File</th>
                 <th className="py-3 px-4 text-center">Actions</th>
@@ -388,14 +388,14 @@ export default function ViewAllExamSolutionTemplate() {
                   <td colSpan={7} className="py-10">
                     <div className="flex items-center justify-center gap-2 text-teal-600">
                       <Loader2 className="animate-spin" size={20} />
-                      Loading exam solutions...
+                      Loading model test solutions...
                     </div>
                   </td>
                 </tr>
               ) : examSolutions.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-gray-500">
-                    No exam solutions found
+                    No model test solutions found
                   </td>
                 </tr>
               ) : (

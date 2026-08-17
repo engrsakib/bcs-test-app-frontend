@@ -86,7 +86,7 @@ export default function EditStudyPlanPage() {
         });
 
       if (!ok) {
-        throw new Error(result?.message || "Failed to fetch exam solution");
+        throw new Error(result?.message || "Failed to fetch model test solution");
       }
 
       setFormData({
@@ -97,7 +97,7 @@ export default function EditStudyPlanPage() {
         exam_solution_url: result.data.exam_solution_url || "",
       });
     } catch (error: any) {
-      notify.error("Error", error?.message || "Failed to load exam solution");
+      notify.error("Error", error?.message || "Failed to load model test solution");
     } finally {
       setLoading(false);
     }
@@ -155,7 +155,7 @@ export default function EditStudyPlanPage() {
     }
 
     if (!formData.exam_solution_url.trim()) {
-      return notify.warning("Missing Exam Solution URL", "Please enter exam solution URL");
+      return notify.warning("Missing Model Test Solution URL", "Please enter model test solution URL");
     }
 
     if (!formData.description.trim()) {
@@ -163,7 +163,7 @@ export default function EditStudyPlanPage() {
     }
 
     const confirmed = await confirmAction({
-      title: "Update Exam Solution?",
+      title: "Update Model Test Solution?",
       description: "Do you want to save these changes?",
       confirmText: "Yes, Update",
     });
@@ -189,7 +189,7 @@ export default function EditStudyPlanPage() {
       );
 
       if (!ok) {
-        throw new Error(result?.message || "Failed to update exam solution");
+        throw new Error(result?.message || "Failed to update model test solution");
       }
 
       notify.success(
@@ -211,7 +211,7 @@ export default function EditStudyPlanPage() {
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 p-6 flex items-center justify-center">
         <div className="flex items-center gap-3 rounded-2xl bg-white px-6 py-5 shadow-lg text-teal-700">
           <Loader2 className="animate-spin" size={22} />
-          <span className="font-semibold">Loading exam solution...</span>
+          <span className="font-semibold">Loading model test solution...</span>
         </div>
       </div>
     );
@@ -235,9 +235,9 @@ export default function EditStudyPlanPage() {
             </div>
 
             <div>
-              <h1 className="text-3xl font-bold text-white">Edit Exam Solution</h1>
+              <h1 className="text-3xl font-bold text-white">Edit Model Test Solution</h1>
               <p className="text-teal-100">
-                Update and manage exam solution information
+                Update and manage model test solution information
               </p>
             </div>
           </div>
@@ -254,7 +254,7 @@ export default function EditStudyPlanPage() {
               name="title"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Enter exam solution title"
+              placeholder="Enter model test solution title"
               className={inputClassName}
             />
           </div>
@@ -312,14 +312,14 @@ export default function EditStudyPlanPage() {
           <div>
             <label className={labelClassName}>
               <LinkIcon className="text-teal-600" size={18} />
-              Exam Solution URL
+              Model Test Solution URL
             </label>
             <input
               type="text"
               name="exam_solution_url"
               value={formData.exam_solution_url}
               onChange={handleChange}
-              placeholder="Enter exam solution URL"
+              placeholder="Enter model test solution URL"
               className={inputClassName}
             />
           </div>
@@ -339,7 +339,7 @@ export default function EditStudyPlanPage() {
                     description: value,
                   }))
                 }
-                placeholder="Write exam solution description..."
+                placeholder="Write model test solution description..."
                 height={280}
               />
             </div>
@@ -361,7 +361,7 @@ export default function EditStudyPlanPage() {
                 Updating...
               </span>
             ) : (
-              "Update Exam Solution"
+              "Update Model Test Solution"
             )}
           </button>
         </div>

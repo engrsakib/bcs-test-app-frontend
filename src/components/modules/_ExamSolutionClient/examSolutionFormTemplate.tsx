@@ -128,11 +128,11 @@ const handleSubmit = async () => {
   const studyUrl = formData.exam_solution_url.trim();
 
   if (!title) {
-    return notify.warning("Missing Title", "Please enter exam solution title");
+    return notify.warning("Missing Title", "Please enter model test solution title");
   }
 
   if (!studyUrl) {
-    return notify.warning("Missing Exam Solution URL", "Please enter exam solution file URL");
+    return notify.warning("Missing Model Test Solution URL", "Please enter model test solution file URL");
   }
 
   try {
@@ -154,7 +154,7 @@ const handleSubmit = async () => {
 
     if (ok) {
       notify.success(
-        "Exam Solution Created",
+        "Model Test Solution Created",
         data?.message || "Study plan created successfully",
         {
           onAutoClose: () => {
@@ -167,7 +167,7 @@ const handleSubmit = async () => {
       const errorText =
         Array.isArray(data?.errorMessages) && data.errorMessages.length > 0
           ? data.errorMessages.map((err: any) => err.message).join("\n")
-          : data?.message || "Failed to create exam solution";
+          : data?.message || "Failed to create model test solution";
 
       notify.error("Error", errorText);
     }
@@ -189,10 +189,10 @@ const handleSubmit = async () => {
 
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-white">
-                Create Exam Solution
+                Create Model Test Solution
               </h1>
               <p className="text-sm md:text-base text-teal-100 mt-1">
-                MCQ Application Exam Solution Setup
+                MCQ Application Model Test Solution Setup
               </p>
             </div>
           </div>
@@ -211,7 +211,7 @@ const handleSubmit = async () => {
               name="title"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Enter exam solution title"
+              placeholder="Enter model test solution title"
               className={inputClassName}
             />
           </div>
@@ -267,18 +267,18 @@ const handleSubmit = async () => {
             )}
           </div>
 
-          {/* Exam Solution URL */}
+          {/* Model Test Solution URL */}
           <div>
             <label className={labelClassName}>
               <LinkIcon className="text-teal-600" size={18} />
-              Exam Solution URL
+              Model Test Solution URL
             </label>
             <input
               type="text"
               name="exam_solution_url"
               value={formData.exam_solution_url}
               onChange={handleChange}
-              placeholder="Enter exam solution PDF/file URL"
+              placeholder="Enter model test solution PDF/file URL"
               className={inputClassName}
             />
           </div>
@@ -315,7 +315,7 @@ const handleSubmit = async () => {
                 Creating...
               </span>
             ) : (
-              "Create Exam Solution"
+              "Create Model Test Solution"
             )}
           </button>
         </div>

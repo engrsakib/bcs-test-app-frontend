@@ -32,6 +32,9 @@ export enum PermissionEnum {
   DELETE_STAFF = "delete_staff",
 
   MANAGE_PERMISSIONS = "manage_permissions",
+
+  VIEW_SMS = "view_sms",
+  SEND_SMS = "send_sms",
 }
 
 export const PERMISSION_GROUP_KEYS = {
@@ -40,6 +43,7 @@ export const PERMISSION_GROUP_KEYS = {
   QUESTION: "QUESTION",
   BOOK: "BOOK",
   GUIDELINE: "GUIDELINE",
+  SMS: "SMS",
   STAFF: "STAFF",
   OTHER: "OTHER",
 } as const;
@@ -78,6 +82,10 @@ export const PERMISSION_GROUPS: Record<PermissionGroupKey, PermissionEnum[]> = {
     PermissionEnum.UPDATE_GUIDELINE,
     PermissionEnum.DELETE_GUIDELINE,
   ],
+  [PERMISSION_GROUP_KEYS.SMS]: [
+    PermissionEnum.VIEW_SMS,
+    PermissionEnum.SEND_SMS,
+  ],
   [PERMISSION_GROUP_KEYS.STAFF]: [
     PermissionEnum.CREATE_STAFF,
     PermissionEnum.VIEW_STAFF,
@@ -96,6 +104,7 @@ export const PERMISSION_GROUP_LABELS: Record<PermissionGroupKey, string> = {
   [PERMISSION_GROUP_KEYS.QUESTION]: "Question",
   [PERMISSION_GROUP_KEYS.BOOK]: "Book",
   [PERMISSION_GROUP_KEYS.GUIDELINE]: "Guideline",
+  [PERMISSION_GROUP_KEYS.SMS]: "SMS",
   [PERMISSION_GROUP_KEYS.STAFF]: "Staff",
   [PERMISSION_GROUP_KEYS.OTHER]: "Other Permissions",
 };
@@ -106,6 +115,7 @@ export const PERMISSION_GROUP_ICONS: Record<PermissionGroupKey, string> = {
   [PERMISSION_GROUP_KEYS.QUESTION]: "❓",
   [PERMISSION_GROUP_KEYS.BOOK]: "📚",
   [PERMISSION_GROUP_KEYS.GUIDELINE]: "📋",
+  [PERMISSION_GROUP_KEYS.SMS]: "💬",
   [PERMISSION_GROUP_KEYS.STAFF]: "👥",
   [PERMISSION_GROUP_KEYS.OTHER]: "⚙️",
 };
@@ -131,6 +141,8 @@ export const PERMISSION_LABELS: Record<PermissionEnum, string> = {
   [PermissionEnum.VIEW_GUIDELINE]: "View Guideline",
   [PermissionEnum.UPDATE_GUIDELINE]: "Update Guideline",
   [PermissionEnum.DELETE_GUIDELINE]: "Delete Guideline",
+  [PermissionEnum.VIEW_SMS]: "View SMS",
+  [PermissionEnum.SEND_SMS]: "Send SMS",
   [PermissionEnum.CHECK_RESULT]: "Check Result",
   [PermissionEnum.CREATE_STAFF]: "Create Staff",
   [PermissionEnum.VIEW_STAFF]: "View Staff",
