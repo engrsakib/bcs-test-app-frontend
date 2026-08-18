@@ -40,6 +40,47 @@ export type SmsTestResult = {
   error_message: string;
 };
 
+export type SmsLogEntry = {
+  id: string;
+  phone_number: string;
+  message_type: "otp" | "forget_password_otp" | "general" | "test";
+  success: boolean;
+  response_code: number | null;
+  error_message: string;
+  created_at: string;
+};
+
+export type OtpBlockLogEntry = {
+  id: string;
+  phone_number: string;
+  attempts_used: number;
+  max_attempts: number;
+  reset_at: string;
+  created_at: string;
+};
+
+export type OtpRateLimitConfig = {
+  maxAttempts: number;
+  windowHours: number;
+};
+
+export type OtpRateLimitBlock = {
+  phone_number: string;
+  attempts_used: number;
+  max_attempts: number;
+  remaining_attempts: number;
+  is_blocked: boolean;
+  ttl_seconds: number;
+  reset_at: string;
+};
+
+export type OtpBlocksData = {
+  config: OtpRateLimitConfig;
+  blocks: OtpRateLimitBlock[];
+  total: number;
+  blocked_count: number;
+};
+
 async function smsProxy<T = unknown>(
   suffix: string,
   options: RequestInit = {}
@@ -83,6 +124,48 @@ export async function sendTestSms(payload: {
 }) {
   return smsProxy<SmsApiResponse<SmsTestResult>>("/test", {
     method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchSmsLogs(limit = 50) {
+  return smsProxy<SmsApiResponse<SmsLogEntry[]>>(`/logs?limit=${limit}`, {
+    method: "GET",
+  });
+}
+
+export async function fetchOtpBlockLogs(limit = 50) {
+  return smsProxy<SmsApiResponse<OtpBlockLogEntry[]>>(
+    `/otp-block-logs?limit=${limit}`,
+    { method: "GET" }
+  );
+}
+
+export async function fetchOtpBlocks() {
+  return smsProxy<SmsApiResponse<OtpBlocksData>>("/otp-blocks", {
+    method: "GET",
+  });
+}
+
+export async function fetchOtpConfig() {
+  return smsProxy<SmsApiResponse<OtpRateLimitConfig>>("/otp-config", {
+    method: "GET",
+  });
+}
+
+export async function updateOtpConfig(payload: OtpRateLimitConfig) {
+  return smsProxy<SmsApiResponse<OtpRateLimitConfig>>("/otp-config", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function clearOtpBlock(payload: {
+  phone_number?: string;
+  clear_all?: boolean;
+}) {
+  return smsProxy<SmsApiResponse<{ deleted_count: number }>>("/otp-blocks", {
+    method: "DELETE",
     body: JSON.stringify(payload),
   });
 }
