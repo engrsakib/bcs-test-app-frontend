@@ -18,6 +18,7 @@ import {
   clearOtpBlock,
   fetchOtpBlockLogs,
   fetchOtpBlocks,
+  fetchOtpConfig,
   fetchSmsBalance,
   fetchSmsLogs,
   fetchSmsStatus,
@@ -31,9 +32,50 @@ import {
 } from "@/lib/sms-api";
 
 const DEFAULT_TEST_MESSAGE = "Your Cloudy BD OTP is 123456";
+const OTP_BLOCKS_PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleString();
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "N/A";
+  }
+
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function formatTimeRemaining(seconds: number) {
+  if (seconds <= 0) {
+    return "Expired";
+  }
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes}m ${secs}s`;
+  }
+
+  return `${secs}s`;
+}
+
+function formatOtpLimitLabel(config: OtpRateLimitConfig | null) {
+  if (!config) {
+    return "Loading...";
+  }
+
+  return `${config.maxAttempts} attempt${config.maxAttempts === 1 ? "" : "s"} / ${config.windowHours} hour${config.windowHours === 1 ? "" : "s"}`;
 }
 
 function formatMessageType(type: SmsLogEntry["message_type"]) {
@@ -50,10 +92,11 @@ export default function SmsMonitoring() {
   const [smsLogs, setSmsLogs] = useState<SmsLogEntry[]>([]);
   const [otpBlockLogs, setOtpBlockLogs] = useState<OtpBlockLogEntry[]>([]);
   const [otpBlocks, setOtpBlocks] = useState<OtpRateLimitBlock[]>([]);
-  const [otpConfig, setOtpConfig] = useState<OtpRateLimitConfig>({
-    maxAttempts: 3,
-    windowHours: 25,
-  });
+  const [otpConfig, setOtpConfig] = useState<OtpRateLimitConfig | null>(null);
+  const [otpBlocksPage, setOtpBlocksPage] = useState(1);
+  const [otpBlocksLimit, setOtpBlocksLimit] = useState<number>(
+    OTP_BLOCKS_PAGE_SIZE_OPTIONS[0]
+  );
   const [testNumber, setTestNumber] = useState("");
   const [testMessage, setTestMessage] = useState(DEFAULT_TEST_MESSAGE);
   const [cleanupNumber, setCleanupNumber] = useState("");
@@ -68,12 +111,14 @@ export default function SmsMonitoring() {
         { data: smsLogsResult },
         { data: blockLogsResult },
         { data: blocksResult },
+        { data: configResult },
       ] = await Promise.all([
         fetchSmsStatus(),
         fetchSmsBalance(),
         fetchSmsLogs(50),
         fetchOtpBlockLogs(50),
         fetchOtpBlocks(),
+        fetchOtpConfig(),
       ]);
 
       if (!statusResult.success || !statusResult.data) {
@@ -93,12 +138,17 @@ export default function SmsMonitoring() {
       setSmsLogs(smsLogsResult.data || []);
       setOtpBlockLogs(blockLogsResult.data || []);
       setOtpBlocks(blocksResult.data?.blocks || []);
-      setOtpConfig(
-        blocksResult.data?.config || {
-          maxAttempts: 3,
-          windowHours: 25,
-        }
-      );
+
+      const nextConfig =
+        configResult.data ||
+        blocksResult.data?.config ||
+        null;
+
+      if (nextConfig) {
+        setOtpConfig(nextConfig);
+      }
+
+      setOtpBlocksPage(1);
 
       if (showToast) {
         notify.success("BulkSMS BD dashboard refreshed");
@@ -154,7 +204,7 @@ export default function SmsMonitoring() {
     try {
       setSavingConfig(true);
 
-      const { ok, data: result } = await updateOtpConfig(otpConfig);
+      const { ok, data: result } = await updateOtpConfig(otpConfig!);
 
       if (!ok || !result.success || !result.data) {
         throw new Error(result.message || "Failed to update OTP config");
@@ -258,6 +308,20 @@ export default function SmsMonitoring() {
     : [];
 
   const blockedCount = otpBlocks.filter((block) => block.is_blocked).length;
+  const otpBlocksTotalPages = Math.max(
+    1,
+    Math.ceil(otpBlocks.length / otpBlocksLimit)
+  );
+  const paginatedOtpBlocks = otpBlocks.slice(
+    (otpBlocksPage - 1) * otpBlocksLimit,
+    otpBlocksPage * otpBlocksLimit
+  );
+
+  useEffect(() => {
+    if (otpBlocksPage > otpBlocksTotalPages) {
+      setOtpBlocksPage(otpBlocksTotalPages);
+    }
+  }, [otpBlocksPage, otpBlocksTotalPages]);
 
   return (
     <div className="min-h-screen w-full bg-white relative">
@@ -352,9 +416,15 @@ export default function SmsMonitoring() {
           <div className="rounded-2xl bg-white/90 backdrop-blur border border-emerald-100 p-5 shadow-sm">
             <p className="text-sm text-gray-500">OTP Limit</p>
             <p className="text-lg font-semibold text-gray-900 mt-1">
-              {otpConfig.maxAttempts} attempts / {otpConfig.windowHours} hours
+              {formatOtpLimitLabel(otpConfig)}
             </p>
             <p className="text-sm text-gray-600 mt-3">
+              Saved in admin panel
+              {otpConfig
+                ? ` • ${otpConfig.maxAttempts} max / ${otpConfig.windowHours}h window`
+                : ""}
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
               Sender ID: {status?.sender_id || "N/A"}
             </p>
           </div>
@@ -371,7 +441,17 @@ export default function SmsMonitoring() {
               </h2>
               <p className="text-sm text-gray-600 mt-1">
                 Change how many OTP requests are allowed within the rolling
-                window. Default is 3 attempts every 25 hours.
+                window.
+                {otpConfig ? (
+                  <>
+                    {" "}
+                    Currently saved:{" "}
+                    <span className="font-medium text-gray-800">
+                      {formatOtpLimitLabel(otpConfig)}
+                    </span>
+                    .
+                  </>
+                ) : null}
               </p>
             </div>
 
@@ -384,11 +464,12 @@ export default function SmsMonitoring() {
                   type="number"
                   min={1}
                   max={20}
-                  value={otpConfig.maxAttempts}
+                  value={otpConfig?.maxAttempts ?? ""}
+                  disabled={!otpConfig}
                   onChange={(event) =>
                     setOtpConfig((current) => ({
-                      ...current,
                       maxAttempts: Number(event.target.value),
+                      windowHours: current?.windowHours ?? 25,
                     }))
                   }
                   className="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -403,10 +484,11 @@ export default function SmsMonitoring() {
                   type="number"
                   min={1}
                   max={168}
-                  value={otpConfig.windowHours}
+                  value={otpConfig?.windowHours ?? ""}
+                  disabled={!otpConfig}
                   onChange={(event) =>
                     setOtpConfig((current) => ({
-                      ...current,
+                      maxAttempts: current?.maxAttempts ?? 3,
                       windowHours: Number(event.target.value),
                     }))
                   }
@@ -417,7 +499,7 @@ export default function SmsMonitoring() {
 
             <button
               type="submit"
-              disabled={savingConfig}
+              disabled={savingConfig || !otpConfig}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-white hover:bg-emerald-800 disabled:opacity-60"
             >
               {savingConfig ? (
@@ -485,12 +567,42 @@ export default function SmsMonitoring() {
         </div>
 
         <div className="rounded-2xl bg-white/90 backdrop-blur border border-emerald-100 p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Active Redis OTP Blocks
-          </h2>
-          <p className="text-sm text-gray-600 mt-1 mb-4">
-            Current OTP attempt counters stored in Redis.
-          </p>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Active Redis OTP Blocks
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Current OTP attempt counters stored in Redis.
+                {otpConfig ? (
+                  <>
+                    {" "}
+                    Limit: {formatOtpLimitLabel(otpConfig)}.
+                  </>
+                ) : null}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <label className="flex items-center gap-2 text-gray-600">
+                Rows per page
+                <select
+                  value={otpBlocksLimit}
+                  onChange={(event) => {
+                    setOtpBlocksLimit(Number(event.target.value));
+                    setOtpBlocksPage(1);
+                  }}
+                  className="rounded-lg border border-gray-300 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {OTP_BLOCKS_PAGE_SIZE_OPTIONS.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
 
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
@@ -500,18 +612,19 @@ export default function SmsMonitoring() {
                   <th className="py-2 pr-4">Used</th>
                   <th className="py-2 pr-4">Remaining</th>
                   <th className="py-2 pr-4">Status</th>
+                  <th className="py-2 pr-4">Time Left</th>
                   <th className="py-2 pr-4">Reset At</th>
                 </tr>
               </thead>
               <tbody>
                 {otpBlocks.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-gray-500">
+                    <td colSpan={6} className="py-6 text-center text-gray-500">
                       No Redis OTP records found.
                     </td>
                   </tr>
                 ) : (
-                  otpBlocks.map((block) => (
+                  paginatedOtpBlocks.map((block) => (
                     <tr
                       key={block.phone_number}
                       className="border-b border-gray-100"
@@ -536,8 +649,11 @@ export default function SmsMonitoring() {
                           {block.is_blocked ? "Blocked" : "Active"}
                         </span>
                       </td>
-                      <td className="py-3 pr-4 text-gray-600">
-                        {formatDate(block.reset_at)}
+                      <td className="py-3 pr-4 text-gray-700 whitespace-nowrap">
+                        {formatTimeRemaining(block.ttl_seconds)}
+                      </td>
+                      <td className="py-3 pr-4 text-gray-600 whitespace-nowrap">
+                        {formatDateTime(block.reset_at)}
                       </td>
                     </tr>
                   ))
@@ -545,6 +661,44 @@ export default function SmsMonitoring() {
               </tbody>
             </table>
           </div>
+
+          {otpBlocks.length > 0 ? (
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-gray-600">
+                Showing {(otpBlocksPage - 1) * otpBlocksLimit + 1}–
+                {Math.min(otpBlocksPage * otpBlocksLimit, otpBlocks.length)} of{" "}
+                {otpBlocks.length} number(s)
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOtpBlocksPage((current) => Math.max(1, current - 1))
+                  }
+                  disabled={otpBlocksPage <= 1}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-600">
+                  Page {otpBlocksPage} of {otpBlocksTotalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOtpBlocksPage((current) =>
+                      Math.min(otpBlocksTotalPages, current + 1)
+                    )
+                  }
+                  disabled={otpBlocksPage >= otpBlocksTotalPages}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -579,7 +733,7 @@ export default function SmsMonitoring() {
                     </div>
                     <p className="text-xs text-gray-600 mt-1">
                       {formatMessageType(log.message_type)} • Code{" "}
-                      {log.response_code ?? "N/A"} • {formatDate(log.created_at)}
+                      {log.response_code ?? "N/A"} • {formatDateTime(log.created_at)}
                     </p>
                     {log.error_message ? (
                       <p className="text-xs text-red-600 mt-1">
@@ -619,10 +773,10 @@ export default function SmsMonitoring() {
                     </div>
                     <p className="text-xs text-gray-600 mt-1">
                       {log.attempts_used}/{log.max_attempts} attempts •{" "}
-                      {formatDate(log.created_at)}
+                      {formatDateTime(log.created_at)}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Reset at {formatDate(log.reset_at)}
+                      Reset at {formatDateTime(log.reset_at)}
                     </p>
                   </div>
                 ))
