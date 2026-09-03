@@ -28,6 +28,18 @@ export type NotificationsPage = {
 export const NOTIFICATIONS_PAGE_SIZE = 10;
 
 function normalizeNotification(raw: Record<string, unknown>): NotificationItem {
+  let createdAt: string | undefined;
+  if (raw.createdAt) {
+    if (typeof raw.createdAt === "string") {
+      createdAt = raw.createdAt;
+    } else {
+      const parsed = new Date(raw.createdAt as string | number);
+      if (!Number.isNaN(parsed.getTime())) {
+        createdAt = parsed.toISOString();
+      }
+    }
+  }
+
   return {
     _id: String(raw._id ?? ""),
     title: String(raw.title ?? ""),
@@ -35,12 +47,68 @@ function normalizeNotification(raw: Record<string, unknown>): NotificationItem {
     module: String(raw.module ?? ""),
     time: String(raw.time ?? ""),
     isRead: Boolean(raw.isRead),
-    createdAt: raw.createdAt ? String(raw.createdAt) : undefined,
+    createdAt,
     actorName: raw.actorName ? String(raw.actorName) : undefined,
     action: raw.action ? String(raw.action) : undefined,
     entityType: raw.entityType ? String(raw.entityType) : undefined,
     entityId: raw.entityId ? String(raw.entityId) : undefined,
   };
+}
+
+export function formatRelativeTime(
+  isoOrDate: string | Date | undefined | null,
+  referenceMs: number = Date.now()
+): string {
+  if (!isoOrDate) return "";
+
+  const date =
+    typeof isoOrDate === "string" ? new Date(isoOrDate) : isoOrDate;
+  const timestamp = date.getTime();
+  if (Number.isNaN(timestamp)) return "";
+
+  const diffMs = Math.max(0, referenceMs - timestamp);
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffSec < 60) return "Just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  if (diffHour < 24) return `${diffHour} hr ago`;
+
+  const remainingHours = diffHour % 24;
+  const remainingMins = diffMin % 60;
+  const dayPart = `${diffDay} day${diffDay === 1 ? "" : "s"}`;
+
+  if (remainingHours === 0 && remainingMins === 0) {
+    return `${dayPart} ago`;
+  }
+
+  const timeParts: string[] = [];
+  if (remainingHours > 0) timeParts.push(`${remainingHours} hr`);
+  if (remainingMins > 0) timeParts.push(`${remainingMins} min`);
+
+  if (diffDay >= 30) {
+    return date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  return `${dayPart} and ${timeParts.join(" ")} ago`;
+}
+
+export function getNotificationRelativeTime(
+  item: NotificationItem,
+  referenceMs: number = Date.now()
+): string {
+  if (item.createdAt) {
+    const formatted = formatRelativeTime(item.createdAt, referenceMs);
+    if (formatted) return formatted;
+  }
+
+  return item.time || "";
 }
 
 export function getNotificationTimestamp(item: NotificationItem): number {

@@ -25,6 +25,8 @@ import { notify } from "@/lib/toast";
 import { apiUrl } from "@/config/env";
 import MathEditor from "@/components/shared/MathEditor";
 import MathPreview from "@/components/shared/MathPreview";
+import { fetchQuestionsList } from "@/lib/offline/admin-fetch";
+import { CachedDataBadge } from "@/components/offline/CachedDataBadge";
 
 // ====================== COOKIE HELPER ======================
 function getCookie(name) {
@@ -67,6 +69,11 @@ export default function ViewAllQuestions() {
 
   const [topics, setTopics] = useState([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
+  const [listCacheMeta, setListCacheMeta] = useState({
+    fromCache: false,
+    isStale: false,
+    fetchedAt: 0,
+  });
 
   const dropdownRef = useRef(null);
 
@@ -135,20 +142,15 @@ export default function ViewAllQuestions() {
       const query = buildQuestionQuery(params);
       const accessToken = getCookie("access_token");
 
-      const res = await fetch(`${apiUrl("/question/")}?${query.toString()}`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          Authorization: accessToken || "",
-        },
-        cache: "no-store",
-      });
-
-      const result = await res.json();
+      const { result, fromCache, isStale, fetchedAt } = await fetchQuestionsList(
+        `${apiUrl("/question/")}?${query.toString()}`,
+        accessToken || ""
+      );
 
       if (result.success) {
         setQuestions(result.data.data);
         setMeta(result.data.meta);
+        setListCacheMeta({ fromCache, isStale, fetchedAt });
       } else {
         notify.error("Error", result.message || "Failed to fetch questions");
       }
@@ -323,7 +325,10 @@ export default function ViewAllQuestions() {
   if (viewMode === "list") {
     return (
       <div className="p-10 bg-gray-50 min-h-screen">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">All Created Questions</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <h1 className="text-3xl font-bold mb-6 text-gray-800">All Created Questions</h1>
+          <CachedDataBadge {...listCacheMeta} />
+        </div>
 
         {/* Search and Filter Section */}
         <div className="bg-white p-6 rounded-lg shadow-sm mb-6">

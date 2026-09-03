@@ -4,8 +4,7 @@ const stripTrailingSlash = (url: string): string => url.replace(/\/+$/, "");
 const CLIENT_API_FALLBACK = "/api/v1";
 
 /** Absolute URL for server-side fetch (new URL() requires a full base). */
-const SERVER_API_FALLBACK =
-  "https://mcq-analysis-apps-server.onrender.com/api/v1";
+const SERVER_API_FALLBACK = "http://187.52.120.181:9001/api/v1";
 
 const API_V1_SUFFIX = "/api/v1";
 
@@ -33,8 +32,7 @@ export const ENV = {
 };
 
 /** Backend base for server-side proxy fetch (must be absolute). */
-export const SERVER_API_BASE_URL =
-  configuredBaseUrl ?? SERVER_API_FALLBACK;
+export const SERVER_API_BASE_URL = configuredBaseUrl ?? SERVER_API_FALLBACK;
 
 /**
  * Build a full API URL from a path like "/question" or "/admin/login".
