@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSerwist } from "@serwist/turbopack";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -8,11 +9,10 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/v1/:path*",
-        destination:
-          "https://mcq-analysis-apps-server.onrender.com/api/v1/:path*",
+        destination: "http://187.52.120.181:9001/api/v1/:path*",
       },
     ];
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);

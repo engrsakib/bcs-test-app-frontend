@@ -16,8 +16,8 @@ import {
   X,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import getCookie from "@/util/GetCookie";
 import { notify } from "@/lib/toast";
+import { bookProxy } from "@/lib/book-api";
 
 import dynamic from "next/dynamic";
 
@@ -80,11 +80,9 @@ export default function UpdateBookTemplate() {
   // UPDATE BOOK API CALL
   // ===========================
   const handleUpdate = async () => {
-    const id = notify.loading("Updating Book...");
+    const toastId = notify.loading("Updating Book...");
 
     try {
-      const token = getCookie("access_token");
-
       const payload = {
         title: formData.title,
         thumbnail_url: formData.thumbnail_url?.trim() || "",
@@ -95,27 +93,28 @@ export default function UpdateBookTemplate() {
         description: formData.description,
       };
 
-      const res = await fetch(`${BASE_URL}/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token || "",
+      const { ok, data: result } = await bookProxy<{ message?: string; data?: unknown }>(
+        `/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
-      const result = await res.json();
-      notify.dismiss(id);
+      notify.dismiss(toastId);
 
-      if (!res.ok) {
-        return notify.error("Error", result?.message || "Failed to update!");
+      if (!ok || !result?.data) {
+        return notify.error(
+          "Error",
+          result?.message || "Book not found or update failed!",
+        );
       }
 
       notify.success("Success!", "Book updated successfully!", {
         onAutoClose: () => router.push("/dashboard/my-book/view-book"),
       });
     } catch (error) {
-      notify.dismiss(id);
+      notify.dismiss(toastId);
       notify.error("Error", "Something went wrong!");
     }
   };

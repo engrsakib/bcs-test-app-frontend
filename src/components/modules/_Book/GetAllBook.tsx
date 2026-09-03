@@ -18,6 +18,7 @@ import {
 import { useRouter } from "next/navigation";
 import { notify } from "@/lib/toast";
 import { bookProxy } from "@/lib/book-api";
+import { CachedDataBadge } from "@/components/offline/CachedDataBadge";
 import { confirmAction } from "@/components/ui/confirm-dialog";
 
 type BookItem = {
@@ -68,6 +69,11 @@ export default function ViewAllBooks() {
     total: 0,
     totalPage: 1,
   });
+  const [listCacheMeta, setListCacheMeta] = useState({
+    fromCache: false,
+    isStale: false,
+    fetchedAt: 0,
+  });
 
   const getPlatformBadge = (platform: string) => {
     switch (platform) {
@@ -102,10 +108,10 @@ export default function ViewAllBooks() {
         searchTerm,
       });
 
-      const { ok, data: result } = await bookProxy<BookApiResponse>(
-        `?${params.toString()}`,
-        { method: "GET" },
-      );
+      const { ok, data: result, fromCache, isStale, fetchedAt } =
+        await bookProxy<BookApiResponse>(`?${params.toString()}`, {
+          method: "GET",
+        });
 
       if (!ok) {
         throw new Error(result.message || "Failed to fetch books");
@@ -113,6 +119,11 @@ export default function ViewAllBooks() {
 
       setBooks(result.data.data);
       setMeta(result.data.meta);
+      setListCacheMeta({
+        fromCache: Boolean(fromCache),
+        isStale: Boolean(isStale),
+        fetchedAt: fetchedAt ?? 0,
+      });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       console.error("Fetch books error:", message);
@@ -256,7 +267,10 @@ export default function ViewAllBooks() {
   return (
     <div className="p-6 min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50">
       <div className="bg-teal-600 text-white p-6 rounded-2xl shadow-lg mb-6">
-        <h1 className="text-3xl font-bold">Browse and Manage Books</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">Browse and Manage Books</h1>
+          <CachedDataBadge {...listCacheMeta} />
+        </div>
         <p className="text-teal-100">Drag rows or use the order dropdown to set display sequence</p>
       </div>
 

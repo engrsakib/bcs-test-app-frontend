@@ -3,6 +3,7 @@ import {
   createStudyTopicType,
   fetchStudyTopicTypes,
 } from "./study-topic-type-api";
+import { getOfflineDb, isOfflineStorageAvailable } from "./offline/db";
 
 export type PendingStudyTopicType = {
   id: string;
@@ -12,9 +13,28 @@ export type PendingStudyTopicType = {
 };
 
 const STORAGE_KEY = "pending-study-topic-types";
+const SYNC_ENTITY = "study-topic-type";
 
 function isBrowser() {
   return typeof window !== "undefined";
+}
+
+async function readIndexedPending(): Promise<PendingStudyTopicType[]> {
+  if (!isOfflineStorageAvailable()) return [];
+
+  const entry = await getOfflineDb().drafts.get("pending-study-topic-types");
+  return (entry?.payload as PendingStudyTopicType[]) ?? [];
+}
+
+async function writeIndexedPending(items: PendingStudyTopicType[]): Promise<void> {
+  if (!isOfflineStorageAvailable()) return;
+
+  await getOfflineDb().drafts.put({
+    draftId: "pending-study-topic-types",
+    type: SYNC_ENTITY,
+    payload: items,
+    updatedAt: Date.now(),
+  });
 }
 
 export function slugifyStudyTopicTypeLabel(label: string): string {
@@ -48,6 +68,7 @@ export function loadPendingStudyTopicTypes(): PendingStudyTopicType[] {
 export function savePendingStudyTopicTypes(items: PendingStudyTopicType[]): void {
   if (!isBrowser()) return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  void writeIndexedPending(items);
 }
 
 export function addPendingStudyTopicType(
@@ -110,7 +131,22 @@ export function mergeStudyTopicTypeOptions(
   );
 }
 
+export async function hydratePendingStudyTopicTypesFromIndexedDb(): Promise<void> {
+  const indexed = await readIndexedPending();
+  if (indexed.length) {
+    savePendingStudyTopicTypes(indexed);
+    return;
+  }
+
+  const legacy = loadPendingStudyTopicTypes();
+  if (legacy.length) {
+    await writeIndexedPending(legacy);
+  }
+}
+
 export async function syncPendingStudyTopicTypesToServer(): Promise<void> {
+  await hydratePendingStudyTopicTypesFromIndexedDb();
+
   const pending = loadPendingStudyTopicTypes();
   if (!pending.length) return;
 
@@ -134,4 +170,8 @@ export async function syncPendingStudyTopicTypesToServer(): Promise<void> {
   } catch {
     // Server still unavailable.
   }
+}
+
+if (isBrowser()) {
+  void hydratePendingStudyTopicTypesFromIndexedDb();
 }

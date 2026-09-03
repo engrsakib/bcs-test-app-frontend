@@ -25,6 +25,10 @@ import { confirmAction } from "@/components/ui/confirm-dialog";
 import { notify } from "@/lib/toast";
 import { ENV } from "@/config/env";
 import { useNotifications } from "@/hooks/useNotifications";
+import {
+  getNotificationRelativeTime,
+  NotificationItem,
+} from "@/lib/notifications";
 
 type DashboardNavbarProps = {
   onMenuClick?: () => void;
@@ -56,6 +60,24 @@ function getCookie(name: string): string | null {
   return null;
 }
 
+function NotificationRelativeTime({ item }: { item: NotificationItem }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(Date.now());
+    }, 60000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  return (
+    <p className="text-xs text-slate-500 mt-1">
+      {getNotificationRelativeTime(item, now)}
+    </p>
+  );
+}
+
 export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
   const [open, setOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -75,6 +97,7 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
     isLoadingMore,
     hasMore,
     error,
+    fromCache,
     markAsRead,
     loadMore,
   } = useNotifications(notificationsEnabled);
@@ -218,7 +241,9 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
                       ? "Loading notifications..."
                       : error
                         ? "Could not load notifications"
-                        : `You have ${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
+                        : fromCache
+                          ? "Showing cached notifications"
+                          : `You have ${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
                   </p>
                 </div>
                 <div
@@ -252,7 +277,7 @@ export function DashboardNavbar({ onMenuClick }: DashboardNavbarProps) {
                             <p className="text-xs text-slate-600 line-clamp-2">
                               {n.description}
                             </p>
-                            <p className="text-xs text-slate-500 mt-1">{n.time}</p>
+                            <NotificationRelativeTime item={n} />
                           </div>
                         </div>
                       </div>

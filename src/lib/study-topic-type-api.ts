@@ -1,10 +1,11 @@
-const PROXY_BASE = "/api/proxy/study-topic-type";
+import { CACHE_TTL } from "@/config/offline";
+import { createCachedProxy } from "./offline/cached-proxy";
 
-type ProxyResult<T> = {
-  ok: boolean;
-  status: number;
-  data: T;
-};
+const studyTopicTypeProxy = createCachedProxy(
+  "/api/proxy/study-topic-type",
+  "study-topic-type",
+  CACHE_TTL.default
+);
 
 export type StudyTopicTypeItem = {
   _id?: string;
@@ -15,39 +16,6 @@ export type StudyTopicTypeItem = {
   isPending?: boolean;
   pendingId?: string;
 };
-
-export async function studyTopicTypeProxy<T = unknown>(
-  suffix = "",
-  options: RequestInit = {}
-): Promise<ProxyResult<T>> {
-  const path = suffix.startsWith("?")
-    ? suffix
-    : suffix
-      ? suffix.startsWith("/")
-        ? suffix
-        : `/${suffix}`
-      : "";
-
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-  };
-
-  const res = await fetch(`${PROXY_BASE}${path}`, {
-    ...options,
-    headers,
-    credentials: "include",
-    cache: "no-store",
-  });
-
-  const data = (await res.json().catch(() => ({}))) as T;
-
-  return {
-    ok: res.ok,
-    status: res.status,
-    data,
-  };
-}
 
 export async function fetchStudyTopicTypes(): Promise<StudyTopicTypeItem[]> {
   const { ok, data } = await studyTopicTypeProxy<{
@@ -66,17 +34,21 @@ export async function createStudyTopicType(payload: {
   label: string;
   value?: string;
 }): Promise<StudyTopicTypeItem> {
-  const { ok, data, status } = await studyTopicTypeProxy<{
-    data?: StudyTopicTypeItem;
-    message?: string;
-  }>("", {
+  const res = await fetch("/api/proxy/study-topic-type", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(payload),
   });
 
-  if (!ok) {
+  const data = (await res.json()) as {
+    data?: StudyTopicTypeItem;
+    message?: string;
+  };
+
+  if (!res.ok) {
     const error = new Error(data?.message || "Failed to create study topic type");
-    (error as Error & { status?: number }).status = status;
+    (error as Error & { status?: number }).status = res.status;
     throw error;
   }
 
@@ -88,15 +60,16 @@ export async function createStudyTopicType(payload: {
 }
 
 export async function deleteStudyTopicType(value: string): Promise<void> {
-  const { ok, data, status } = await studyTopicTypeProxy<{
-    message?: string;
-  }>(`/${encodeURIComponent(value)}`, {
+  const res = await fetch(`/api/proxy/study-topic-type/${encodeURIComponent(value)}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
-  if (!ok) {
+  const data = (await res.json()) as { message?: string };
+
+  if (!res.ok) {
     const error = new Error(data?.message || "Failed to delete study topic type");
-    (error as Error & { status?: number }).status = status;
+    (error as Error & { status?: number }).status = res.status;
     throw error;
   }
 }

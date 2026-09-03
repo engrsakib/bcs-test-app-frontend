@@ -24,6 +24,8 @@ import {
 import { notify } from "@/lib/toast";
 import { confirmAction } from "@/components/ui/confirm-dialog";
 import { formatExamDateTime } from "@/lib/exam-datetime";
+import { fetchExamsList } from "@/lib/offline/admin-fetch";
+import { CachedDataBadge } from "@/components/offline/CachedDataBadge";
 
 function isExamStartTimePassed(examDateTime: string): boolean {
   const time = new Date(examDateTime).getTime();
@@ -113,6 +115,11 @@ export default function ExamListPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [listCacheMeta, setListCacheMeta] = useState({
+    fromCache: false,
+    isStale: false,
+    fetchedAt: 0,
+  });
 
   // console.log("SearchTerm",searchTerm)
 
@@ -152,16 +159,21 @@ export default function ExamListPage() {
     setLoading(true);
 
     try {
-      const url = `${ENV.BASE_URL}/exam?page=${currentPage}&limit=${limit}&searchTerm=${search}`;
-      const response = await fetch(url, {
-        headers: { Authorization: getCookie("access_token") || "" },
-      });
+      const url = `/exam?page=${currentPage}&limit=${limit}&searchTerm=${search}`;
+      const { result, fromCache, isStale, fetchedAt } = await fetchExamsList(
+        url,
+        getCookie("access_token") || ""
+      );
 
-      const result = await response.json();
+      const payload = result as {
+        success?: boolean;
+        data?: { data?: unknown[]; meta?: { totalPage?: number } };
+      };
 
-      if (result.success) {
-        setExams(result.data.data);
-        setTotalPages(result.data.meta.totalPage);
+      if (payload.success) {
+        setExams(payload.data?.data ?? []);
+        setTotalPages(payload.data?.meta?.totalPage ?? 1);
+        setListCacheMeta({ fromCache, isStale, fetchedAt });
       }
     } catch (error) {
       console.error("Error fetching exams:", error);
@@ -287,6 +299,9 @@ export default function ExamListPage() {
                 Exam Management
               </h1>
               <p className="text-gray-600">Manage all your exams</p>
+              <div className="mt-2">
+                <CachedDataBadge {...listCacheMeta} />
+              </div>
             </div>
 
             <Link href={"/dashboard/exam/create-exam"}>

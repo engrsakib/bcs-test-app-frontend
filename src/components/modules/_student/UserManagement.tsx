@@ -25,11 +25,15 @@ import {
   Shield,
   UserCheck,
   EyeOff,
+  TrendingUp,
 } from "lucide-react";
 
 import { notify } from "@/lib/toast";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ENV } from "@/config/env";
+import { fetchStudentsList } from "@/lib/offline/admin-fetch";
+import { CachedDataBadge } from "@/components/offline/CachedDataBadge";
 
 interface User {
   _id: string;
@@ -59,6 +63,7 @@ function getCookie(name: string): string | null {
 }
 
 export default function UserManagementTable() {
+  const router = useRouter();
   const [admins, setAdmins] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
@@ -75,6 +80,11 @@ export default function UserManagementTable() {
     page: 1,
     limit: 10,
     total: 0,
+  });
+  const [listCacheMeta, setListCacheMeta] = useState({
+    fromCache: false,
+    isStale: false,
+    fetchedAt: 0,
   });
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -120,18 +130,15 @@ export default function UserManagementTable() {
 
       const url = `${ENV.BASE_URL}/user?page=${filters.page}&limit=${filters.limit}&search_query=${filters.search_query}`;
 
-      const res = await fetch(url, {
-        headers: {
-          Authorization: accessToken || "",
-        },
-      });
-
-      const result = await res.json();
-      console.log("Pagination FETCH RESULT:", result);
+      const { result, fromCache, isStale, fetchedAt } = await fetchStudentsList(
+        url,
+        accessToken || ""
+      );
 
       if (result.success) {
-        setAdmins(result.data.data);
-        setMeta(result.data.meta);
+        setAdmins(result.data?.data as User[]);
+        setMeta(result.data?.meta as Meta);
+        setListCacheMeta({ fromCache, isStale, fetchedAt });
       }
     } catch (err) {
       console.log("Fetch error:", err);
@@ -178,13 +185,24 @@ export default function UserManagementTable() {
     e.preventDefault();
     if (!selectedUser) return;
 
+    const payload: Record<string, string> = {
+      name: updateFormData.name,
+      phone_number: updateFormData.phone_number,
+      email: updateFormData.email?.trim() ?? "",
+      image: updateFormData.image || "",
+    };
+
+    if (updateFormData.password.trim()) {
+      payload.password = updateFormData.password;
+    }
+
     const res = await fetch(`${ENV.BASE_URL}/user/${selectedUser._id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: accessToken || "",
       },
-      body: JSON.stringify(updateFormData),
+      body: JSON.stringify(payload),
     });
 
     const result = await res.json();
@@ -194,11 +212,20 @@ export default function UserManagementTable() {
 
       setAdmins((prev) =>
         prev.map((x) =>
-          x._id === selectedUser._id ? { ...x, ...updateFormData } : x
+          x._id === selectedUser._id
+            ? { ...x, ...payload, password: undefined }
+            : x
         )
       );
 
       setCurrentView("table");
+    } else {
+      notify.error(
+        "Update Failed",
+        result.message ||
+          result.errorMessages?.map((item: { message: string }) => item.message).join(", ") ||
+          "Could not update student"
+      );
     }
   };
 
@@ -307,6 +334,7 @@ export default function UserManagementTable() {
                   </div>
                 </div>
 
+                <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => handleUpdate(selectedUser)}
                   className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
@@ -314,6 +342,19 @@ export default function UserManagementTable() {
                   <Edit className="w-5 h-5" />
                   Edit Profile
                 </button>
+
+                <button
+                  onClick={() =>
+                    router.push(
+                      `/dashboard/team/view-student/${selectedUser._id}/growth`
+                    )
+                  }
+                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+                >
+                  <TrendingUp className="w-5 h-5" />
+                  View Growth
+                </button>
+                </div>
               </div>
 
               {/* Info Grid */}
@@ -579,6 +620,9 @@ export default function UserManagementTable() {
           <p className="text-gray-600">
             Easily view, update and manage all student information.
           </p>
+          <div className="mt-2">
+            <CachedDataBadge {...listCacheMeta} />
+          </div>
         </div>
 
         {/* FILTER HEADER */}
@@ -704,15 +748,6 @@ export default function UserManagementTable() {
                   ) : (
                     admins.map((u) => (
                       <tr key={u._id} className="hover:bg-gray-50 transition-colors">
-                        {/* existing row code */}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-
-                <tbody className="divide-y divide-gray-100">
-                  {admins.map((u) => (
-                    <tr key={u._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {/* <img
@@ -736,6 +771,18 @@ export default function UserManagementTable() {
                           <div>
                             <p className="font-semibold text-gray-900">{u.name}</p>
                             <p className="text-xs text-gray-500">{u._id}</p>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                router.push(
+                                  `/dashboard/team/view-student/${u._id}/growth`
+                                )
+                              }
+                              className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                            >
+                              <TrendingUp className="w-3.5 h-3.5" />
+                              View Growth
+                            </button>
                           </div>
                         </div>
                       </td>
@@ -779,6 +826,21 @@ export default function UserManagementTable() {
                               </button>
 
                               <button
+                                onClick={() => {
+                                  setOpenDropdown(null);
+                                  router.push(
+                                    `/dashboard/team/view-student/${u._id}/growth`
+                                  );
+                                }}
+                                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
+                              >
+                                <TrendingUp size={18} className="text-emerald-600" />
+                                <span className="font-medium text-gray-700">
+                                  View Growth
+                                </span>
+                              </button>
+
+                              <button
                                 onClick={() => handleUpdate(u)}
                                 className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
                               >
@@ -802,7 +864,8 @@ export default function UserManagementTable() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
