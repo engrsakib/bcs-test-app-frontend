@@ -6,6 +6,8 @@ export interface ExamParticipation {
   exam_name: string;
   participants: number;
   participationRate: number;
+  onTimeSubmissions: number;
+  lateSubmissions: number;
 }
 
 export interface DashboardStats {
@@ -57,6 +59,42 @@ type ExamListItem = {
 };
 
 const RECENT_EXAM_LIMIT = 10;
+
+async function fetchSubmissionTiming(examNumber: number): Promise<{
+  onTimeSubmissions: number;
+  lateSubmissions: number;
+}> {
+  let page = 1;
+  let totalPages = 1;
+  let onTimeSubmissions = 0;
+  let lateSubmissions = 0;
+  const limit = 100;
+
+  while (page <= totalPages) {
+    const res = await fetch(
+      `${ENV.BASE_URL}/results?examNum=${examNumber}&page=${page}&limit=${limit}`,
+      { headers: authHeaders() }
+    );
+    const result = await res.json();
+
+    if (!result.success || !Array.isArray(result.data?.data)) {
+      break;
+    }
+
+    for (const row of result.data.data as { is_on_time?: boolean }[]) {
+      if (row.is_on_time === false) {
+        lateSubmissions += 1;
+      } else {
+        onTimeSubmissions += 1;
+      }
+    }
+
+    totalPages = result.data.meta?.totalPage ?? 1;
+    page += 1;
+  }
+
+  return { onTimeSubmissions, lateSubmissions };
+}
 
 async function fetchParticipantCount(examNumber: number): Promise<number> {
   try {
@@ -130,7 +168,10 @@ async function fetchExamParticipationFallback(
 
   return Promise.all(
     exams.map(async (exam) => {
-      const participants = await fetchParticipantCount(exam.exam_number);
+      const [participants, timing] = await Promise.all([
+        fetchParticipantCount(exam.exam_number),
+        fetchSubmissionTiming(exam.exam_number),
+      ]);
       const participationRate =
         totalStudents > 0 ? (participants / totalStudents) * 100 : 0;
 
@@ -139,6 +180,46 @@ async function fetchExamParticipationFallback(
         exam_name: exam.exam_name,
         participants,
         participationRate: Math.round(participationRate * 100) / 100,
+        onTimeSubmissions: timing.onTimeSubmissions,
+        lateSubmissions: timing.lateSubmissions,
+      };
+    })
+  );
+}
+
+function normalizeExamParticipation(item: ExamParticipation): ExamParticipation {
+  return {
+    ...item,
+    onTimeSubmissions: item.onTimeSubmissions ?? 0,
+    lateSubmissions: item.lateSubmissions ?? 0,
+  };
+}
+
+async function enrichParticipationTiming(
+  items: ExamParticipation[]
+): Promise<ExamParticipation[]> {
+  const needsTiming = items.some(
+    (item) =>
+      item.participants > 0 &&
+      item.onTimeSubmissions === 0 &&
+      item.lateSubmissions === 0
+  );
+
+  if (!needsTiming) {
+    return items;
+  }
+
+  return Promise.all(
+    items.map(async (item) => {
+      if (item.participants === 0) {
+        return item;
+      }
+
+      const timing = await fetchSubmissionTiming(item.exam_number);
+      return {
+        ...item,
+        onTimeSubmissions: timing.onTimeSubmissions,
+        lateSubmissions: timing.lateSubmissions,
       };
     })
   );
@@ -148,7 +229,8 @@ async function resolveExamParticipation(
   stats: DashboardStats
 ): Promise<ExamParticipation[]> {
   if (stats.examParticipation.length > 0) {
-    return stats.examParticipation;
+    const normalized = stats.examParticipation.map(normalizeExamParticipation);
+    return enrichParticipationTiming(normalized);
   }
 
   if (stats.totalExams <= 0) {
