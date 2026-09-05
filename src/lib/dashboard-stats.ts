@@ -1,6 +1,13 @@
 import { ENV } from "@/config/env";
 import getCookie from "@/util/GetCookie";
 
+export interface ExamParticipation {
+  exam_number: number;
+  exam_name: string;
+  participants: number;
+  participationRate: number;
+}
+
 export interface DashboardStats {
   totalExams: number;
   completedExams: number;
@@ -10,6 +17,7 @@ export interface DashboardStats {
   totalYoutubeVideos: number;
   rokomariBooks: number;
   totalResults: number;
+  examParticipation: ExamParticipation[];
 }
 
 const defaultStats: DashboardStats = {
@@ -21,6 +29,7 @@ const defaultStats: DashboardStats = {
   totalYoutubeVideos: 0,
   rokomariBooks: 0,
   totalResults: 0,
+  examParticipation: [],
 };
 
 function authHeaders(): HeadersInit {
@@ -80,7 +89,11 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     if (statsRes.ok) {
       const statsJson = await statsRes.json();
       if (statsJson.success && statsJson.data) {
-        return statsJson.data as DashboardStats;
+        const data = statsJson.data as DashboardStats;
+        return {
+          ...data,
+          examParticipation: data.examParticipation ?? [],
+        };
       }
     }
   } catch {
@@ -122,6 +135,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     totalYoutubeVideos,
     rokomariBooks: totalBooks,
     totalResults,
+    examParticipation: [],
   };
 }
 
