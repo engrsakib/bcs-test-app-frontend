@@ -14,17 +14,9 @@ import {
 import type { DashboardStats, ExamParticipation } from "@/lib/dashboard-stats";
 
 type ChartRow = ExamParticipation & {
-  label: string;
   totalStudents: number;
+  slot: number;
 };
-
-function formatExamLabel(exam: ExamParticipation): string {
-  const name =
-    exam.exam_name.length > 18
-      ? `${exam.exam_name.slice(0, 18)}…`
-      : exam.exam_name;
-  return `#${exam.exam_number} ${name}`;
-}
 
 function ParticipationTooltip({
   active,
@@ -38,18 +30,31 @@ function ParticipationTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg text-sm">
-      <p className="font-semibold text-gray-900">{data.exam_name}</p>
-      <p className="text-gray-600">Exam #{data.exam_number}</p>
-      <p className="mt-1 text-gray-700">
-        Participants: <span className="font-medium">{data.participants.toLocaleString()}</span>
+    <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xl shadow-slate-200/50 min-w-[240px]">
+      <p className="text-sm font-semibold text-slate-900 leading-snug">
+        {data.exam_name}
       </p>
-      <p className="text-gray-700">
-        Total Students:{" "}
-        <span className="font-medium">{data.totalStudents.toLocaleString()}</span>
-      </p>
-      <p className="text-indigo-700 font-medium">
-        Participation Rate: {data.participationRate.toFixed(2)}%
+      <div className="mt-3 flex items-center gap-3">
+        <div className="flex-1">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            Participants
+          </p>
+          <p className="text-lg font-semibold tabular-nums text-slate-900">
+            {data.participants.toLocaleString()}
+          </p>
+        </div>
+        <div className="h-10 w-px bg-slate-100" />
+        <div className="flex-1 text-right">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            Rate
+          </p>
+          <p className="text-lg font-semibold tabular-nums text-emerald-600">
+            {data.participationRate.toFixed(1)}%
+          </p>
+        </div>
+      </div>
+      <p className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-500">
+        of {data.totalStudents.toLocaleString()} registered students
       </p>
     </div>
   );
@@ -57,9 +62,10 @@ function ParticipationTooltip({
 
 function ChartSkeleton() {
   return (
-    <div className="h-[360px] rounded-xl border border-gray-200 bg-white p-4 animate-pulse">
-      <div className="h-6 w-64 bg-gray-200 rounded mb-6" />
-      <div className="h-[280px] bg-gray-100 rounded" />
+    <div className="h-[360px] rounded-2xl border border-slate-200 bg-white p-6 animate-pulse">
+      <div className="h-5 w-48 bg-slate-100 rounded" />
+      <div className="mt-2 h-4 w-64 bg-slate-50 rounded" />
+      <div className="mt-8 h-[260px] bg-slate-50 rounded-xl" />
     </div>
   );
 }
@@ -75,100 +81,157 @@ export function ExamParticipationChart({
     return <ChartSkeleton />;
   }
 
-  const chartData: ChartRow[] = stats.examParticipation.map((exam) => ({
+  const chartData: ChartRow[] = stats.examParticipation
+    .slice(0, 10)
+    .map((exam, index) => ({
     ...exam,
-    label: formatExamLabel(exam),
     totalStudents: stats.totalStudents,
+    slot: index + 1,
   }));
 
   if (chartData.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white px-6 py-16 text-center">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Exam Participation
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
+        <h2 className="text-base font-semibold text-slate-900">
+          Participation Overview
         </h2>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-sm text-slate-500">
           {stats.totalExams > 0
-            ? "Exam records were found, but participation data could not be loaded. Try refreshing the page."
-            : "No exam data available yet. Participation metrics will appear once exams are created."}
+            ? "Participation data could not be loaded. Try refreshing the page."
+            : "Metrics will appear once exams are created."}
         </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 md:p-6">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Exam Participation
-        </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Participants vs total registered students for recent exams
-        </p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold tracking-tight text-slate-900">
+            Participation Overview
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Last 10 exams — engagement across your student base
+          </p>
+        </div>
+        <div className="flex gap-6 sm:gap-8">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+              Exams
+            </p>
+            <p className="text-xl font-semibold tabular-nums text-slate-900">
+              {chartData.length}
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+              Avg. Rate
+            </p>
+            <p className="text-xl font-semibold tabular-nums text-emerald-600">
+              {(
+                chartData.reduce((sum, row) => sum + row.participationRate, 0) /
+                chartData.length
+              ).toFixed(1)}
+              %
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <div
-          className="min-w-[640px]"
-          role="img"
-          aria-label="Exam participation chart showing participants and participation rate by exam"
-        >
-          <ResponsiveContainer width="100%" height={360}>
-            <ComposedChart
-              data={chartData}
-              margin={{ top: 8, right: 24, left: 8, bottom: 48 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11, fill: "#6b7280" }}
-                interval={0}
-                angle={-25}
-                textAnchor="end"
-                height={70}
-              />
-              <YAxis
-                yAxisId="left"
-                tick={{ fontSize: 11, fill: "#6b7280" }}
-                tickFormatter={(value) => value.toLocaleString()}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tick={{ fontSize: 11, fill: "#6b7280" }}
-                tickFormatter={(value) => `${value}%`}
-                domain={[0, "auto"]}
-              />
-              <Tooltip content={<ParticipationTooltip />} />
-              <Legend />
-              <Bar
-                yAxisId="left"
-                dataKey="totalStudents"
-                name="Total Students"
-                fill="#e5e7eb"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={36}
-              />
-              <Bar
-                yAxisId="left"
-                dataKey="participants"
-                name="Participants"
-                fill="#6366f1"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={36}
-              />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="participationRate"
-                name="Participation Rate (%)"
-                stroke="#059669"
-                strokeWidth={2}
-                dot={{ r: 3, fill: "#059669" }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+      <div
+        className="relative rounded-xl border border-slate-100 bg-slate-50/40 px-2 pt-4 pb-2 md:px-4"
+        role="img"
+        aria-label="Exam participation chart. Hover bars for exam details."
+      >
+        <ResponsiveContainer width="100%" height={300}>
+          <ComposedChart
+            data={chartData}
+            margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+            barCategoryGap="22%"
+          >
+            <defs>
+              <linearGradient id="participantFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#6366f1" />
+                <stop offset="100%" stopColor="#4f46e5" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#e2e8f0"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="slot"
+              hide
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              yAxisId="left"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 11, fill: "#94a3b8" }}
+              tickFormatter={(value) =>
+                value >= 1000 ? `${(value / 1000).toFixed(0)}k` : String(value)
+              }
+              width={40}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 11, fill: "#94a3b8" }}
+              tickFormatter={(value) => `${value}%`}
+              domain={[0, "auto"]}
+              width={36}
+            />
+            <Tooltip
+              content={<ParticipationTooltip />}
+              cursor={{ fill: "rgba(99, 102, 241, 0.08)", radius: 6 }}
+            />
+            <Legend
+              verticalAlign="top"
+              align="left"
+              iconType="plainline"
+              iconSize={12}
+              wrapperStyle={{
+                fontSize: 12,
+                color: "#64748b",
+                paddingBottom: 12,
+                fontWeight: 500,
+              }}
+            />
+            <Bar
+              yAxisId="left"
+              dataKey="participants"
+              name="Participants"
+              fill="url(#participantFill)"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={32}
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="participationRate"
+              name="Participation rate"
+              stroke="#059669"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{
+                r: 5,
+                fill: "#059669",
+                stroke: "#fff",
+                strokeWidth: 2,
+              }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+
+        <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] text-slate-400">
+          Hover any bar to view exam details
+        </p>
       </div>
     </div>
   );

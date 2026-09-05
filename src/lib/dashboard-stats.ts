@@ -56,7 +56,7 @@ type ExamListItem = {
   exam_date_time?: string;
 };
 
-const RECENT_EXAM_LIMIT = 15;
+const RECENT_EXAM_LIMIT = 10;
 
 async function fetchParticipantCount(examNumber: number): Promise<number> {
   try {
