@@ -50,6 +50,114 @@ async function fetchMetaTotal(
   return result.data.meta[metaKey] ?? 0;
 }
 
+type ExamListItem = {
+  exam_number?: number;
+  exam_name?: string;
+  exam_date_time?: string;
+};
+
+const RECENT_EXAM_LIMIT = 15;
+
+async function fetchParticipantCount(examNumber: number): Promise<number> {
+  try {
+    const leaderboardRes = await fetch(
+      `${ENV.BASE_URL}/results/${examNumber}/leaderboard?page=1&limit=1`,
+      { headers: authHeaders() }
+    );
+    const leaderboardJson = await leaderboardRes.json();
+
+    if (leaderboardJson.success && leaderboardJson.data?.meta) {
+      return leaderboardJson.data.meta.totalResult ?? 0;
+    }
+  } catch {
+    // Try the results search endpoint next.
+  }
+
+  try {
+    const resultsRes = await fetch(
+      `${ENV.BASE_URL}/results?examNum=${examNumber}&page=1&limit=1`,
+      { headers: authHeaders() }
+    );
+    const resultsJson = await resultsRes.json();
+
+    if (resultsJson.success && resultsJson.data?.meta) {
+      return resultsJson.data.meta.totalResult ?? 0;
+    }
+  } catch {
+    // Ignore per-exam fetch failures and treat as zero participants.
+  }
+
+  return 0;
+}
+
+async function fetchExamParticipationFallback(
+  totalStudents: number
+): Promise<ExamParticipation[]> {
+  const res = await fetch(
+    `${ENV.BASE_URL}/exam?page=1&limit=${RECENT_EXAM_LIMIT}`,
+    { headers: authHeaders() }
+  );
+  const result = await res.json();
+
+  if (!result.success || !Array.isArray(result.data?.data)) {
+    return [];
+  }
+
+  const exams = (result.data.data as ExamListItem[])
+    .map((exam) => {
+      const examNumber = Number(exam.exam_number);
+      if (!Number.isFinite(examNumber) || !exam.exam_name) {
+        return null;
+      }
+
+      return {
+        exam_number: examNumber,
+        exam_name: exam.exam_name,
+        exam_date_time: exam.exam_date_time,
+      };
+    })
+    .filter((exam): exam is NonNullable<typeof exam> => exam !== null)
+    .sort((a, b) => {
+      const aTime = a.exam_date_time
+        ? new Date(a.exam_date_time).getTime()
+        : 0;
+      const bTime = b.exam_date_time
+        ? new Date(b.exam_date_time).getTime()
+        : 0;
+      return bTime - aTime;
+    })
+    .slice(0, RECENT_EXAM_LIMIT);
+
+  return Promise.all(
+    exams.map(async (exam) => {
+      const participants = await fetchParticipantCount(exam.exam_number);
+      const participationRate =
+        totalStudents > 0 ? (participants / totalStudents) * 100 : 0;
+
+      return {
+        exam_number: exam.exam_number,
+        exam_name: exam.exam_name,
+        participants,
+        participationRate: Math.round(participationRate * 100) / 100,
+      };
+    })
+  );
+}
+
+async function resolveExamParticipation(
+  stats: DashboardStats
+): Promise<ExamParticipation[]> {
+  if (stats.examParticipation.length > 0) {
+    return stats.examParticipation;
+  }
+
+  if (stats.totalExams <= 0) {
+    return [];
+  }
+
+  return fetchExamParticipationFallback(stats.totalStudents);
+}
+
 async function fetchAllPaginated<T>(
   basePath: string,
   predicate?: (item: T) => boolean
@@ -90,10 +198,13 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
       const statsJson = await statsRes.json();
       if (statsJson.success && statsJson.data) {
         const data = statsJson.data as DashboardStats;
-        return {
+        const stats: DashboardStats = {
           ...data,
           examParticipation: data.examParticipation ?? [],
         };
+
+        stats.examParticipation = await resolveExamParticipation(stats);
+        return stats;
       }
     }
   } catch {
@@ -135,7 +246,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     totalYoutubeVideos,
     rokomariBooks: totalBooks,
     totalResults,
-    examParticipation: [],
+    examParticipation: await fetchExamParticipationFallback(totalStudents),
   };
 }
 
