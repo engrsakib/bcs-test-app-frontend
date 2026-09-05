@@ -88,8 +88,9 @@ export function ExamParticipationChart({
           Exam Participation
         </h2>
         <p className="mt-2 text-gray-600">
-          No exam data available yet. Participation metrics will appear once
-          exams are created.
+          {stats.totalExams > 0
+            ? "Exam records were found, but participation data could not be loaded. Try refreshing the page."
+            : "No exam data available yet. Participation metrics will appear once exams are created."}
         </p>
       </div>
     );
