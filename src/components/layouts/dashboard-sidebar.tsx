@@ -14,6 +14,7 @@ import {
   Megaphone,
   FileText,
   MessageSquare,
+  History,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -134,6 +135,11 @@ const links = [
     name: "BulkSMS BD",
     icon: MessageSquare,
     href: "/dashboard/sms",
+  },
+  {
+    name: "Activity",
+    icon: History,
+    href: "/dashboard/activity",
   },
   { name: "Profile", href: "/dashboard/profile", icon: Link2 },
 ];

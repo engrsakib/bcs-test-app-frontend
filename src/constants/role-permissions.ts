@@ -30,7 +30,10 @@ const ROLE_PERMISSION_GROUPS: Record<
 };
 
 const ROLE_EXTRA_PERMISSIONS: Partial<Record<AdminRole, PermissionEnum[]>> = {
-  [ADMIN_ROLES.ADMIN]: [PermissionEnum.CHECK_RESULT],
+  [ADMIN_ROLES.ADMIN]: [
+    PermissionEnum.CHECK_RESULT,
+    PermissionEnum.VIEW_ACTIVITY,
+  ],
 };
 
 export const SYSTEM_ROLES = Object.values(ADMIN_ROLES);
