@@ -3,7 +3,7 @@
 
 import { defaultCache } from "@serwist/turbopack/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { CacheFirst, NetworkFirst, NetworkOnly, Serwist } from "serwist";
+import { CacheFirst, NetworkOnly, Serwist } from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -30,11 +30,7 @@ const serwist = new Serwist({
     },
     {
       matcher: ({ url }) => url.pathname.startsWith("/dashboard"),
-      handler: new NetworkFirst({
-        cacheName: "dashboard-pages",
-        networkTimeoutSeconds: 5,
-        plugins: [],
-      }),
+      handler: new NetworkOnly(),
     },
     {
       matcher: ({ url }) =>

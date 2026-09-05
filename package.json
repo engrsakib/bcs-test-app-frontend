@@ -44,9 +44,15 @@
     "react-katex": "^3.1.0",
     "react-mathlive": "^3.0.5-preview.1",
     "react-quill-new": "^3.8.3",
+    "recharts": "^2.15.4",
     "serwist": "^9.5.12",
     "sonner": "^2.0.7",
-    "zod": "^4.1.13"
+    "zod": "4.4.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "zod": "4.4.3"
+    }
   },
   "devDependencies": {
     "@serwist/turbopack": "^9.5.12",
