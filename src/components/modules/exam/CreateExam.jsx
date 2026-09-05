@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import {
   saveExamDraft,
   loadExamDraft,
+  loadExamDraftAsync,
   clearExamDraft,
 } from "@/lib/exam-draft-storage";
 import { parseDateTimeLocalToISO } from "@/lib/exam-datetime";
@@ -68,14 +69,18 @@ export default function CreateExamForm() {
   const [submitStatus, setSubmitStatus] = useState(null);
 
   useEffect(() => {
-    const draft = loadExamDraft();
-    if (!draft) return;
-    if (draft.formData) {
-      setFormData((prev) => ({ ...prev, ...draft.formData }));
-    }
-    if (draft.selectedQuestions?.length) {
-      setSelectedQuestions(draft.selectedQuestions);
-    }
+    const restoreDraft = async () => {
+      const draft = (await loadExamDraftAsync()) ?? loadExamDraft();
+      if (!draft) return;
+      if (draft.formData) {
+        setFormData((prev) => ({ ...prev, ...draft.formData }));
+      }
+      if (draft.selectedQuestions?.length) {
+        setSelectedQuestions(draft.selectedQuestions);
+      }
+    };
+
+    void restoreDraft();
   }, []);
 
   const totalMarks = selectedQuestions.reduce(
