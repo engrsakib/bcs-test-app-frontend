@@ -22,11 +22,16 @@ import {
   Filter
 } from "lucide-react";
 import { notify } from "@/lib/toast";
-import { apiUrl } from "@/config/env";
+import { apiUrl, ENV } from "@/config/env";
 import MathEditor from "@/components/shared/MathEditor";
 import MathPreview from "@/components/shared/MathPreview";
 import { fetchQuestionsList } from "@/lib/offline/admin-fetch";
 import { CachedDataBadge } from "@/components/offline/CachedDataBadge";
+import {
+  optionHasContent,
+  parseOptionValue,
+  serializeOptionValue,
+} from "@/lib/mcq-option-value";
 
 // ====================== COOKIE HELPER ======================
 function getCookie(name) {
@@ -47,6 +52,8 @@ export default function ViewAllQuestions() {
   const [viewMode, setViewMode] = useState("list");
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [updateLoading, setUpdateLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [optionUploadingIndex, setOptionUploadingIndex] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
 
   const [filters, setFilters] = useState({
@@ -247,6 +254,20 @@ export default function ViewAllQuestions() {
       return;
     }
 
+    if (
+      selectedQuestion.answerType === "mcq" &&
+      IMAGE_OPTION_TYPES.includes(selectedQuestion.type)
+    ) {
+      const options = selectedQuestion.answer?.options || [];
+      if (options.some((opt) => !optionHasContent(opt))) {
+        notify.warning(
+          "Incomplete Options",
+          "Each option needs text, an image, or both."
+        );
+        return;
+      }
+    }
+
     try {
       setUpdateLoading(true);
       const accessToken = getCookie("access_token");
@@ -261,7 +282,15 @@ export default function ViewAllQuestions() {
           selectedQuestion.type === "math"
             ? selectedQuestion.mathFormula || ""
             : undefined,
-        answer: selectedQuestion.answer,
+        image_url: selectedQuestion.image_url || "",
+        answer: selectedQuestion.answer
+          ? {
+              ...selectedQuestion.answer,
+              options: (selectedQuestion.answer.options || []).map((opt) =>
+                serializeOptionValue(parseOptionValue(opt))
+              ),
+            }
+          : selectedQuestion.answer,
         category_id: selectedQuestion.category_id,
       };
 
@@ -298,6 +327,95 @@ export default function ViewAllQuestions() {
     }
   };
 
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
+  const IMAGE_OPTION_TYPES = ["ict", "mental_ability"];
+
+  const uploadToCloudinary = async (file) => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      throw new Error("Please upload a JPG, JPEG, or PNG image.");
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      throw new Error("Image size must be 5MB or less.");
+    }
+
+    const cloudName = ENV.CLOUDINARY.CLOUD_NAME;
+    const uploadPreset = ENV.CLOUDINARY.UPLOAD_PRESET;
+    if (!cloudName || !uploadPreset) {
+      throw new Error("Cloudinary is not configured.");
+    }
+
+    const uploadData = new FormData();
+    uploadData.append("file", file);
+    uploadData.append("upload_preset", uploadPreset);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: "POST", body: uploadData }
+    );
+    const data = await response.json();
+
+    if (!response.ok || !data?.secure_url) {
+      throw new Error(data?.error?.message || "Upload failed");
+    }
+
+    return data.secure_url;
+  };
+
+  const handleQuestionImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedQuestion) return;
+
+    setImageUploading(true);
+
+    try {
+      const url = await uploadToCloudinary(file);
+      setSelectedQuestion({ ...selectedQuestion, image_url: url });
+      notify.success("Upload Success", "Question image uploaded.");
+    } catch (error) {
+      console.error("Image upload failed", error);
+      const message = error.message || "Failed to upload image.";
+      if (message.includes("JPG") || message.includes("5MB")) {
+        notify.warning("Invalid File", message);
+      } else {
+        notify.error("Upload Failed", message);
+      }
+    } finally {
+      setImageUploading(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleOptionImageUpload = async (optionIndex, event) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedQuestion) return;
+
+    setOptionUploadingIndex(optionIndex);
+
+    try {
+      const url = await uploadToCloudinary(file);
+      const newOpt = [...selectedQuestion.answer.options];
+      const current = parseOptionValue(newOpt[optionIndex]);
+      newOpt[optionIndex] = serializeOptionValue({ ...current, image_url: url });
+      setSelectedQuestion({
+        ...selectedQuestion,
+        answer: { ...selectedQuestion.answer, options: newOpt },
+      });
+      notify.success("Upload Success", `Option ${optionIndex + 1} image uploaded.`);
+    } catch (error) {
+      console.error("Option image upload failed", error);
+      const message = error.message || "Failed to upload image.";
+      if (message.includes("JPG") || message.includes("5MB")) {
+        notify.warning("Invalid File", message);
+      } else {
+        notify.error("Upload Failed", message);
+      }
+    } finally {
+      setOptionUploadingIndex(null);
+      event.target.value = "";
+    }
+  };
+
   // ====================== TRUNCATE ======================
   const truncateText = (text, len = 40) =>
     text?.length > len ? text.substring(0, len) + "..." : text;
@@ -308,6 +426,8 @@ export default function ViewAllQuestions() {
       math: "bg-blue-50 text-blue-700 border border-blue-200",
       general: "bg-green-50 text-green-700 border border-green-200",
       science: "bg-purple-50 text-purple-700 border border-purple-200",
+      mental_ability: "bg-amber-50 text-amber-700 border border-amber-200",
+      ict: "bg-cyan-50 text-cyan-700 border border-cyan-200",
     }[t] || "bg-gray-50 text-gray-700");
 
   const getAnswerTypeGradient = (t) =>
@@ -643,6 +763,17 @@ export default function ViewAllQuestions() {
               <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{selectedQuestion.description}</p>
             </div>
 
+            {selectedQuestion.image_url ? (
+              <div>
+                <p className="text-sm text-gray-500 mb-2">Question Image</p>
+                <img
+                  src={selectedQuestion.image_url}
+                  alt="Question"
+                  className="w-full max-w-md h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
+                />
+              </div>
+            ) : null}
+
             <div>
               <p className="text-sm text-gray-500 mb-1">Study Topic</p>
               <p className="text-lg text-gray-800">{getTopicName(selectedQuestion)}</p>
@@ -689,7 +820,18 @@ export default function ViewAllQuestions() {
                       {selectedQuestion.type === "math" ? (
                         <MathPreview value={opt} className="flex-1" />
                       ) : (
-                        <span className="text-gray-800">{opt}</span>
+                        <div className="flex-1 flex flex-col gap-2">
+                          {parseOptionValue(opt).image_url ? (
+                            <img
+                              src={parseOptionValue(opt).image_url}
+                              alt={`Option ${i + 1}`}
+                              className="h-24 w-32 object-contain rounded-md border border-gray-200 bg-white"
+                            />
+                          ) : null}
+                          {parseOptionValue(opt).text ? (
+                            <span className="text-gray-800">{parseOptionValue(opt).text}</span>
+                          ) : null}
+                        </div>
                       )}
                       {String(i + 1) === selectedQuestion.answer.correctAnswer && (
                         <span className="ml-auto text-green-600 font-bold text-sm shrink-0">
@@ -752,6 +894,48 @@ export default function ViewAllQuestions() {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Question Image
+                <span className="ml-1 text-xs font-normal text-gray-500">(optional, JPG/PNG, max 5MB)</span>
+              </label>
+              {selectedQuestion.image_url ? (
+                <div className="relative mt-1 inline-block">
+                  <img
+                    src={selectedQuestion.image_url}
+                    alt="Question preview"
+                    className="w-full max-w-md h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedQuestion({ ...selectedQuestion, image_url: "" })
+                    }
+                    className="absolute top-2 right-2 rounded-full bg-red-600 px-2 py-1 text-xs font-medium text-white shadow hover:bg-red-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <label className="inline-flex items-center">
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                    onChange={handleQuestionImageUpload}
+                    disabled={imageUploading}
+                    className="sr-only"
+                  />
+                  <span
+                    className={`inline-flex cursor-pointer items-center rounded-md bg-[#2B6A5B] px-4 py-2 text-sm font-medium text-white hover:bg-green-700 ${
+                      imageUploading ? "pointer-events-none opacity-50" : ""
+                    }`}
+                  >
+                    {imageUploading ? "Uploading..." : "Choose file"}
+                  </span>
+                </label>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Marks</label>
@@ -795,6 +979,8 @@ export default function ViewAllQuestions() {
               >
                 <option value="general">General</option>
                 <option value="math">Math</option>
+                <option value="mental_ability">Mental Ability</option>
+                <option value="ict">ICT</option>
               </select>
             </div>
 
@@ -856,6 +1042,76 @@ export default function ViewAllQuestions() {
                               });
                             }}
                           />
+                        ) : IMAGE_OPTION_TYPES.includes(selectedQuestion.type) ? (
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Option {i + 1} text (optional)
+                            </label>
+                            <input
+                              value={parseOptionValue(opt).text}
+                              onChange={(e) => {
+                                const newOpt = [...selectedQuestion.answer.options];
+                                newOpt[i] = serializeOptionValue({
+                                  ...parseOptionValue(opt),
+                                  text: e.target.value,
+                                });
+                                setSelectedQuestion({
+                                  ...selectedQuestion,
+                                  answer: { ...selectedQuestion.answer, options: newOpt },
+                                });
+                              }}
+                              className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                              placeholder="Enter option text (optional)"
+                            />
+                            <label className="block text-xs font-medium text-gray-600">
+                              Option {i + 1} image (optional)
+                            </label>
+                            {parseOptionValue(opt).image_url ? (
+                              <div className="relative mt-1 inline-block">
+                                <img
+                                  src={parseOptionValue(opt).image_url}
+                                  alt={`Option ${i + 1}`}
+                                  className="h-28 w-40 object-contain rounded-md border border-gray-200 bg-gray-50"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newOpt = [...selectedQuestion.answer.options];
+                                    newOpt[i] = serializeOptionValue({
+                                      ...parseOptionValue(opt),
+                                      image_url: "",
+                                    });
+                                    setSelectedQuestion({
+                                      ...selectedQuestion,
+                                      answer: { ...selectedQuestion.answer, options: newOpt },
+                                    });
+                                  }}
+                                  className="absolute top-1 right-1 rounded-full bg-red-600 px-2 py-0.5 text-xs font-medium text-white shadow hover:bg-red-700"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="inline-flex items-center">
+                                <input
+                                  type="file"
+                                  accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                                  onChange={(e) => handleOptionImageUpload(i, e)}
+                                  disabled={optionUploadingIndex === i}
+                                  className="sr-only"
+                                />
+                                <span
+                                  className={`inline-flex cursor-pointer items-center rounded-md bg-[#2B6A5B] px-3 py-2 text-sm font-medium text-white hover:bg-green-700 ${
+                                    optionUploadingIndex === i
+                                      ? "pointer-events-none opacity-50"
+                                      : ""
+                                  }`}
+                                >
+                                  {optionUploadingIndex === i ? "Uploading..." : "Choose file"}
+                                </span>
+                              </label>
+                            )}
+                          </div>
                         ) : (
                           <input
                             value={opt}

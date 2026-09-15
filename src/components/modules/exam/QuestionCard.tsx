@@ -7,6 +7,8 @@ const typeColors: Record<string, string> = {
   math: "bg-purple-100 text-purple-800",
   general: "bg-blue-100 text-blue-800",
   science: "bg-green-100 text-green-800",
+  mental_ability: "bg-amber-100 text-amber-800",
+  ict: "bg-cyan-100 text-cyan-800",
 };
 
 const answerColors: Record<string, string> = {

@@ -5,7 +5,7 @@
 
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FileText,
   Tag,
@@ -25,11 +25,22 @@ const QuillEditor = dynamic(() => import("@/editor/QuilEditor"), {
   ssr: false,
 });
 
-
-const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}/books`;
+type BookResponse = {
+  message?: string;
+  data?: {
+    title?: string;
+    thumbnail_url?: string;
+    buy_url?: string;
+    sold_platform?: string;
+    price?: number;
+    is_published?: boolean;
+    description?: string;
+  };
+};
 
 export default function UpdateBookTemplate() {
-  const { id } = useParams();
+  const params = useParams();
+  const bookId = String(params?.id ?? "");
   const router = useRouter();
  
   const [loading, setLoading] = useState(true);
@@ -49,31 +60,36 @@ export default function UpdateBookTemplate() {
   // ===========================
   const fetchBookDetails = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/${id}`);
-      const data = await res.json();
-      const book = data?.data;
+      const { ok, data: result } = await bookProxy<BookResponse>(`/${bookId}`, {
+        method: "GET",
+      });
+      const book = result?.data;
+
+      if (!ok || !book) {
+        notify.error("Error", result?.message || "Book not found");
+        return;
+      }
 
       setFormData({
-        title: book?.title,
-        thumbnail_url: book?.thumbnail_url,
-        buy_url: book?.buy_url,
-        sold_platform: book?.sold_platform,        // 🔥 enum exact value
-        price: book?.price,
-        is_published: book?.is_published,
-        description: book?.description,
+        title: book.title || "",
+        thumbnail_url: book.thumbnail_url || "",
+        buy_url: book.buy_url || "",
+        sold_platform: book.sold_platform || "",
+        price: book.price != null ? String(book.price) : "",
+        is_published: Boolean(book.is_published),
+        description: book.description || "",
       });
-
-
     } catch (err) {
       console.log("❌ Fetch Error:", err);
+      notify.error("Error", "Failed to load book");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (id) fetchBookDetails();
-  }, [id]);
+    if (bookId) fetchBookDetails();
+  }, [bookId]);
 
 
   // ===========================
@@ -93,8 +109,8 @@ export default function UpdateBookTemplate() {
         description: formData.description,
       };
 
-      const { ok, data: result } = await bookProxy<{ message?: string; data?: unknown }>(
-        `/${id}`,
+      const { ok, data: result } = await bookProxy<BookResponse>(
+        `/${bookId}`,
         {
           method: "PUT",
           body: JSON.stringify(payload),

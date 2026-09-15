@@ -13,6 +13,7 @@ import {
 import { formatExamDate, formatExamTime } from "@/lib/exam-datetime";
 import MathPreview from "@/components/shared/MathPreview";
 import { exportExamPdf, type ExamExportData } from "@/lib/export-exam-pdf";
+import { hasQuestionImage, parseOptionValue } from "@/lib/mcq-option-value";
 import { notify } from "@/lib/toast";
 
 type ExamDetails = ExamExportData;
@@ -74,6 +75,13 @@ function QuestionViewer({
               {question.description}
             </p>
           ) : null}
+          {hasQuestionImage(question.image_url) ? (
+            <img
+              src={String(question.image_url).trim()}
+              alt="Question"
+              className="mt-4 w-full max-w-lg object-contain rounded-lg border border-gray-200 bg-white"
+            />
+          ) : null}
         </section>
 
         {question.mathFormula ? (
@@ -132,9 +140,25 @@ function QuestionViewer({
                       </span>
                       <span className="flex-1 [overflow-wrap:anywhere] [word-break:keep-all]">
                         {question.type === "math" ? (
-                          <MathPreview value={option} />
+                          <MathPreview value={String(option ?? "")} />
                         ) : (
-                          option
+                          (() => {
+                            const parsed = parseOptionValue(option);
+                            return (
+                              <span className="flex flex-col gap-2">
+                                {parsed.image_url ? (
+                                  <img
+                                    src={parsed.image_url}
+                                    alt={`Option ${OPTION_LABELS[optionIndex] ?? optionIndex + 1}`}
+                                    className="h-24 w-32 object-contain rounded-md border border-emerald-100 bg-white"
+                                  />
+                                ) : null}
+                                {parsed.text ? (
+                                  <span>{parsed.text}</span>
+                                ) : null}
+                              </span>
+                            );
+                          })()
                         )}
                       </span>
                     </div>

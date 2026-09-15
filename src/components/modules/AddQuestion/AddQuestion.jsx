@@ -3,11 +3,16 @@
 'use client';
 
 import { ENV } from '@/config/env';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { notify } from '@/lib/toast';
 import { setPendingExamQuestion } from '@/lib/exam-draft-storage';
+import {
+  optionHasContent,
+  parseOptionValue,
+  serializeOptionValue,
+} from '@/lib/mcq-option-value';
 import MathEditor from '@/components/shared/MathEditor';
 
 const QUESTIONS_STORAGE_KEY = 'allQuestions';
@@ -67,9 +72,122 @@ export default function CreateQuestionForm() {
   const [topicsLoading, setTopicsLoading] = useState(true);
   const [description, setDescription] = useState('');
   const [mathFormula, setMathFormula] = useState(''); 
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [optionUploadingKey, setOptionUploadingKey] = useState('');
   const [blanks, setBlanks] = useState([
     { id: 1, options: ['', '', '', ''], correctAnswer: '' },
   ]);
+  const imageInputRef = useRef(null);
+
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+  const IMAGE_OPTION_TYPES = ['ict', 'mental_ability'];
+  const isImageOptionType = IMAGE_OPTION_TYPES.includes(questionType);
+
+  const uploadToCloudinary = async (file) => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      throw new Error('Please upload a JPG, JPEG, or PNG image.');
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      throw new Error('Image size must be 5MB or less.');
+    }
+
+    const cloudName = ENV.CLOUDINARY.CLOUD_NAME;
+    const uploadPreset = ENV.CLOUDINARY.UPLOAD_PRESET;
+    if (!cloudName || !uploadPreset) {
+      throw new Error('Cloudinary is not configured.');
+    }
+
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    uploadData.append('upload_preset', uploadPreset);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: 'POST',
+        body: uploadData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data?.secure_url) {
+      throw new Error(data?.error?.message || 'Upload failed');
+    }
+
+    return data.secure_url;
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+
+    try {
+      const url = await uploadToCloudinary(file);
+      setImageUrl(url);
+      notify.success('Upload Success', 'Question image uploaded.');
+    } catch (error) {
+      console.error('Image upload failed', error);
+      const message = error.message || 'Failed to upload image.';
+      if (message.includes('JPG') || message.includes('5MB')) {
+        notify.warning('Invalid File', message);
+      } else {
+        notify.error('Upload Failed', message);
+      }
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleOptionImageUpload = async (blankIndex, optionIndex, event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const uploadKey = `${blankIndex}-${optionIndex}`;
+    setOptionUploadingKey(uploadKey);
+
+    try {
+      const url = await uploadToCloudinary(file);
+      setBlanks((prev) => {
+        const next = [...prev];
+        const current = parseOptionValue(next[blankIndex].options[optionIndex]);
+        next[blankIndex] = {
+          ...next[blankIndex],
+          options: next[blankIndex].options.map((opt, idx) =>
+            idx === optionIndex
+              ? serializeOptionValue({ ...current, image_url: url })
+              : opt
+          ),
+        };
+        return next;
+      });
+      notify.success('Upload Success', `Option ${optionIndex + 1} image uploaded.`);
+    } catch (error) {
+      console.error('Option image upload failed', error);
+      const message = error.message || 'Failed to upload image.';
+      if (message.includes('JPG') || message.includes('5MB')) {
+        notify.warning('Invalid File', message);
+      } else {
+        notify.error('Upload Failed', message);
+      }
+    } finally {
+      setOptionUploadingKey('');
+      event.target.value = '';
+    }
+  };
+
+  const removeImage = () => {
+    setImageUrl('');
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+  };
 
 
 
@@ -213,6 +331,22 @@ export default function CreateQuestionForm() {
     return;
   }
 
+  if (answerType === 'mcq' && isImageOptionType) {
+    const firstBlank = blanks[0];
+    const missingContent = firstBlank?.options?.some((opt) => !optionHasContent(opt));
+    if (missingContent) {
+      notify.warning(
+        'Incomplete Options',
+        'Each option needs text, an image, or both.'
+      );
+      return;
+    }
+    if (!firstBlank?.correctAnswer) {
+      notify.warning('Missing Answer', 'Please choose the correct answer.');
+      return;
+    }
+  }
+
   setLoading(true);
 
   try {
@@ -223,13 +357,16 @@ export default function CreateQuestionForm() {
       description: description || undefined,
       type: questionType.toLowerCase(),
       mathFormula: questionType === 'math' ? mathFormula : undefined,
+      image_url: imageUrl || undefined,
       answerType: answerType.toLowerCase(),
       marks: parseInt(mark),
       category_id: categoryId,
       answer: answerType === 'mcq'
         ? {
             options: blanks.flatMap(blank =>
-              blank.options.filter(opt => opt.trim() !== '')
+              blank.options.map((opt) =>
+                serializeOptionValue(parseOptionValue(opt))
+              )
             ),
             correctAnswer: blanks[0].correctAnswer
           }
@@ -307,6 +444,7 @@ export default function CreateQuestionForm() {
     setCategoryId("");
     setDescription("");
     setMathFormula("");
+    setImageUrl("");
     setBlanks([{ id: 1, options: ["", "", "", ""], correctAnswer: "" }]);
 
   } catch (error) {
@@ -335,7 +473,8 @@ export default function CreateQuestionForm() {
             ) : null}
           </div>
           <span className="text-sm text-gray-500 bg-green-50 px-3 py-1 rounded-full">
-            🟢  Active
+            <span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-1.5 align-middle" aria-hidden />
+            Active
           </span>
         </div>
 
@@ -375,6 +514,8 @@ export default function CreateQuestionForm() {
           >
             <option value="general">General</option>
             <option value="math">Math</option>
+            <option value="mental_ability">Mental Ability</option>
+            <option value="ict">ICT</option>
           </Select>
           <div>
             <Select
@@ -420,6 +561,47 @@ export default function CreateQuestionForm() {
           ></textarea>
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Question Image
+            <span className="ml-1 text-xs font-normal text-gray-500">(optional, JPG/PNG, max 5MB)</span>
+          </label>
+          {imageUrl ? (
+            <div className="relative mt-1 inline-block">
+              <img
+                src={imageUrl}
+                alt="Question preview"
+                className="w-full max-w-md h-48 object-contain rounded-md border border-gray-200 bg-gray-50"
+              />
+              <button
+                type="button"
+                onClick={removeImage}
+                className="absolute top-2 right-2 rounded-full bg-red-600 px-2 py-1 text-xs font-medium text-white shadow hover:bg-red-700"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <label className="inline-flex items-center">
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                onChange={handleImageUpload}
+                disabled={uploading}
+                className="sr-only"
+              />
+              <span
+                className={`inline-flex cursor-pointer items-center rounded-md bg-[#2B6A5B] px-4 py-2 text-sm font-medium text-white hover:bg-green-700 ${
+                  uploading ? 'pointer-events-none opacity-50' : ''
+                }`}
+              >
+                {uploading ? 'Uploading...' : 'Choose file'}
+              </span>
+            </label>
+          )}
+        </div>
+
         {questionType === 'math' && (
            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -443,6 +625,11 @@ export default function CreateQuestionForm() {
             <h2 className="text-lg font-semibold text-gray-800">
               Answer Blanks (MCQ Options)
             </h2>
+            {isImageOptionType && (
+              <p className="text-sm text-gray-500">
+                Each option can be text, an image (JPG/PNG, max 5MB), or both.
+              </p>
+            )}
             {blanks.map((blank, blankIndex) => (
               <div
                 key={blank.id}
@@ -473,6 +660,76 @@ export default function CreateQuestionForm() {
                           handleBlankOptionChange(blankIndex, optionIndex, value)
                         }
                       />
+                    ) : isImageOptionType ? (
+                      <div key={optionIndex} className="space-y-2">
+                        <Input
+                          label={`Option ${optionIndex + 1} text (optional)`}
+                          type="text"
+                          value={parseOptionValue(option).text}
+                          onChange={(e) =>
+                            handleBlankOptionChange(
+                              blankIndex,
+                              optionIndex,
+                              serializeOptionValue({
+                                ...parseOptionValue(option),
+                                text: e.target.value,
+                              })
+                            )
+                          }
+                          placeholder="Enter option text (optional)"
+                        />
+                        <label className="block text-xs font-medium text-gray-600">
+                          Option {optionIndex + 1} image (optional)
+                        </label>
+                        {parseOptionValue(option).image_url ? (
+                          <div className="relative inline-block">
+                            <img
+                              src={parseOptionValue(option).image_url}
+                              alt={`Option ${optionIndex + 1}`}
+                              className="h-28 w-40 object-contain rounded-md border border-gray-200 bg-gray-50"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleBlankOptionChange(
+                                  blankIndex,
+                                  optionIndex,
+                                  serializeOptionValue({
+                                    ...parseOptionValue(option),
+                                    image_url: '',
+                                  })
+                                )
+                              }
+                              className="absolute top-1 right-1 rounded-full bg-red-600 px-2 py-0.5 text-xs font-medium text-white shadow hover:bg-red-700"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="inline-flex items-center">
+                            <input
+                              type="file"
+                              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                              onChange={(e) =>
+                                handleOptionImageUpload(blankIndex, optionIndex, e)
+                              }
+                              disabled={optionUploadingKey === `${blankIndex}-${optionIndex}`}
+                              className="sr-only"
+                            />
+                            <span
+                              className={`inline-flex cursor-pointer items-center rounded-md bg-[#2B6A5B] px-3 py-2 text-sm font-medium text-white hover:bg-green-700 ${
+                                optionUploadingKey === `${blankIndex}-${optionIndex}`
+                                  ? 'pointer-events-none opacity-50'
+                                  : ''
+                              }`}
+                            >
+                              {optionUploadingKey === `${blankIndex}-${optionIndex}`
+                                ? 'Uploading...'
+                                : 'Choose file'}
+                            </span>
+                          </label>
+                        )}
+                      </div>
                     ) : (
                       <Input
                         key={optionIndex}
@@ -503,11 +760,11 @@ export default function CreateQuestionForm() {
                   >
                     <option value="">Choose correct answer</option>
                     {blank.options.map((opt, index) =>
-                      opt.trim() ? (
+                      optionHasContent(opt) ? (
                         <option key={index} value={index + 1}>
                           {questionType === 'math'
                             ? `Option ${index + 1}`
-                            : opt}
+                            : parseOptionValue(opt).text || `Option ${index + 1}`}
                         </option>
                       ) : null
                     )}

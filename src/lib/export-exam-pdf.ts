@@ -2,6 +2,11 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { formatExamDate, formatExamTime } from "@/lib/exam-datetime";
 import { ensureSolaimanLipiFont, PDF_FONT_FAMILY } from "@/lib/pdf-font";
+import {
+  hasQuestionImage,
+  optionDisplayText,
+  parseOptionValue,
+} from "@/lib/mcq-option-value";
 import { escapeHtml, renderContentHtml } from "@/lib/pdf-math";
 
 export interface ExamExportQuestion {
@@ -13,6 +18,7 @@ export interface ExamExportQuestion {
   type?: string;
   answerType?: string;
   mathFormula?: string;
+  image_url?: string;
   answer?: {
     options?: string[];
     correctAnswer?: string | number;
@@ -65,6 +71,12 @@ function getOptionLabel(index: number): string {
   return index < BANGLA_OPTION_LABELS.length
     ? BANGLA_OPTION_LABELS[index]
     : String.fromCharCode(65 + index);
+}
+
+function buildQuestionImageHtml(imageUrl: string | undefined): string {
+  if (!hasQuestionImage(imageUrl)) return "";
+  const src = escapeHtml(String(imageUrl).trim());
+  return `<div style="margin-top:6px;"><img src="${src}" alt="" style="max-height:120px;max-width:100%;object-fit:contain;display:block;border-radius:4px;" /></div>`;
 }
 
 function isMcqQuestion(question: ExamExportQuestion): boolean {
@@ -147,18 +159,28 @@ function buildOptionsHtml(
   const isMath = question.type === "math";
   const useGrid =
     options.length === 4 &&
-    options.every((option) => option.trim().length <= 42);
+    options.every((option) => optionDisplayText(option).length <= 42);
 
   const renderOption = (option: string, index: number, width: string) => {
     const label = getOptionLabel(index);
-    const optionContent = renderContentHtml(option, {
-      forceMath: isMath || undefined,
-    });
+    const parsed = parseOptionValue(option);
+    const textContent = parsed.text
+      ? renderContentHtml(parsed.text, {
+          forceMath: isMath || undefined,
+        })
+      : parsed.image_url
+        ? `<span style="color:${MUTED};font-style:italic;">Image option</span>`
+        : renderContentHtml(String(option ?? ""), {
+            forceMath: isMath || undefined,
+          });
+    const imageContent = parsed.image_url
+      ? `<img src="${escapeHtml(parsed.image_url)}" alt="" style="max-height:72px;max-width:100%;object-fit:contain;display:block;margin:${parsed.text ? "0 0 4px" : "0"};" />`
+      : "";
 
     return `<td style="width:${width};padding:3px 4px 3px 0;vertical-align:top;">
       <div style="display:flex;align-items:flex-start;gap:4px;font-size:${COMPACT_FONT_PX}px;line-height:1.55;color:${TEXT};">
         <span style="font-weight:700;color:${PRIMARY};flex-shrink:0;min-width:18px;">(${label})</span>
-        <span style="flex:1;">${optionContent}</span>
+        <span style="flex:1;">${imageContent}${textContent}</span>
       </div>
     </td>`;
   };
@@ -202,6 +224,7 @@ function buildMcqBlockHtml(
       ${buildQuestionNumberBadge(index + 1)}
       <div style="flex:1;font-size:${COMPACT_FONT_PX}px;font-weight:600;line-height:1.55;color:${TEXT};">${titleHtml}</div>
     </div>
+    ${buildQuestionImageHtml(question.image_url)}
     ${formulaHtml}
     ${buildOptionsHtml(question, COLUMN_WIDTH - 18)}
   </div>`;
@@ -228,6 +251,7 @@ function buildWrittenBlockHtml(
       </div>
     </div>
     ${descriptionHtml}
+    ${buildQuestionImageHtml(question.image_url)}
     <div style="margin-top:10px;font-size:${META_FONT_PX}px;font-weight:600;color:#475569;">Answer</div>
     <div style="margin-top:5px;min-height:52px;border:1px dashed #cbd5e1;border-radius:4px;background:#fafafa;"></div>
   </div>`;

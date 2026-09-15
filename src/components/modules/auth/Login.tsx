@@ -163,7 +163,8 @@ const Login: React.FC = () => {
             </div>
             {errors.phone_number && (
               <p className="text-red-600 text-sm flex items-center gap-1 mt-1">
-                <AlertCircle className="w-4 h-4" /> {errors.phone_number}
+                <AlertCircle className="w-4 h-4" />
+                <span>{errors.phone_number}</span>
               </p>
             )}
           </div>
@@ -197,26 +198,29 @@ const Login: React.FC = () => {
 
             {errors.password && (
               <p className="text-red-600 text-sm flex items-center gap-1 mt-1">
-                <AlertCircle className="w-4 h-4" /> {errors.password}
+                <AlertCircle className="w-4 h-4" />
+                <span>{errors.password}</span>
               </p>
             )}
           </div>
 
           {/* Login Button */}
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={isLoading}
             className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3.5 rounded-xl shadow-lg hover:opacity-90 flex items-center justify-center gap-2 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Logging in...
-              </>
+              <span className="inline-flex items-center justify-center gap-2">
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Logging in...</span>
+              </span>
             ) : (
-              <>
-                <LogIn className="w-5 h-5" /> Login
-              </>
+              <span className="inline-flex items-center justify-center gap-2">
+                <LogIn className="w-5 h-5" />
+                <span>Login</span>
+              </span>
             )}
           </button>
         </div>
