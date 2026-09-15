@@ -212,7 +212,8 @@ export function ExamParticipationChart({
               stroke="#65a30d"
               strokeWidth={2.5}
               strokeDasharray="6 4"
-              dot={false}
+              dot={{ r: 3, fill: "#65a30d", strokeWidth: 0 }}
+              connectNulls
               activeDot={{
                 r: 5,
                 fill: "#65a30d",

@@ -64,6 +64,28 @@ async function fetchSubmissionTiming(examNumber: number): Promise<{
   onTimeSubmissions: number;
   lateSubmissions: number;
 }> {
+  try {
+    const res = await fetch(`${ENV.BASE_URL}/dashboard/stats`, {
+      headers: authHeaders(),
+    });
+    const result = await res.json();
+
+    if (result.success && Array.isArray(result.data?.examParticipation)) {
+      const row = (
+        result.data.examParticipation as ExamParticipation[]
+      ).find((item) => item.exam_number === examNumber);
+
+      if (row) {
+        return {
+          onTimeSubmissions: row.onTimeSubmissions ?? 0,
+          lateSubmissions: row.lateSubmissions ?? 0,
+        };
+      }
+    }
+  } catch {
+    // Fall back to results-only counting below.
+  }
+
   let page = 1;
   let totalPages = 1;
   let onTimeSubmissions = 0;
