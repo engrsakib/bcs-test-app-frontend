@@ -8,6 +8,7 @@ export interface ExamParticipation {
   participationRate: number;
   onTimeSubmissions: number;
   lateSubmissions: number;
+  cheatedSubmissions: number;
 }
 
 export interface DashboardStats {
@@ -63,6 +64,7 @@ const RECENT_EXAM_LIMIT = 10;
 async function fetchSubmissionTiming(examNumber: number): Promise<{
   onTimeSubmissions: number;
   lateSubmissions: number;
+  cheatedSubmissions: number;
 }> {
   try {
     const res = await fetch(`${ENV.BASE_URL}/dashboard/stats`, {
@@ -79,6 +81,7 @@ async function fetchSubmissionTiming(examNumber: number): Promise<{
         return {
           onTimeSubmissions: row.onTimeSubmissions ?? 0,
           lateSubmissions: row.lateSubmissions ?? 0,
+          cheatedSubmissions: row.cheatedSubmissions ?? 0,
         };
       }
     }
@@ -90,6 +93,7 @@ async function fetchSubmissionTiming(examNumber: number): Promise<{
   let totalPages = 1;
   let onTimeSubmissions = 0;
   let lateSubmissions = 0;
+  let cheatedSubmissions = 0;
   const limit = 100;
 
   while (page <= totalPages) {
@@ -103,8 +107,13 @@ async function fetchSubmissionTiming(examNumber: number): Promise<{
       break;
     }
 
-    for (const row of result.data.data as { is_on_time?: boolean }[]) {
-      if (row.is_on_time === false) {
+    for (const row of result.data.data as {
+      is_on_time?: boolean;
+      is_cheated?: boolean;
+    }[]) {
+      if (row.is_cheated) {
+        cheatedSubmissions += 1;
+      } else if (row.is_on_time === false) {
         lateSubmissions += 1;
       } else {
         onTimeSubmissions += 1;
@@ -115,7 +124,7 @@ async function fetchSubmissionTiming(examNumber: number): Promise<{
     page += 1;
   }
 
-  return { onTimeSubmissions, lateSubmissions };
+  return { onTimeSubmissions, lateSubmissions, cheatedSubmissions };
 }
 
 async function fetchParticipantCount(examNumber: number): Promise<number> {
@@ -204,6 +213,7 @@ async function fetchExamParticipationFallback(
         participationRate: Math.round(participationRate * 100) / 100,
         onTimeSubmissions: timing.onTimeSubmissions,
         lateSubmissions: timing.lateSubmissions,
+        cheatedSubmissions: timing.cheatedSubmissions,
       };
     })
   );
@@ -214,6 +224,7 @@ function normalizeExamParticipation(item: ExamParticipation): ExamParticipation 
     ...item,
     onTimeSubmissions: item.onTimeSubmissions ?? 0,
     lateSubmissions: item.lateSubmissions ?? 0,
+    cheatedSubmissions: item.cheatedSubmissions ?? 0,
   };
 }
 
@@ -224,7 +235,8 @@ async function enrichParticipationTiming(
     (item) =>
       item.participants > 0 &&
       item.onTimeSubmissions === 0 &&
-      item.lateSubmissions === 0
+      item.lateSubmissions === 0 &&
+      item.cheatedSubmissions === 0
   );
 
   if (!needsTiming) {
@@ -242,6 +254,7 @@ async function enrichParticipationTiming(
         ...item,
         onTimeSubmissions: timing.onTimeSubmissions,
         lateSubmissions: timing.lateSubmissions,
+        cheatedSubmissions: timing.cheatedSubmissions,
       };
     })
   );

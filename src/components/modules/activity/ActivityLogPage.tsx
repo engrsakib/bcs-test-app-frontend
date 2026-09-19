@@ -83,6 +83,9 @@ function formatActionLabel(action: string) {
 }
 
 function formatModuleLabel(module: string) {
+  if (module === "cheated") {
+    return "Cheated";
+  }
   return module
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -222,7 +225,10 @@ export default function ActivityLogPage() {
             className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           >
             {ACTIVITY_MODULES.map((option) => (
-              <option key={option.label} value={option.value}>
+              <option
+                key={option.value || "all-modules"}
+                value={option.value}
+              >
                 {option.label}
               </option>
             ))}

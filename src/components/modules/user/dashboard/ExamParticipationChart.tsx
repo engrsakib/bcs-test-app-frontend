@@ -33,7 +33,7 @@ function ParticipationTooltip({
       <p className="text-sm font-semibold text-slate-900 leading-snug">
         {data.exam_name}
       </p>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-3 gap-3">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-wider text-emerald-600">
             On-time
@@ -48,6 +48,14 @@ function ParticipationTooltip({
           </p>
           <p className="text-lg font-semibold tabular-nums text-lime-700">
             {data.lateSubmissions.toLocaleString()}
+          </p>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-red-600">
+            Cheated
+          </p>
+          <p className="text-lg font-semibold tabular-nums text-red-700">
+            {(data.cheatedSubmissions ?? 0).toLocaleString()}
           </p>
         </div>
       </div>
@@ -112,6 +120,10 @@ export function ExamParticipationChart({
     (sum, row) => sum + row.lateSubmissions,
     0
   );
+  const totalCheated = chartData.reduce(
+    (sum, row) => sum + (row.cheatedSubmissions ?? 0),
+    0
+  );
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
@@ -121,10 +133,10 @@ export function ExamParticipationChart({
             Submission Timing
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Last 10 exams — on-time vs after-time submissions
+            Last 10 exams — on-time, after-time, and cheated submissions
           </p>
         </div>
-        <div className="flex gap-6 sm:gap-8">
+        <div className="flex flex-wrap gap-6 sm:gap-8">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-wider text-emerald-600">
               On-time
@@ -141,13 +153,21 @@ export function ExamParticipationChart({
               {totalLate.toLocaleString()}
             </p>
           </div>
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-red-600">
+              Cheated
+            </p>
+            <p className="text-xl font-semibold tabular-nums text-red-700">
+              {totalCheated.toLocaleString()}
+            </p>
+          </div>
         </div>
       </div>
 
       <div
         className="relative rounded-xl border border-slate-100 bg-slate-50/40 px-2 pt-4 pb-2 md:px-4"
         role="img"
-        aria-label="Line chart of on-time and late submissions for recent exams"
+        aria-label="Line chart of on-time, late, and cheated submissions for recent exams"
       >
         <ResponsiveContainer width="100%" height={300}>
           <LineChart
@@ -217,6 +237,21 @@ export function ExamParticipationChart({
               activeDot={{
                 r: 5,
                 fill: "#65a30d",
+                stroke: "#fff",
+                strokeWidth: 2,
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="cheatedSubmissions"
+              name="Cheated"
+              stroke="#dc2626"
+              strokeWidth={2.5}
+              dot={{ r: 3, fill: "#dc2626", strokeWidth: 0 }}
+              connectNulls
+              activeDot={{
+                r: 5,
+                fill: "#dc2626",
                 stroke: "#fff",
                 strokeWidth: 2,
               }}

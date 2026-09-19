@@ -81,9 +81,20 @@ export type ActivityQueryParams = {
   dateTo?: string;
 };
 
-export const ACTIVITY_MODULES: { value: ActivityModule | ""; label: string }[] =
-  [
+/** Virtual filter (not stored on log rows); maps to proctoring / cheated actions. */
+export const ACTIVITY_MODULE_CHEATED = "cheated" as const;
+
+export type ActivityModuleFilter =
+  | ActivityModule
+  | typeof ACTIVITY_MODULE_CHEATED
+  | "";
+
+export const ACTIVITY_MODULES: {
+  value: ActivityModuleFilter;
+  label: string;
+}[] = [
     { value: "", label: "All modules" },
+    { value: ACTIVITY_MODULE_CHEATED, label: "Cheated" },
     { value: "auth", label: "Auth" },
     { value: "admin", label: "Staff" },
     { value: "question", label: "Question" },
