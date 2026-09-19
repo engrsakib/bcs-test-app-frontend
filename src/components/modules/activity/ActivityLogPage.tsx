@@ -15,6 +15,7 @@ import {
   ACTIVITY_ACTIONS,
   ACTIVITY_MODULES,
   fetchActivityLogs,
+  isDangerActivity,
   type ActivityLogEntry,
   type ActivityQueryParams,
 } from "@/lib/activity-api";
@@ -53,6 +54,14 @@ function actionBadgeClass(action: ActivityLogEntry["action"]) {
       return "bg-violet-100 text-violet-800";
     case "submitted":
       return "bg-cyan-100 text-cyan-800";
+    case "proctoring_violation":
+    case "exam_submitted_offline":
+    case "exam_submitted_cheated":
+      return "bg-rose-100 text-rose-900";
+    case "exam_started":
+      return "bg-indigo-100 text-indigo-900";
+    case "exam_submitted":
+      return "bg-teal-100 text-teal-900";
     default:
       return "bg-gray-100 text-gray-700";
   }
@@ -161,7 +170,8 @@ export default function ActivityLogPage() {
             </h1>
           </div>
           <p className="mt-1 text-sm text-gray-500">
-            Audit log of admin login, logout, and content management actions.
+            Audit log for staff actions and student exam lifecycle (start,
+            submit, offline sync, proctoring violations).
           </p>
         </div>
 
@@ -188,7 +198,7 @@ export default function ActivityLogPage() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search admin, title, description..."
+              placeholder="Search name, phone (student/admin), title..."
               className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             />
           </div>
@@ -317,10 +327,24 @@ export default function ActivityLogPage() {
                   </td>
                 </tr>
               ) : (
-                logs.map((log) => (
-                  <tr key={log._id} className="hover:bg-gray-50/80">
+                logs.map((log) => {
+                  const danger = isDangerActivity(log);
+                  return (
+                  <tr
+                    key={log._id}
+                    className={
+                      danger
+                        ? "bg-rose-50/90 hover:bg-rose-50"
+                        : "hover:bg-gray-50/80"
+                    }
+                  >
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {log.actorName}
+                      {log.examNumber != null && (
+                        <div className="mt-0.5 text-xs font-normal text-gray-500">
+                          Exam #{log.examNumber}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -345,7 +369,8 @@ export default function ActivityLogPage() {
                       {formatDateTime(log.createdAt)}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

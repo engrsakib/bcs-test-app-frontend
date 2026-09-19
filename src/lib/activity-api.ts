@@ -8,7 +8,14 @@ export type ActivityAction =
   | "updated"
   | "deleted"
   | "registered"
-  | "submitted";
+  | "submitted"
+  | "proctoring_violation"
+  | "exam_started"
+  | "exam_submitted"
+  | "exam_submitted_offline"
+  | "exam_submitted_cheated";
+
+export type ActivitySeverity = "normal" | "danger";
 
 export type ActivityModule =
   | "study-plan"
@@ -38,6 +45,8 @@ export type ActivityLogEntry = {
   entityId?: string;
   ipAddress?: string;
   userAgent?: string;
+  severity?: ActivitySeverity;
+  examNumber?: number;
   createdAt: string;
 };
 
@@ -101,7 +110,21 @@ export const ACTIVITY_ACTIONS: { value: ActivityAction | ""; label: string }[] =
     { value: "deleted", label: "Deleted" },
     { value: "registered", label: "Registered" },
     { value: "submitted", label: "Submitted" },
+    { value: "proctoring_violation", label: "Exam proctoring" },
+    { value: "exam_started", label: "Exam started" },
+    { value: "exam_submitted", label: "Exam submitted" },
+    { value: "exam_submitted_offline", label: "Offline submit" },
+    { value: "exam_submitted_cheated", label: "Cheated submit" },
   ];
+
+export function isDangerActivity(log: Pick<ActivityLogEntry, "action" | "severity">) {
+  if (log.severity === "danger") return true;
+  return (
+    log.action === "proctoring_violation" ||
+    log.action === "exam_submitted_offline" ||
+    log.action === "exam_submitted_cheated"
+  );
+}
 
 function buildActivityQuery(params: ActivityQueryParams): string {
   const query = new URLSearchParams();
