@@ -22,20 +22,31 @@ import {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
+const ACTIVITY_CLOCK_OPTIONS: Intl.DateTimeFormatOptions = {
+  timeZone: "Asia/Dhaka",
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: true,
+};
+
+const ISO_STAMP =
+  /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?/g;
+
 function formatDateTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return "N/A";
   }
 
-  return date.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  return date.toLocaleString("en-US", ACTIVITY_CLOCK_OPTIONS);
+}
+
+function formatDescription(text: string) {
+  return text.replace(ISO_STAMP, (iso) => formatDateTime(iso));
 }
 
 function actionBadgeClass(action: ActivityLogEntry["action"]) {
@@ -359,7 +370,7 @@ export default function ActivityLogPage() {
                     <td className="max-w-md px-4 py-3 text-gray-700">
                       <div className="font-medium text-gray-900">{log.title}</div>
                       <div className="mt-0.5 text-xs text-gray-500">
-                        {log.description}
+                        {formatDescription(log.description)}
                       </div>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">
