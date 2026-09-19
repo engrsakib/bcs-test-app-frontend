@@ -22,6 +22,7 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 import { notify } from "@/lib/toast";
+import { formatExamNumber } from "@/lib/format-exam-number";
 import { confirmAction } from "@/components/ui/confirm-dialog";
 import { formatExamDateTime } from "@/lib/exam-datetime";
 import { fetchExamsList } from "@/lib/offline/admin-fetch";
@@ -354,7 +355,9 @@ export default function ExamListPage() {
 
                   {exams.map((exam) => (
                     <tr key={exam._id} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-4">{exam.exam_number}</td>
+                      <td className="px-6 py-4">
+                        {formatExamNumber(exam.exam_number)}
+                      </td>
                       <td className="px-6 py-4 font-semibold">
                         {exam.exam_name}
                       </td>

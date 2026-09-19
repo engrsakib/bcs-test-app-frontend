@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { formatExamDate, formatExamTime } from "@/lib/exam-datetime";
+import { formatExamNumberHash } from "@/lib/format-exam-number";
 import { ensureSolaimanLipiFont, PDF_FONT_FAMILY } from "@/lib/pdf-font";
 import {
   hasQuestionImage,
@@ -90,7 +91,12 @@ function buildMetaTable(exam: ExamExportData, generatedAt: string): string {
   const rows = [
     ["Date", formatExamDate(exam.exam_date_time), "Time", formatExamTime(exam.exam_date_time)],
     ["Duration", `${exam.duration_minutes} minutes`, "Total Questions", String(exam.questions.length)],
-    ["Total Marks", String(exam.total_marks), "Exam No.", `#${exam.exam_number}`],
+    [
+      "Total Marks",
+      String(exam.total_marks),
+      "Exam No.",
+      formatExamNumberHash(exam.exam_number),
+    ],
   ];
 
   return `<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:${META_FONT_PX}px;">
@@ -133,7 +139,7 @@ function buildFullHeaderHtml(exam: ExamExportData, generatedAt: string): string 
 function buildContinuationHeaderHtml(exam: ExamExportData): string {
   return `<div style="width:${CONTENT_WIDTH}px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">
     <div style="font-size:11px;font-weight:700;color:${TEXT};line-height:1.4;">${renderContentHtml(exam.exam_name)}</div>
-    <div style="font-size:9px;color:${MUTED};margin-top:2px;">Exam #${escapeHtml(exam.exam_number)} · Continued</div>
+    <div style="font-size:9px;color:${MUTED};margin-top:2px;">Exam ${escapeHtml(formatExamNumberHash(exam.exam_number))} · Continued</div>
   </div>`;
 }
 

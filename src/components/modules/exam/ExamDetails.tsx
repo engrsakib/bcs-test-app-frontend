@@ -15,6 +15,8 @@ import MathPreview from "@/components/shared/MathPreview";
 import { exportExamPdf, type ExamExportData } from "@/lib/export-exam-pdf";
 import { hasQuestionImage, parseOptionValue } from "@/lib/mcq-option-value";
 import { notify } from "@/lib/toast";
+import { formatExamNumberHash } from "@/lib/format-exam-number";
+import { formatQuestionId } from "@/lib/format-question-id";
 
 type ExamDetails = ExamExportData;
 
@@ -97,7 +99,10 @@ function QuestionViewer({
         ) : null}
 
         <section className="space-y-3 rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 p-4 sm:p-5">
-          <QuestionMetaRow label="Question ID" value={question.questionId} />
+          <QuestionMetaRow
+            label="Question ID"
+            value={formatQuestionId(question.questionId)}
+          />
           <QuestionMetaRow label="Type" value={question.type || "—"} />
           <QuestionMetaRow
             label="Answer Type"
@@ -371,7 +376,7 @@ export default function ExamDetailsClient() {
                 {exam.exam_name}
               </h2>
               <p className="font-mono text-lg text-green-100">
-                #{exam.exam_number}
+                {formatExamNumberHash(exam.exam_number)}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

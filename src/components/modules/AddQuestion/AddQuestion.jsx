@@ -14,6 +14,11 @@ import {
   serializeOptionValue,
 } from '@/lib/mcq-option-value';
 import MathEditor from '@/components/shared/MathEditor';
+import StudyTopicSearchSelect from '@/components/shared/StudyTopicSearchSelect';
+import {
+  getLastStudyTopicId,
+  setLastStudyTopicId,
+} from '@/lib/study-topic-preference';
 
 const QUESTIONS_STORAGE_KEY = 'allQuestions';
 const API_URL = `${ENV.BASE_URL}/question/`;
@@ -226,6 +231,13 @@ export default function CreateQuestionForm() {
         const result = await response.json();
         if (response.ok && Array.isArray(result.data)) {
           setTopics(result.data);
+          const storedId = getLastStudyTopicId();
+          if (
+            storedId &&
+            result.data.some((topic) => topic._id === storedId)
+          ) {
+            setCategoryId(storedId);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch study topics', error);
@@ -441,7 +453,12 @@ export default function CreateQuestionForm() {
     setMark("1");
     setAnswerType("mcq");
     setQuestionType("general");
-    setCategoryId("");
+    const lastTopicId = getLastStudyTopicId();
+    if (lastTopicId && topics.some((t) => t._id === lastTopicId)) {
+      setCategoryId(lastTopicId);
+    } else {
+      setCategoryId("");
+    }
     setDescription("");
     setMathFormula("");
     setImageUrl("");
@@ -518,22 +535,18 @@ export default function CreateQuestionForm() {
             <option value="ict">ICT</option>
           </Select>
           <div>
-            <Select
+            <StudyTopicSearchSelect
               label="Study Topic *"
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
+              onChange={(id) => {
+                setCategoryId(id);
+                setLastStudyTopicId(id);
+              }}
+              topics={topics}
+              loading={topicsLoading}
               required
               disabled={topicsLoading}
-            >
-              <option value="">
-                {topicsLoading ? 'Loading topics...' : 'Select topic'}
-              </option>
-              {topics.map((topic) => (
-                <option key={topic._id} value={topic._id}>
-                  {topic.name} ({topic.category_number})
-                </option>
-              ))}
-            </Select>
+            />
             {!topicsLoading && topics.length === 0 && (
               <p className="mt-1 text-sm text-amber-600">
                 No topics found.{' '}

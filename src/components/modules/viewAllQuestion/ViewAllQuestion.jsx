@@ -32,6 +32,7 @@ import {
   parseOptionValue,
   serializeOptionValue,
 } from "@/lib/mcq-option-value";
+import { formatQuestionId } from "@/lib/format-question-id";
 
 // ====================== COOKIE HELPER ======================
 function getCookie(name) {
@@ -420,6 +421,22 @@ export default function ViewAllQuestions() {
   const truncateText = (text, len = 40) =>
     text?.length > len ? text.substring(0, len) + "..." : text;
 
+  const renderQuestionTitleCell = (q) => {
+    const title = q.title?.trim();
+    if (title) {
+      return truncateText(title, 40);
+    }
+    const formula = q.mathFormula?.trim();
+    if (formula) {
+      return (
+        <div className="max-w-[220px] max-h-20 overflow-hidden">
+          <MathPreview value={formula} noScroll className="max-h-20" />
+        </div>
+      );
+    }
+    return <span className="text-sm italic text-gray-400">—</span>;
+  };
+
   // ====================== TYPE COLORS ======================
   const getTypeGradient = (t) =>
     ({
@@ -622,8 +639,8 @@ export default function ViewAllQuestions() {
   ) : (
     questions.map((q) => (
           <tr key={q._id} className="border-b border-gray-200 hover:bg-gray-50 transition">
-                    <td className="p-4 text-gray-600">{q.questionId}</td>
-                    <td className="p-4 text-gray-800">{truncateText(q.title, 40)}</td>
+                    <td className="p-4 text-gray-600">{formatQuestionId(q.questionId)}</td>
+                    <td className="p-4 text-gray-800">{renderQuestionTitleCell(q)}</td>
                     <td className="p-4 text-gray-700 text-sm">{getTopicName(q)}</td>
                     <td className="p-4 text-gray-600 text-sm">{truncateText(q.description, 50)}</td>
                     <td className="p-4 text-center">
@@ -745,7 +762,9 @@ export default function ViewAllQuestions() {
             <div className="flex gap-4">
               <div className="flex-1">
                 <p className="text-sm text-gray-500 mb-1">Question ID</p>
-                <p className="text-lg font-semibold text-gray-800">{selectedQuestion.questionId}</p>
+                <p className="text-lg font-semibold text-gray-800">
+                  {formatQuestionId(selectedQuestion.questionId)}
+                </p>
               </div>
               <div className="flex-1">
                 <p className="text-sm text-gray-500 mb-1">Marks</p>
