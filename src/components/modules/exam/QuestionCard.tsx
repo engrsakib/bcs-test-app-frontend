@@ -2,6 +2,7 @@
 
 import { FaPlus, FaTimes } from "react-icons/fa";
 import type { ExamQuestion } from "@/lib/exam-draft-storage";
+import MathPreview from "@/components/shared/MathPreview";
 
 const typeColors: Record<string, string> = {
   math: "bg-purple-100 text-purple-800",
@@ -39,6 +40,8 @@ export default function QuestionCard({
   onToggle,
 }: QuestionCardProps) {
   const topicName = getTopicName(question);
+  const title = question.title?.trim();
+  const formula = question.mathFormula?.trim();
 
   return (
     <div
@@ -58,9 +61,21 @@ export default function QuestionCard({
       }`}
     >
       <div className="flex items-start justify-between gap-3">
-        <h4 className="flex-1 text-sm font-semibold text-gray-800 line-clamp-2">
-          {question.title}
-        </h4>
+        <div className="flex-1 min-w-0">
+          {title ? (
+            <h4 className="text-sm font-semibold text-gray-800 line-clamp-2">
+              {title}
+            </h4>
+          ) : formula ? (
+            <div className="max-h-16 overflow-hidden">
+              <MathPreview value={formula} noScroll className="text-left" />
+            </div>
+          ) : (
+            <h4 className="text-sm font-medium text-gray-400 italic">
+              Untitled question
+            </h4>
+          )}
+        </div>
         <button
           type="button"
           onClick={(e) => {

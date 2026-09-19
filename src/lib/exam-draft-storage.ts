@@ -9,6 +9,7 @@ export interface ExamQuestion {
   _id: string;
   title: string;
   description?: string;
+  mathFormula?: string;
   type: string;
   answerType: string;
   marks: number;

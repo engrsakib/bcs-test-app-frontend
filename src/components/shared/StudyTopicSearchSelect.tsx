@@ -9,14 +9,37 @@ export type StudyTopicOption = {
 };
 
 type StudyTopicSearchSelectProps = {
-  label: string;
+  label?: string;
   value: string;
   onChange: (id: string) => void;
   topics: StudyTopicOption[];
   loading?: boolean;
   required?: boolean;
   disabled?: boolean;
+  /** Match value to Mongo _id or category_number (for filters). */
+  valueKey?: "id" | "category_number";
+  placeholder?: string;
+  hideLabel?: boolean;
+  includeAllOption?: boolean;
+  allOptionLabel?: string;
+  /** Pin “all topics” control in the panel header (filter dropdowns). */
+  allOptionInHeader?: boolean;
+  searchPlaceholder?: string;
+  getTopicLabel?: (topic: StudyTopicOption) => string;
+  listMaxHeightClass?: string;
+  buttonClassName?: string;
+  focusRingClassName?: string;
+  accent?: "blue" | "emerald";
 };
+
+function getTopicValue(
+  topic: StudyTopicOption,
+  valueKey: "id" | "category_number"
+) {
+  return valueKey === "category_number"
+    ? String(topic.category_number)
+    : topic._id;
+}
 
 function formatTopicLabel(topic: StudyTopicOption) {
   return `${topic.name} (${topic.category_number})`;
@@ -31,22 +54,39 @@ function topicMatchesQuery(topic: StudyTopicOption, query: string) {
 }
 
 export default function StudyTopicSearchSelect({
-  label,
+  label = "Study Topic",
   value,
   onChange,
   topics,
   loading = false,
   required = false,
   disabled = false,
+  valueKey = "id",
+  placeholder: placeholderProp,
+  hideLabel = false,
+  includeAllOption = false,
+  allOptionLabel = "All topics",
+  allOptionInHeader = false,
+  searchPlaceholder = "Search by name or number...",
+  getTopicLabel = formatTopicLabel,
+  listMaxHeightClass = "max-h-60",
+  buttonClassName = "",
+  focusRingClassName = "focus:ring-blue-500 focus:border-blue-500",
+  accent = "blue",
 }: StudyTopicSearchSelectProps) {
+  const itemHover = accent === "emerald" ? "hover:bg-emerald-50" : "hover:bg-blue-50";
+  const itemSelected =
+    accent === "emerald"
+      ? "bg-emerald-50 font-medium text-emerald-900"
+      : "bg-blue-50 font-medium text-blue-900";
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const selected = useMemo(
-    () => topics.find((t) => t._id === value),
-    [topics, value],
+    () => topics.find((t) => getTopicValue(t, valueKey) === value),
+    [topics, value, valueKey],
   );
 
   const filtered = useMemo(
@@ -83,68 +123,121 @@ export default function StudyTopicSearchSelect({
   }, [open]);
 
   const isDisabled = disabled || loading;
-  const placeholder = loading ? "Loading topics..." : "Select topic";
+  const placeholder =
+    placeholderProp ?? (loading ? "Loading topics..." : "Select topic");
+
+  const selectAllTopics = () => {
+    onChange("");
+    setOpen(false);
+    setSearch("");
+  };
+
+  const showAllOptionInList = includeAllOption && !allOptionInHeader;
+
+  const defaultButtonClass =
+    "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-left focus:outline-none sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed bg-white";
 
   return (
-    <div ref={rootRef} className="relative">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
-      </label>
+    <div ref={rootRef} className={open ? "relative z-[100]" : "relative"}>
+      {!hideLabel ? (
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {label}
+        </label>
+      ) : null}
       <button
         type="button"
         disabled={isDisabled}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-required={required || undefined}
+        aria-label={hideLabel ? label : undefined}
         onClick={() => {
           if (isDisabled) return;
           setOpen((prev) => !prev);
           if (open) setSearch("");
         }}
-        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-left focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed bg-white"
+        className={`${defaultButtonClass} ${focusRingClassName} ${buttonClassName}`.trim()}
       >
-        <span className={selected ? "text-gray-900" : "text-gray-500"}>
-          {selected ? formatTopicLabel(selected) : placeholder}
+        <span className={selected ? "text-gray-900 truncate block" : "text-gray-500 truncate block"}>
+          {selected ? getTopicLabel(selected) : placeholder}
         </span>
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
-          <div className="p-2 border-b border-gray-100">
+        <div className="absolute z-[100] mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
+          <div className="p-2 border-b border-gray-100 space-y-2">
+            {includeAllOption && allOptionInHeader ? (
+              <button
+                type="button"
+                className={`w-full text-left px-3 py-2 text-sm rounded-md border border-gray-200 ${itemHover} ${
+                  !value ? itemSelected : "text-gray-900 bg-gray-50/80"
+                }`}
+                onClick={selectAllTopics}
+              >
+                {allOptionLabel}
+              </button>
+            ) : null}
             <input
               ref={searchRef}
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or number..."
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder={searchPlaceholder}
+              className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none sm:text-sm ${focusRingClassName}`}
               autoComplete="off"
             />
+            {search.trim() ? (
+              <button
+                type="button"
+                className={`text-xs font-medium ${
+                  accent === "emerald"
+                    ? "text-emerald-700 hover:text-emerald-800"
+                    : "text-blue-700 hover:text-blue-800"
+                }`}
+                onClick={() => setSearch("")}
+              >
+                Show all topics ({topics.length})
+              </button>
+            ) : null}
           </div>
           <ul
             role="listbox"
-            className="max-h-60 overflow-y-auto py-1"
+            className={`${listMaxHeightClass} overflow-y-auto py-1`}
             aria-label={label}
           >
+            {showAllOptionInList ? (
+              <li role="option" aria-selected={!value}>
+                <button
+                  type="button"
+                  className={`w-full text-left px-3 py-2 text-sm ${itemHover} ${
+                    !value ? itemSelected : "text-gray-900"
+                  }`}
+                  onClick={selectAllTopics}
+                >
+                  {allOptionLabel}
+                </button>
+              </li>
+            ) : null}
             {filtered.length === 0 ? (
               <li className="px-3 py-2 text-sm text-gray-500">No matches</li>
             ) : (
               filtered.map((topic) => {
-                const isSelected = topic._id === value;
+                const topicValue = getTopicValue(topic, valueKey);
+                const isSelected = topicValue === value;
                 return (
                   <li key={topic._id} role="option" aria-selected={isSelected}>
                     <button
                       type="button"
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 ${
-                        isSelected ? "bg-blue-50 font-medium text-blue-900" : "text-gray-900"
+                      className={`w-full text-left px-3 py-2 text-sm ${itemHover} ${
+                        isSelected ? itemSelected : "text-gray-900"
                       }`}
                       onClick={() => {
-                        onChange(topic._id);
+                        onChange(topicValue);
                         setOpen(false);
                         setSearch("");
                       }}
                     >
-                      {formatTopicLabel(topic)}
+                      {getTopicLabel(topic)}
                     </button>
                   </li>
                 );

@@ -20,6 +20,7 @@ import {
   type ExamQuestion,
 } from "@/lib/exam-draft-storage";
 import QuestionCard from "./QuestionCard";
+import StudyTopicSearchSelect from "@/components/shared/StudyTopicSearchSelect";
 
 const PAGE_LIMIT = 9;
 
@@ -214,7 +215,7 @@ export default function QuestionSelectorPage() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
         {/* Search, filter & actions */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="relative z-[100] bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible">
           <div className="p-4 flex flex-col lg:flex-row gap-3">
             <div className="relative flex-1 min-w-0">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -227,27 +228,30 @@ export default function QuestionSelectorPage() {
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 lg:w-72 shrink-0">
-              <div className="relative flex-1">
-                <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none" />
-                <select
+            <div className="flex flex-col sm:flex-row gap-2 lg:w-80 shrink-0">
+              <div className="relative flex-1 min-w-0">
+                <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none z-10" />
+                <StudyTopicSearchSelect
+                  label="Question topic filter"
+                  hideLabel
                   value={categoryNumber}
-                  onChange={(e) => handleTopicFilterChange(e.target.value)}
-                  disabled={topicsLoading}
-                  className="w-full appearance-none pl-10 pr-8 py-3 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-60"
-                >
-                  <option value="">
-                    {topicsLoading ? "Loading topics..." : "All question topics"}
-                  </option>
-                  {topics.map((topic) => (
-                    <option
-                      key={topic._id}
-                      value={String(topic.category_number)}
-                    >
-                      {topic.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={handleTopicFilterChange}
+                  topics={topics}
+                  loading={topicsLoading}
+                  valueKey="category_number"
+                  includeAllOption
+                  allOptionInHeader
+                  allOptionLabel="All question topics"
+                  getTopicLabel={(topic) => topic.name}
+                  searchPlaceholder="Search topics..."
+                  listMaxHeightClass="max-h-[min(70vh,20rem)]"
+                  placeholder={
+                    topicsLoading ? "Loading topics..." : "All question topics"
+                  }
+                  buttonClassName="pl-10 pr-8 py-3 rounded-lg shadow-none"
+                  focusRingClassName="focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  accent="emerald"
+                />
               </div>
             </div>
 
@@ -314,7 +318,7 @@ export default function QuestionSelectorPage() {
         </div>
 
         {/* Question grid */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 min-h-[320px]">
+        <div className="relative z-0 bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 min-h-[320px]">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
