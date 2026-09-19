@@ -1,7 +1,5 @@
-import {
-  formatSequentialId,
-  formatSequentialIdHash,
-} from "@/lib/format-sequential-id";
+const MAX_SHORT_QUESTION_ID = 999_999;
+const QUESTION_ID_DISPLAY_LENGTH = 6;
 
 function toNumericId(questionId: string | number): number | null {
   const n =
@@ -9,19 +7,22 @@ function toNumericId(questionId: string | number): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Display 0001–9999 for new question IDs; legacy EAN IDs unchanged. */
+function formatShortQuestionId(id: number): string {
+  return String(Math.trunc(id)).padStart(QUESTION_ID_DISPLAY_LENGTH, "0");
+}
+
+/** Display 000001–999999 for new question IDs; legacy EAN IDs unchanged. */
 export function formatQuestionId(questionId: string | number): string {
   const n = toNumericId(questionId);
   if (n === null) {
     return String(questionId);
   }
-  return formatSequentialId(n);
+  if (n >= 1 && n <= MAX_SHORT_QUESTION_ID) {
+    return formatShortQuestionId(n);
+  }
+  return String(n);
 }
 
 export function formatQuestionIdHash(questionId: string | number): string {
-  const n = toNumericId(questionId);
-  if (n === null) {
-    return `#${questionId}`;
-  }
-  return formatSequentialIdHash(n);
+  return `#${formatQuestionId(questionId)}`;
 }
