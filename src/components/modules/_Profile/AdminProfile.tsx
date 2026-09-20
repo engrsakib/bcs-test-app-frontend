@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Edit2, Phone, Briefcase, FileText, Shield, Calendar, X, Upload, Loader2 } from 'lucide-react';
 import { ENV } from '@/config/env';
+import { uploadImageToCloudinary } from '@/lib/cloudinary-upload';
 import getCookie from '@/util/GetCookie';
 import { ADMIN_ROLE_OPTIONS } from '@/constants/admin-roles';
 
@@ -125,33 +126,17 @@ export default function AdminProfile() {
       return;
     }
 
-    const cloud_name_key = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const upload_preset_key = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-
     setUploadingImage(true);
     try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', file);
-      formDataUpload.append('upload_preset', upload_preset_key!);
-      formDataUpload.append('cloud_name', cloud_name_key!);
-      
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloud_name_key}/image/upload`,
-        {
-          method: 'POST',
-          body: formDataUpload,
-        }
-      );
-
-      const data = await response.json();
-      
-      if (data.secure_url) {
-        setFormData({ ...formData, image: data.secure_url });
-        console.log('Image uploaded successfully:', data.secure_url);
-      }
+      const secureUrl = await uploadImageToCloudinary(file);
+      setFormData({ ...formData, image: secureUrl });
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('Failed to upload image. Please try again.');
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Failed to upload image. Please try again.'
+      );
     } finally {
       setUploadingImage(false);
     }

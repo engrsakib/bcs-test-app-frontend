@@ -33,6 +33,7 @@ import {
   serializeOptionValue,
 } from "@/lib/mcq-option-value";
 import { formatQuestionId } from "@/lib/format-question-id";
+import { uploadImageToCloudinary } from "@/lib/cloudinary-upload";
 
 // ====================== COOKIE HELPER ======================
 function getCookie(name) {
@@ -340,27 +341,7 @@ export default function ViewAllQuestions() {
       throw new Error("Image size must be 5MB or less.");
     }
 
-    const cloudName = ENV.CLOUDINARY.CLOUD_NAME;
-    const uploadPreset = ENV.CLOUDINARY.UPLOAD_PRESET;
-    if (!cloudName || !uploadPreset) {
-      throw new Error("Cloudinary is not configured.");
-    }
-
-    const uploadData = new FormData();
-    uploadData.append("file", file);
-    uploadData.append("upload_preset", uploadPreset);
-
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: "POST", body: uploadData }
-    );
-    const data = await response.json();
-
-    if (!response.ok || !data?.secure_url) {
-      throw new Error(data?.error?.message || "Upload failed");
-    }
-
-    return data.secure_url;
+    return uploadImageToCloudinary(file);
   };
 
   const handleQuestionImageUpload = async (event) => {
