@@ -24,9 +24,12 @@ export interface MeritExportOptions {
 
 const UTF8_BOM = "\uFEFF";
 const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
 const PAGE_WIDTH_PX = 794;
-const ROWS_FIRST_PAGE = 22;
-const ROWS_PER_PAGE = 28;
+/** First page includes exam title + summary; keep low so rows are not clipped in PDF. */
+const ROWS_FIRST_PAGE = 18;
+/** Continuation pages: table header + rows only. */
+const ROWS_PER_PAGE = 26;
 
 function escapeCsvValue(value: string | number): string {
   const str = String(value);
@@ -193,7 +196,7 @@ async function createIsolatedRenderFrame(
   iframe.style.left = "-10000px";
   iframe.style.top = "0";
   iframe.style.width = `${PAGE_WIDTH_PX}px`;
-  iframe.style.height = "1600px";
+  iframe.style.height = "2400px";
   iframe.style.border = "none";
   document.body.appendChild(iframe);
 
@@ -245,6 +248,31 @@ html, body {
   return { iframe, pageElement };
 }
 
+/** Splits a tall canvas image across multiple A4 pages so bottom rows are never clipped. */
+function addImageAcrossA4Pages(
+  doc: jsPDF,
+  imgData: string,
+  imgHeightMm: number,
+): void {
+  if (imgHeightMm <= A4_HEIGHT_MM) {
+    doc.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, imgHeightMm);
+    return;
+  }
+
+  let heightLeft = imgHeightMm;
+  let position = 0;
+
+  doc.addImage(imgData, "JPEG", 0, position, A4_WIDTH_MM, imgHeightMm);
+  heightLeft -= A4_HEIGHT_MM;
+
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeightMm;
+    doc.addPage();
+    doc.addImage(imgData, "JPEG", 0, position, A4_WIDTH_MM, imgHeightMm);
+    heightLeft -= A4_HEIGHT_MM;
+  }
+}
+
 async function renderPageToPdf(
   doc: jsPDF,
   html: string,
@@ -269,7 +297,7 @@ async function renderPageToPdf(
       doc.addPage();
     }
 
-    doc.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, imgHeightMm);
+    addImageAcrossA4Pages(doc, imgData, imgHeightMm);
   } finally {
     document.body.removeChild(iframe);
   }
