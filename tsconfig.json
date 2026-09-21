@@ -34,7 +34,6 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/components/modules/permission/MathEditor.jsx",
     "src/components/modules/AddQuestion/AddQuestion.jsx",
     "src/app/dashboard/my-book/page.jsx",
     "tailwind.config.js",

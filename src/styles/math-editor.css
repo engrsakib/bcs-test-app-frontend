@@ -1,0 +1,12 @@
+math-field.math-editor-field {
+  --text-font-family: var(--font-noto-bengali), "Nirmala UI", "SolaimanLipi", sans-serif;
+  font-family: KaTeX_Main, KaTeX_Math, "Times New Roman", serif;
+  display: block;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 1.125rem;
+  background: #ffffff;
+  width: 100%;
+  min-height: 3rem;
+}

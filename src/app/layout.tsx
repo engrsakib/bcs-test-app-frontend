@@ -1,7 +1,7 @@
 
 
 import type { Metadata, Viewport } from "next";
-import { Poppins } from "next/font/google";
+import { Noto_Sans_Bengali, Poppins } from "next/font/google";
 import { SerwistProvider } from "@serwist/turbopack/react";
 
 import "./globals.css";
@@ -12,6 +12,12 @@ const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-poppins",
+});
+
+const notoBengali = Noto_Sans_Bengali({
+  subsets: ["bengali"],
+  weight: ["400", "500", "600"],
+  variable: "--font-noto-bengali",
 });
 
 const APP_NAME = "EduMaster Management";
@@ -55,7 +61,7 @@ export default function RootLayout({
         strategy="afterInteractive"
       />
       <body
-        className={`${poppins.variable} font-poppins antialiased bg-gray-50 text-gray-800`}
+        className={`${poppins.variable} ${notoBengali.variable} font-poppins antialiased bg-gray-50 text-gray-800`}
       >
         <SerwistProvider swUrl="/serwist/sw.js">
           <AppProviders>{children}</AppProviders>

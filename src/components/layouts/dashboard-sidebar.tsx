@@ -18,8 +18,8 @@ import {
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import Image from "next/image";
 import { MdOutlineLeaderboard } from "react-icons/md";
+import { BrandLogo } from "@/components/ui/brand-logo";
 
 const links = [
   { name: "Dashboard", href: "/dashboard", icon: Trophy },
@@ -160,13 +160,7 @@ export function DashboardSidebar() {
       <Link href="/dashboard">
         <div className="p-4 border-b border-emerald-300/20">
           <div className="bg-white rounded-lg shadow-lg w-[150px] flex items-center justify-center py-2">
-            <Image
-              src="/logo.png"
-              width={120}
-              height={40}
-              alt="BCS Exam Hub"
-              priority
-            />
+            <BrandLogo width={48} height={48} />
           </div>
         </div>
       </Link>

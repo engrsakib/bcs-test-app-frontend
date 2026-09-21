@@ -1,6 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import "@/styles/mathlive-katex-fonts.css";
+import "@/styles/math-editor.css";
+import {
+  isLikelyBijoyAnsi,
+  sanitizePastedTextForMathField,
+} from "@/lib/sanitize-math-paste";
 
 interface MathEditorProps {
   value?: string;
@@ -9,51 +15,56 @@ interface MathEditorProps {
   label?: string;
 }
 
+type MathFieldElement = HTMLElement & {
+  setValue?: (value: string) => void;
+  setOptions?: (options: Record<string, unknown>) => void;
+  getValue?: () => string;
+  insert?: (value: string) => boolean;
+  addEventListener: HTMLElement["addEventListener"];
+  removeEventListener: HTMLElement["removeEventListener"];
+};
+
+let mathLiveLoader: Promise<void> | null = null;
+
+function ensureMathLiveLoaded(): Promise<void> {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  if (!mathLiveLoader) {
+    mathLiveLoader = import("mathlive").then(({ MathfieldElement }) => {
+      MathfieldElement.fontsDirectory = "/mathlive-fonts";
+    });
+  }
+
+  return mathLiveLoader;
+}
+
 export default function MathEditor({
   value = "",
   onChange,
   readOnly = false,
   label,
 }: MathEditorProps) {
-  const mathEditorRef = useRef<HTMLElement | null>(null);
+  const mathEditorRef = useRef<MathFieldElement | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const scriptId = "mathlive-script";
-
-    if (window.MathfieldElement) {
-      setIsLoaded(true);
-      return;
-    }
-
-    if (document.getElementById(scriptId)) {
-      const checkInterval = window.setInterval(() => {
-        if (window.MathfieldElement) {
-          setIsLoaded(true);
-          window.clearInterval(checkInterval);
-        }
-      }, 100);
-      return () => window.clearInterval(checkInterval);
-    }
-
-    const script = document.createElement("script");
-    script.id = scriptId;
-    script.src = "https://unpkg.com/mathlive";
-    script.async = true;
-    script.onload = () => setIsLoaded(true);
-    document.head.appendChild(script);
+    let cancelled = false;
+    ensureMathLiveLoaded().then(() => {
+      if (!cancelled) {
+        setIsLoaded(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     if (!isLoaded || !mathEditorRef.current) return;
 
-    const mathField = mathEditorRef.current as HTMLElement & {
-      setValue?: (value: string) => void;
-      setOptions?: (options: Record<string, unknown>) => void;
-      getValue?: () => string;
-      addEventListener: HTMLElement["addEventListener"];
-      removeEventListener: HTMLElement["removeEventListener"];
-    };
+    const mathField = mathEditorRef.current;
 
     if (value && mathField.setValue) {
       mathField.setValue(value);
@@ -63,6 +74,7 @@ export default function MathEditor({
       mathField.setOptions({
         virtualKeyboardMode: "manual",
         smartMode: true,
+        defaultMode: "math",
       });
     }
 
@@ -72,22 +84,40 @@ export default function MathEditor({
       }
     };
 
+    const handlePaste = (event: Event) => {
+      if (readOnly) return;
+
+      const clipboardEvent = event as ClipboardEvent;
+      const raw = clipboardEvent.clipboardData?.getData("text/plain") ?? "";
+      if (!isLikelyBijoyAnsi(raw)) {
+        return;
+      }
+
+      const converted = sanitizePastedTextForMathField(raw);
+      if (converted === raw) {
+        return;
+      }
+
+      clipboardEvent.preventDefault();
+      clipboardEvent.stopPropagation();
+      mathField.insert?.(converted);
+    };
+
     mathField.addEventListener("input", handleInput);
     mathField.addEventListener("change", handleInput);
+    mathField.addEventListener("paste", handlePaste);
 
     return () => {
       mathField.removeEventListener("input", handleInput);
       mathField.removeEventListener("change", handleInput);
+      mathField.removeEventListener("paste", handlePaste);
     };
   }, [isLoaded, onChange, readOnly, value]);
 
   useEffect(() => {
     if (!isLoaded || !mathEditorRef.current) return;
 
-    const mathField = mathEditorRef.current as HTMLElement & {
-      getValue?: () => string;
-      setValue?: (value: string) => void;
-    };
+    const mathField = mathEditorRef.current;
 
     if (mathField.getValue && mathField.setValue) {
       const currentVal = mathField.getValue();
@@ -111,17 +141,9 @@ export default function MathEditor({
       ) : (
         <math-field
           ref={mathEditorRef as React.RefObject<HTMLElement>}
+          className="math-editor-field"
           read-only={readOnly ? "true" : undefined}
-          style={{
-            display: "block",
-            border: "1px solid #d1d5db",
-            borderRadius: "0.375rem",
-            padding: "0.5rem 0.75rem",
-            fontSize: "1.125rem",
-            background: "#ffffff",
-            width: "100%",
-            minHeight: "3rem",
-          }}
+          smart-mode="on"
         >
           {value || ""}
         </math-field>

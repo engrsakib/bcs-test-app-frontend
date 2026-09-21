@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/copy-mathlive-fonts.mjs",
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start"
+    "build": "next build --turbopack && node scripts/prepare-standalone.mjs",
+    "start": "node .next/standalone/server.js",
+    "start:legacy": "next start"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -14,6 +16,7 @@
     "@tiptap/extension-underline": "^3.18.0",
     "@tiptap/react": "^3.18.0",
     "@tiptap/starter-kit": "^3.18.0",
+    "bijoy-unicode-converter": "^0.1.2",
     "clsx": "^2.1.1",
     "dexie": "^4.4.5",
     "dompurify": "^3.3.1",

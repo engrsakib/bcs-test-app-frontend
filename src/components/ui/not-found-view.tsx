@@ -1,6 +1,7 @@
 import { FileQuestion } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+
+import { BrandLogo } from "@/components/ui/brand-logo";
 
 type NotFoundViewProps = {
   /** When true, fits inside dashboard main (sidebar stays visible). */
@@ -16,13 +17,7 @@ export function NotFoundView({ compact = false }: NotFoundViewProps) {
     <div className={outerClass}>
       <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
         <div className="mx-auto mb-5 bg-white rounded-lg w-[150px] flex items-center justify-center py-2 border border-gray-100 shadow-sm">
-          <Image
-            src="/logo.png"
-            width={120}
-            height={40}
-            alt="EduMaster Management"
-            priority
-          />
+          <BrandLogo width={48} height={48} />
         </div>
         <div className="mx-auto w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
           <FileQuestion className="w-8 h-8 text-emerald-600" aria-hidden />
