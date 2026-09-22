@@ -11,13 +11,15 @@ import {
   Tag,
   AlignLeft,
   Type,
-
+  Upload,
+  Loader2,
   Image as ImageIcon,
   X,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { notify } from "@/lib/toast";
 import { bookProxy } from "@/lib/book-api";
+import { uploadImageToCloudinary } from "@/lib/cloudinary-upload";
 
 import dynamic from "next/dynamic";
 
@@ -44,6 +46,7 @@ export default function UpdateBookTemplate() {
   const router = useRouter();
  
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -91,6 +94,37 @@ export default function UpdateBookTemplate() {
     if (bookId) fetchBookDetails();
   }, [bookId]);
 
+  const handleThumbnailUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      notify.error("Invalid File", "Please upload an image file.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      notify.error("File Too Large", "Image size should be less than 5MB.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const secureUrl = await uploadImageToCloudinary(file);
+      setFormData((prev) => ({ ...prev, thumbnail_url: secureUrl }));
+      notify.success("Upload Success", "Thumbnail uploaded successfully.");
+    } catch (error) {
+      notify.error(
+        "Upload Failed",
+        error instanceof Error ? error.message : "Failed to upload image.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // ===========================
   // UPDATE BOOK API CALL
@@ -178,44 +212,76 @@ export default function UpdateBookTemplate() {
           {/* THUMBNAIL (optional) */}
           <div>
             <label className="font-semibold text-gray-700 flex gap-2 items-center">
-              <ImageIcon className="w-5 h-5 text-teal-600" /> Thumbnail URL
+              <ImageIcon className="w-5 h-5 text-teal-600" /> Thumbnail Image
               <span className="text-xs font-normal text-gray-500">(optional)</span>
             </label>
 
             <input
-              className="w-full px-4 py-3 border rounded-xl mt-2"
-              placeholder="https://image-url.com (optional)"
-              value={formData.thumbnail_url}
-              onChange={(e) =>
-                setFormData({ ...formData, thumbnail_url: e.target.value })
-              }
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={handleThumbnailUpload}
+              className="hidden"
+              id="book-thumb-upload"
+              disabled={uploading}
             />
 
-            <div className="relative w-40 h-28 bg-gray-200 mt-3 rounded-xl shadow overflow-hidden">
-              {formData.thumbnail_url ? (
-                <>
-                  <img
-                    src={formData.thumbnail_url}
-                    alt="Thumbnail preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, thumbnail_url: "" })
-                    }
-                    className="absolute top-2 right-2 rounded-full bg-red-600 p-1.5 text-white shadow hover:bg-red-700"
-                    title="Remove thumbnail"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                  No Image
-                </div>
-              )}
-            </div>
+            {formData.thumbnail_url ? (
+              <div className="relative mt-3 inline-block">
+                <img
+                  src={formData.thumbnail_url}
+                  alt="Thumbnail preview"
+                  className="w-56 h-36 object-cover rounded-xl shadow-md border"
+                />
+                {uploading && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
+                    <Loader2 className="w-7 h-7 animate-spin text-white" />
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, thumbnail_url: "" }))
+                  }
+                  className="absolute top-2 right-2 rounded-full bg-red-600 p-2 text-white shadow hover:bg-red-700"
+                  title="Remove thumbnail"
+                  disabled={uploading}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+                <label
+                  htmlFor="book-thumb-upload"
+                  className={`absolute bottom-2 left-2 cursor-pointer rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-teal-700 ${
+                    uploading ? "pointer-events-none opacity-50" : ""
+                  }`}
+                >
+                  Change
+                </label>
+              </div>
+            ) : (
+              <label
+                htmlFor="book-thumb-upload"
+                className={`mt-2 flex h-36 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 transition-all hover:border-teal-500 ${
+                  uploading ? "pointer-events-none opacity-50" : ""
+                }`}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="mb-2 h-8 w-8 animate-spin text-teal-600" />
+                    <span className="text-sm text-gray-600">Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mb-2 h-8 w-8 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      Click to upload thumbnail
+                    </span>
+                    <span className="mt-1 text-xs text-gray-400">
+                      PNG, JPG, WEBP, GIF up to 5MB
+                    </span>
+                  </>
+                )}
+              </label>
+            )}
           </div>
 
           {/* SOLD PLATFORM */}
