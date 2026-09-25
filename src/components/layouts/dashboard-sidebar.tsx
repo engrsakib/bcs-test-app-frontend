@@ -15,6 +15,7 @@ import {
   FileText,
   MessageSquare,
   History,
+  BellRing,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -135,6 +136,11 @@ const links = [
     name: "BulkSMS BD",
     icon: MessageSquare,
     href: "/dashboard/sms",
+  },
+  {
+    name: "App Notifications",
+    icon: BellRing,
+    href: "/dashboard/notifications/send",
   },
   {
     name: "Activity",
