@@ -1,10 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Bell,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Filter,
   Loader2,
-  Search,
   Send,
   Users,
   X,
@@ -19,7 +29,13 @@ import {
 } from "@/lib/count-words";
 import {
   createNotificationCampaign,
+  fetchCampaignRecipients,
   fetchNotificationCampaigns,
+  type CampaignListFilters,
+  type CampaignListMeta,
+  type CampaignRecipientRow,
+  type CampaignRecipientSegment,
+  type CampaignStatus,
   type NotificationCampaign,
   type CampaignAudienceMode,
 } from "@/lib/notification-campaign-api";
@@ -29,6 +45,11 @@ type StudentPick = {
   _id: string;
   name: string;
   phone_number: string;
+};
+
+type ExamOption = {
+  exam_number: number;
+  exam_name: string;
 };
 
 function getCookie(name: string): string | null {
@@ -48,19 +69,75 @@ function normalizePhone(raw: string): string | null {
   return BD_PHONE.test(digits) ? digits : null;
 }
 
+function rowToStudent(row: CampaignRecipientRow): StudentPick {
+  const id = row.userId ?? `phone:${row.phone_number}`;
+  return {
+    _id: id,
+    name: row.name,
+    phone_number: row.phone_number,
+  };
+}
+
+function audienceLabel(c: NotificationCampaign): string {
+  if (c.audienceMode === "all") return "All users";
+  const n = c.selectedPhoneNumbers?.length ?? 0;
+  return n > 0 ? `${n} selected` : "Selected";
+}
+
 export default function NotificationCampaignComposer() {
   const [audienceMode, setAudienceMode] =
     useState<CampaignAudienceMode>("all");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [selected, setSelected] = useState<StudentPick[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<StudentPick[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
   const [manualPhone, setManualPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [recipientSource, setRecipientSource] = useState<"browse" | "exam">(
+    "browse"
+  );
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const [browseSearch, setBrowseSearch] = useState("");
+  const [browseDebounced, setBrowseDebounced] = useState("");
+  const [browsePage, setBrowsePage] = useState(1);
+  const [browseRows, setBrowseRows] = useState<CampaignRecipientRow[]>([]);
+  const [browseMeta, setBrowseMeta] = useState<CampaignListMeta | null>(null);
+  const [browseLoading, setBrowseLoading] = useState(false);
+  const [browseChecked, setBrowseChecked] = useState<Set<string>>(new Set());
+
+  const [allExams, setAllExams] = useState<ExamOption[]>([]);
+  const [examSearch, setExamSearch] = useState("");
+  const [filteredExams, setFilteredExams] = useState<ExamOption[]>([]);
+  const [showExamDropdown, setShowExamDropdown] = useState(false);
+  const [selectedExam, setSelectedExam] = useState<ExamOption | null>(null);
+  const [examSegment, setExamSegment] = useState<
+    "top_by_exam" | "not_attended"
+  >("top_by_exam");
+  const [topN, setTopN] = useState(50);
+  const [examPage, setExamPage] = useState(1);
+  const [examRows, setExamRows] = useState<CampaignRecipientRow[]>([]);
+  const [examMeta, setExamMeta] = useState<CampaignListMeta | null>(null);
+  const [examLoading, setExamLoading] = useState(false);
+  const [examChecked, setExamChecked] = useState<Set<string>>(new Set());
+
   const [campaigns, setCampaigns] = useState<NotificationCampaign[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyLimit, setHistoryLimit] = useState(10);
+  const [historyMeta, setHistoryMeta] = useState<CampaignListMeta | null>(
+    null
+  );
+  const [showHistoryFilters, setShowHistoryFilters] = useState(false);
+  const [historySubjectInput, setHistorySubjectInput] = useState("");
+  const [historySubject, setHistorySubject] = useState("");
+  const [historyFilters, setHistoryFilters] = useState<CampaignListFilters>({
+    status: "",
+    audienceMode: "",
+    dateFrom: "",
+    dateTo: "",
+  });
+
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   const wordCount = useMemo(() => countWords(body), [body]);
   const canSubmit =
@@ -70,54 +147,202 @@ export default function NotificationCampaignComposer() {
     (audienceMode === "all" || selected.length > 0) &&
     !submitting;
 
+  useEffect(() => {
+    const t = setTimeout(() => setBrowseDebounced(browseSearch.trim()), 300);
+    return () => clearTimeout(t);
+  }, [browseSearch]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setHistorySubject(historySubjectInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [historySubjectInput]);
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historySubject, historyFilters, historyLimit]);
+
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
     try {
-      const res = await fetchNotificationCampaigns(1, 10);
+      const res = await fetchNotificationCampaigns(
+        historyPage,
+        historyLimit,
+        { ...historyFilters, search: historySubject }
+      );
       if (res.success && res.data?.data) {
         setCampaigns(res.data.data);
+        setHistoryMeta(res.data.meta);
       }
     } catch {
       notify.error("Failed to load campaign history");
     } finally {
       setHistoryLoading(false);
     }
-  }, []);
+  }, [historyPage, historyLimit, historyFilters, historySubject]);
 
   useEffect(() => {
     void loadHistory();
   }, [loadHistory]);
 
-  const runSearch = async () => {
-    const q = searchQuery.trim();
-    if (!q) return;
-    const token = getCookie("access_token");
-    if (!token) {
-      notify.error("Not authenticated");
+  const loadBrowse = useCallback(async () => {
+    setBrowseLoading(true);
+    try {
+      const res = await fetchCampaignRecipients({
+        segment: "browse",
+        page: browsePage,
+        limit: 20,
+        search: browseDebounced || undefined,
+      });
+      if (res.success && res.data) {
+        setBrowseRows(res.data.data);
+        setBrowseMeta(res.data.meta);
+      } else {
+        notify.error(res.message || "Failed to load students");
+      }
+    } catch {
+      notify.error("Failed to load students");
+    } finally {
+      setBrowseLoading(false);
+    }
+  }, [browsePage, browseDebounced]);
+
+  useEffect(() => {
+    if (
+      audienceMode !== "selected" ||
+      recipientSource !== "browse" ||
+      !browseOpen
+    ) {
       return;
     }
-    setSearchLoading(true);
+    void loadBrowse();
+  }, [audienceMode, recipientSource, browseOpen, loadBrowse]);
+
+  useEffect(() => {
+    setBrowsePage(1);
+  }, [browseDebounced]);
+
+  const loadExams = useCallback(async () => {
+    const token = getCookie("access_token");
+    if (!token) return;
     try {
-      const url = `${ENV.BASE_URL}/user?page=1&limit=20&search_query=${encodeURIComponent(q)}`;
-      const res = await fetch(url, {
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json",
-        },
-      });
-      const json = await res.json();
-      const rows = (json?.data?.data ?? json?.data ?? []) as StudentPick[];
-      setSearchResults(Array.isArray(rows) ? rows : []);
+      const response = await fetch(
+        `${ENV.BASE_URL}/exam/exam-search?exam_name=`,
+        { headers: { Authorization: token } }
+      );
+      const json = await response.json();
+      if (json.success && json.data) {
+        setAllExams(json.data);
+        setFilteredExams(json.data);
+      }
     } catch {
-      notify.error("Student search failed");
-    } finally {
-      setSearchLoading(false);
+      /* ignore */
     }
+  }, []);
+
+  useEffect(() => {
+    if (recipientSource === "exam" && audienceMode === "selected") {
+      void loadExams();
+    }
+  }, [recipientSource, audienceMode, loadExams]);
+
+  useEffect(() => {
+    if (!examSearch.trim()) {
+      setFilteredExams(allExams);
+      return;
+    }
+    const q = examSearch.toLowerCase();
+    setFilteredExams(
+      allExams.filter(
+        (e) =>
+          e.exam_name.toLowerCase().includes(q) ||
+          String(e.exam_number).includes(q)
+      )
+    );
+  }, [examSearch, allExams]);
+
+  const loadExamRecipients = useCallback(async () => {
+    if (!selectedExam) return;
+    setExamLoading(true);
+    try {
+      const segment: CampaignRecipientSegment =
+        examSegment === "top_by_exam" ? "top_by_exam" : "not_attended";
+      const res = await fetchCampaignRecipients({
+        segment,
+        page: examPage,
+        limit: 20,
+        examNumber: selectedExam.exam_number,
+        topN: examSegment === "top_by_exam" ? topN : undefined,
+        search:
+          examSegment === "not_attended" ? browseDebounced || undefined : undefined,
+      });
+      if (res.success && res.data) {
+        setExamRows(res.data.data);
+        setExamMeta(res.data.meta);
+      } else {
+        notify.error(res.message || "Failed to load exam recipients");
+      }
+    } catch {
+      notify.error("Failed to load exam recipients");
+    } finally {
+      setExamLoading(false);
+    }
+  }, [selectedExam, examSegment, examPage, topN, browseDebounced]);
+
+  useEffect(() => {
+    if (
+      audienceMode !== "selected" ||
+      recipientSource !== "exam" ||
+      !selectedExam
+    ) {
+      return;
+    }
+    void loadExamRecipients();
+  }, [audienceMode, recipientSource, selectedExam, loadExamRecipients]);
+
+  useEffect(() => {
+    setExamPage(1);
+  }, [selectedExam, examSegment, topN, browseDebounced]);
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (
+        pickerRef.current &&
+        !pickerRef.current.contains(e.target as Node)
+      ) {
+        setBrowseOpen(false);
+      }
+      const target = e.target as HTMLElement;
+      if (!target.closest(".campaign-exam-search")) {
+        setShowExamDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  const addMany = (rows: CampaignRecipientRow[]) => {
+    setSelected((prev) => {
+      const phones = new Set(prev.map((s) => s.phone_number));
+      const next = [...prev];
+      for (const row of rows) {
+        if (phones.has(row.phone_number)) continue;
+        phones.add(row.phone_number);
+        next.push(rowToStudent(row));
+      }
+      return next;
+    });
   };
 
-  const addStudent = (student: StudentPick) => {
-    if (selected.some((s) => s._id === student._id)) return;
-    setSelected((prev) => [...prev, student]);
+  const toggleChecked = (
+    set: React.Dispatch<React.SetStateAction<Set<string>>>,
+    phone: string
+  ) => {
+    set((prev) => {
+      const next = new Set(prev);
+      if (next.has(phone)) next.delete(phone);
+      else next.add(phone);
+      return next;
+    });
   };
 
   const addManualPhone = () => {
@@ -176,6 +401,130 @@ export default function NotificationCampaignComposer() {
     }
   };
 
+  const resetHistoryFilters = () => {
+    setHistorySubjectInput("");
+    setHistorySubject("");
+    setHistoryFilters({
+      status: "",
+      audienceMode: "",
+      dateFrom: "",
+      dateTo: "",
+    });
+    setHistoryPage(1);
+  };
+
+  const historyTotalPages = historyMeta?.totalPage ?? 1;
+  const historyFrom = historyMeta
+    ? (historyMeta.page - 1) * historyMeta.limit + 1
+    : 0;
+  const historyTo = historyMeta
+    ? Math.min(historyMeta.page * historyMeta.limit, historyMeta.total)
+    : 0;
+
+  const renderRecipientList = (
+    rows: CampaignRecipientRow[],
+    checked: Set<string>,
+    setChecked: React.Dispatch<React.SetStateAction<Set<string>>>,
+    showScore: boolean
+  ) => (
+    <ul className="max-h-52 overflow-y-auto divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+      {rows.map((row) => (
+        <li
+          key={row.phone_number}
+          className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
+        >
+          <input
+            type="checkbox"
+            checked={checked.has(row.phone_number)}
+            onChange={() => toggleChecked(setChecked, row.phone_number)}
+            className="rounded border-slate-300"
+          />
+          <span className="flex-1 min-w-0">
+            <span className="font-medium text-slate-800">{row.name}</span>{" "}
+            <span className="text-slate-500">{row.phone_number}</span>
+          </span>
+          {showScore && row.rank != null && (
+            <span className="text-xs text-slate-500 shrink-0">
+              #{row.rank} · {row.score ?? "—"}
+            </span>
+          )}
+        </li>
+      ))}
+      {rows.length === 0 && (
+        <li className="px-3 py-4 text-sm text-slate-500 text-center">
+          No students found
+        </li>
+      )}
+    </ul>
+  );
+
+  const renderListToolbar = (
+    rows: CampaignRecipientRow[],
+    checked: Set<string>,
+    setChecked: React.Dispatch<React.SetStateAction<Set<string>>>,
+    meta: CampaignListMeta | null,
+    page: number,
+    setPage: React.Dispatch<React.SetStateAction<number>>,
+    loading: boolean
+  ) => (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <button
+        type="button"
+        className="rounded-md border border-slate-200 px-2 py-1 hover:bg-white"
+        onClick={() => {
+          setChecked(new Set(rows.map((r) => r.phone_number)));
+        }}
+      >
+        Select page
+      </button>
+      <button
+        type="button"
+        className="rounded-md bg-emerald-700 text-white px-2 py-1 font-medium disabled:opacity-50"
+        disabled={checked.size === 0}
+        onClick={() => {
+          const picked = rows.filter((r) => checked.has(r.phone_number));
+          addMany(picked);
+          setChecked(new Set());
+          notify.success(`Added ${picked.length} recipient(s)`);
+        }}
+      >
+        Add selected ({checked.size})
+      </button>
+      <button
+        type="button"
+        className="rounded-md border border-emerald-600 text-emerald-800 px-2 py-1 font-medium disabled:opacity-50"
+        disabled={rows.length === 0}
+        onClick={() => {
+          addMany(rows);
+          notify.success(`Added ${rows.length} on this page`);
+        }}
+      >
+        Add all on page
+      </button>
+      <div className="ml-auto flex items-center gap-1">
+        <button
+          type="button"
+          disabled={loading || page <= 1}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          className="p-1 rounded border border-slate-200 disabled:opacity-40"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <span className="text-slate-500">
+          {meta ? `${meta.page} / ${meta.totalPage}` : "—"}
+        </span>
+        <button
+          type="button"
+          disabled={loading || !meta?.hasMore}
+          onClick={() => setPage((p) => p + 1)}
+          className="p-1 rounded border border-slate-200 disabled:opacity-40"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-8">
       <header className="flex items-start gap-3">
@@ -228,56 +577,191 @@ export default function NotificationCampaignComposer() {
           </div>
 
           {audienceMode === "selected" && (
-            <div className="space-y-3 rounded-xl bg-slate-50 p-4 border border-slate-100">
-              <div className="flex gap-2">
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && void runSearch()}
-                  placeholder="Search by name or phone…"
-                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
+            <div
+              ref={pickerRef}
+              className="space-y-3 rounded-xl bg-slate-50 p-4 border border-slate-100"
+            >
+              <div className="flex gap-2 p-1 rounded-lg bg-white border border-slate-200">
                 <button
                   type="button"
-                  onClick={() => void runSearch()}
-                  disabled={searchLoading}
-                  className="rounded-lg bg-emerald-700 text-white px-3 py-2 text-sm font-medium disabled:opacity-50"
+                  onClick={() => {
+                    setRecipientSource("browse");
+                    setBrowseOpen(true);
+                  }}
+                  className={`flex-1 rounded-md py-2 text-xs font-semibold ${
+                    recipientSource === "browse"
+                      ? "bg-emerald-700 text-white"
+                      : "text-slate-600"
+                  }`}
                 >
-                  {searchLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
+                  All students (A–Z)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecipientSource("exam")}
+                  className={`flex-1 rounded-md py-2 text-xs font-semibold ${
+                    recipientSource === "exam"
+                      ? "bg-emerald-700 text-white"
+                      : "text-slate-600"
+                  }`}
+                >
+                  By exam
                 </button>
               </div>
-              {searchResults.length > 0 && (
-                <ul className="max-h-40 overflow-y-auto divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
-                  {searchResults.map((s) => (
-                    <li
-                      key={s._id}
-                      className="flex items-center justify-between px-3 py-2 text-sm"
-                    >
-                      <span>
-                        {s.name}{" "}
-                        <span className="text-slate-500">{s.phone_number}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => addStudent(s)}
-                        className="text-emerald-700 font-medium text-xs"
-                      >
-                        Add
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+
+              {recipientSource === "browse" && (
+                <>
+                  <input
+                    value={browseSearch}
+                    onChange={(e) => setBrowseSearch(e.target.value)}
+                    onFocus={() => setBrowseOpen(true)}
+                    placeholder="Search by name or phone…"
+                    aria-expanded={browseOpen}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+                  />
+                  {browseOpen && (
+                    <div className="space-y-2">
+                      {browseLoading ? (
+                        <div className="flex justify-center py-6">
+                          <Loader2 className="h-5 w-5 animate-spin text-emerald-700" />
+                        </div>
+                      ) : (
+                        <>
+                          {renderListToolbar(
+                            browseRows,
+                            browseChecked,
+                            setBrowseChecked,
+                            browseMeta,
+                            browsePage,
+                            setBrowsePage,
+                            browseLoading
+                          )}
+                          {renderRecipientList(
+                            browseRows,
+                            browseChecked,
+                            setBrowseChecked,
+                            false
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
+
+              {recipientSource === "exam" && (
+                <div className="space-y-3">
+                  <div className="relative campaign-exam-search">
+                    <input
+                      value={examSearch}
+                      onChange={(e) => {
+                        setExamSearch(e.target.value);
+                        setShowExamDropdown(true);
+                      }}
+                      onFocus={() => setShowExamDropdown(true)}
+                      placeholder="Search exam by name or number…"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+                    />
+                    {showExamDropdown && filteredExams.length > 0 && (
+                      <ul className="absolute z-20 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg text-sm">
+                        {filteredExams.slice(0, 15).map((exam) => (
+                          <li key={exam.exam_number}>
+                            <button
+                              type="button"
+                              className="w-full text-left px-3 py-2 hover:bg-emerald-50"
+                              onClick={() => {
+                                setSelectedExam(exam);
+                                setExamSearch(
+                                  `#${exam.exam_number} · ${exam.exam_name}`
+                                );
+                                setShowExamDropdown(false);
+                              }}
+                            >
+                              #{exam.exam_number} · {exam.exam_name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {selectedExam && (
+                    <>
+                      <div className="flex flex-wrap gap-3 text-sm">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            checked={examSegment === "top_by_exam"}
+                            onChange={() => setExamSegment("top_by_exam")}
+                          />
+                          Top students
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            checked={examSegment === "not_attended"}
+                            onChange={() => setExamSegment("not_attended")}
+                          />
+                          Not attended yet
+                        </label>
+                        {examSegment === "top_by_exam" && (
+                          <label className="flex items-center gap-2 ml-auto">
+                            Top
+                            <input
+                              type="number"
+                              min={1}
+                              max={200}
+                              value={topN}
+                              onChange={(e) =>
+                                setTopN(Number(e.target.value) || 50)
+                              }
+                              className="w-16 rounded border border-slate-200 px-2 py-1 text-sm"
+                            />
+                          </label>
+                        )}
+                      </div>
+                      {examSegment === "not_attended" && (
+                        <input
+                          value={browseSearch}
+                          onChange={(e) => setBrowseSearch(e.target.value)}
+                          placeholder="Filter not-attended by name or phone…"
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+                        />
+                      )}
+                      {examLoading ? (
+                        <div className="flex justify-center py-6">
+                          <Loader2 className="h-5 w-5 animate-spin text-emerald-700" />
+                        </div>
+                      ) : (
+                        <>
+                          {renderListToolbar(
+                            examRows,
+                            examChecked,
+                            setExamChecked,
+                            examMeta,
+                            examPage,
+                            setExamPage,
+                            examLoading
+                          )}
+                          {renderRecipientList(
+                            examRows,
+                            examChecked,
+                            setExamChecked,
+                            examSegment === "top_by_exam"
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <input
                   value={manualPhone}
                   onChange={(e) => setManualPhone(e.target.value)}
                   placeholder="Or type phone 01XXXXXXXXX"
-                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
                 />
                 <button
                   type="button"
@@ -404,62 +888,225 @@ export default function NotificationCampaignComposer() {
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">
-          Recent campaigns
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h2 className="text-lg font-bold text-slate-900">Recent campaigns</h2>
+          <button
+            type="button"
+            onClick={() => setShowHistoryFilters((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+            {showHistoryFilters ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        {showHistoryFilters && (
+          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-slate-600">
+                Subject search
+              </label>
+              <input
+                value={historySubjectInput}
+                onChange={(e) => setHistorySubjectInput(e.target.value)}
+                placeholder="Search subject…"
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600">
+                Status
+              </label>
+              <select
+                value={historyFilters.status ?? ""}
+                onChange={(e) =>
+                  setHistoryFilters((f) => ({
+                    ...f,
+                    status: e.target.value as CampaignStatus | "",
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+              >
+                <option value="">All statuses</option>
+                <option value="queued">Queued</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600">
+                Audience
+              </label>
+              <select
+                value={historyFilters.audienceMode ?? ""}
+                onChange={(e) =>
+                  setHistoryFilters((f) => ({
+                    ...f,
+                    audienceMode: e.target.value as CampaignAudienceMode | "",
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+              >
+                <option value="">All audiences</option>
+                <option value="all">All users</option>
+                <option value="selected">Selected users</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600">
+                From date
+              </label>
+              <input
+                type="date"
+                value={historyFilters.dateFrom ?? ""}
+                onChange={(e) =>
+                  setHistoryFilters((f) => ({
+                    ...f,
+                    dateFrom: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600">
+                To date
+              </label>
+              <input
+                type="date"
+                value={historyFilters.dateTo ?? ""}
+                onChange={(e) =>
+                  setHistoryFilters((f) => ({
+                    ...f,
+                    dateTo: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={resetHistoryFilters}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-white"
+              >
+                Reset filters
+              </button>
+            </div>
+          </div>
+        )}
+
         {historyLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-emerald-700" />
           </div>
         ) : campaigns.length === 0 ? (
-          <p className="text-sm text-slate-500">No campaigns yet.</p>
+          <p className="text-sm text-slate-500 py-6 text-center">
+            No campaigns match your filters.
+          </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-slate-500 border-b">
-                  <th className="py-2 pr-4">Subject</th>
-                  <th className="py-2 pr-4">Audience</th>
-                  <th className="py-2 pr-4">Status</th>
-                  <th className="py-2 pr-4">Delivered</th>
-                  <th className="py-2">Sent</th>
-                </tr>
-              </thead>
-              <tbody>
-                {campaigns.map((c) => (
-                  <tr key={c._id} className="border-b border-slate-100">
-                    <td className="py-3 pr-4 font-medium text-slate-800 max-w-[200px] truncate">
-                      {c.subject}
-                    </td>
-                    <td className="py-3 pr-4 capitalize">{c.audienceMode}</td>
-                    <td className="py-3 pr-4">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          c.status === "completed"
-                            ? "bg-green-100 text-green-800"
-                            : c.status === "failed"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-amber-100 text-amber-900"
-                        }`}
-                      >
-                        {c.status}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4">
-                      {c.stats?.inboxCreated ?? 0} inbox /{" "}
-                      {c.stats?.pushSent ?? 0} push
-                    </td>
-                    <td className="py-3 text-slate-500">
-                      {new Date(c.createdAt).toLocaleString()}
-                    </td>
+          <>
+            <div className="overflow-x-auto rounded-lg border border-slate-100">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-slate-500 bg-slate-50 border-b">
+                    <th className="py-3 px-4 font-semibold">Subject</th>
+                    <th className="py-3 px-4 font-semibold">Audience</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold">Delivered</th>
+                    <th className="py-3 px-4 font-semibold">Sent</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {campaigns.map((c) => (
+                    <tr
+                      key={c._id}
+                      className="border-b border-slate-100 hover:bg-slate-50/80"
+                    >
+                      <td
+                        className="py-3 px-4 font-medium text-slate-800 max-w-[220px] truncate"
+                        title={c.subject}
+                      >
+                        {c.subject}
+                      </td>
+                      <td className="py-3 px-4 text-slate-700">
+                        {audienceLabel(c)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
+                            c.status === "completed"
+                              ? "bg-green-100 text-green-800"
+                              : c.status === "failed"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-amber-100 text-amber-900"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-slate-600">
+                        {c.stats?.inboxCreated ?? 0} inbox /{" "}
+                        {c.stats?.pushSent ?? 0} push
+                      </td>
+                      <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
+                        {new Date(c.createdAt).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
+              <p className="text-slate-600">
+                Showing {historyFrom}–{historyTo} of {historyMeta?.total ?? 0}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex items-center gap-2 text-slate-600">
+                  Per page
+                  <select
+                    value={historyLimit}
+                    onChange={(e) => setHistoryLimit(Number(e.target.value))}
+                    className="rounded-lg border border-slate-200 px-2 py-1 bg-white"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  disabled={historyPage <= 1}
+                  onClick={() => setHistoryPage((p) => p - 1)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Prev
+                </button>
+                <span className="text-slate-500">
+                  Page {historyPage} of {historyTotalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={historyPage >= historyTotalPages}
+                  onClick={() => setHistoryPage((p) => p + 1)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-40"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
-
     </div>
   );
 }
