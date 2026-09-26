@@ -13,9 +13,8 @@ import {
 } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import {
-  saveExamDraft,
-  loadExamDraft,
-  loadExamDraftAsync,
+  saveCreateExamDraft,
+  loadCreateExamDraftAsync,
   clearExamDraft,
 } from "@/lib/exam-draft-storage";
 import { parseDateTimeLocalToISO } from "@/lib/exam-datetime";
@@ -70,7 +69,7 @@ export default function CreateExamForm() {
 
   useEffect(() => {
     const restoreDraft = async () => {
-      const draft = (await loadExamDraftAsync()) ?? loadExamDraft();
+      const draft = await loadCreateExamDraftAsync();
       if (!draft) return;
       if (draft.formData) {
         setFormData((prev) => ({ ...prev, ...draft.formData }));
@@ -98,11 +97,11 @@ export default function CreateExamForm() {
   const handleRemoveQuestion = (questionId) => {
     const updated = selectedQuestions.filter((q) => q._id !== questionId);
     setSelectedQuestions(updated);
-    saveExamDraft({ formData, selectedQuestions: updated });
+    saveCreateExamDraft({ formData, selectedQuestions: updated });
   };
 
   const openQuestionSelector = () => {
-    saveExamDraft({ formData, selectedQuestions });
+    saveCreateExamDraft({ formData, selectedQuestions });
     router.push(
       "/dashboard/exam/select-questions?returnTo=/dashboard/exam/create-exam&mode=create",
     );

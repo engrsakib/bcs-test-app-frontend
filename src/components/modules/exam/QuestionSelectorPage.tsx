@@ -15,8 +15,10 @@ import { apiUrl } from "@/config/env";
 import getCookie from "@/util/GetCookie";
 import {
   consumePendingExamQuestion,
+  loadCreateExamDraft,
   loadExamDraft,
-  updateSelectedQuestions,
+  updateSelectedQuestionsForCreate,
+  updateSelectedQuestionsForEdit,
   type ExamQuestion,
 } from "@/lib/exam-draft-storage";
 import QuestionCard from "./QuestionCard";
@@ -49,8 +51,25 @@ export default function QuestionSelectorPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    const draft = loadExamDraft();
-    let initialSelected = draft?.selectedQuestions ?? [];
+    let initialSelected: ExamQuestion[] = [];
+
+    if (mode === "edit") {
+      const draft = loadExamDraft();
+      let examFromReturn = "";
+      try {
+        examFromReturn =
+          new URL(returnTo, window.location.origin).searchParams.get("exam") ??
+          "";
+      } catch {
+        examFromReturn = "";
+      }
+      if (draft?.examNumber === examFromReturn) {
+        initialSelected = draft.selectedQuestions ?? [];
+      }
+    } else {
+      const draft = loadCreateExamDraft();
+      initialSelected = draft?.selectedQuestions ?? [];
+    }
 
     const pendingQuestion = consumePendingExamQuestion();
     if (
@@ -58,13 +77,20 @@ export default function QuestionSelectorPage() {
       !initialSelected.some((q) => q._id === pendingQuestion._id)
     ) {
       initialSelected = [...initialSelected, pendingQuestion];
-      updateSelectedQuestions(initialSelected);
+      if (mode === "edit") {
+        const draft = loadExamDraft();
+        if (draft?.examNumber) {
+          updateSelectedQuestionsForEdit(draft.examNumber, initialSelected);
+        }
+      } else {
+        updateSelectedQuestionsForCreate(initialSelected);
+      }
     }
 
     if (initialSelected.length) {
       setSelected(initialSelected);
     }
-  }, []);
+  }, [mode, returnTo]);
 
   useEffect(() => {
     const fetchTopics = async () => {
@@ -165,14 +191,37 @@ export default function QuestionSelectorPage() {
   const totalMarks = selected.reduce((sum, q) => sum + (q.marks || 0), 0);
 
   const handleSave = () => {
-    updateSelectedQuestions(selected);
+    if (mode === "edit") {
+      const draft = loadExamDraft();
+      let examFromReturn = "";
+      try {
+        examFromReturn =
+          new URL(returnTo, window.location.origin).searchParams.get("exam") ??
+          "";
+      } catch {
+        examFromReturn = "";
+      }
+      const examNum = draft?.examNumber ?? examFromReturn;
+      if (examNum) {
+        updateSelectedQuestionsForEdit(examNum, selected);
+      }
+    } else {
+      updateSelectedQuestionsForCreate(selected);
+    }
     router.push(returnTo);
   };
 
   const handleBack = () => router.push(returnTo);
 
   const handleCreateQuestion = () => {
-    updateSelectedQuestions(selected);
+    if (mode === "edit") {
+      const draft = loadExamDraft();
+      if (draft?.examNumber) {
+        updateSelectedQuestionsForEdit(draft.examNumber, selected);
+      }
+    } else {
+      updateSelectedQuestionsForCreate(selected);
+    }
     const currentUrl = `/dashboard/exam/select-questions?returnTo=${encodeURIComponent(returnTo)}&mode=${mode}`;
     router.push(
       `/dashboard/question/create-question?returnTo=${encodeURIComponent(currentUrl)}`,

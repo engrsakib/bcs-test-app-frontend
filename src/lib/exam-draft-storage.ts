@@ -34,7 +34,15 @@ export interface ExamFormDraft {
 export interface ExamDraftSession {
   formData?: ExamFormDraft;
   selectedQuestions: ExamQuestion[];
+  /** Set when draft belongs to exam edit flow — must not hydrate create form. */
   examNumber?: string;
+  mode?: "create" | "edit";
+}
+
+export function isEditExamDraft(
+  draft: ExamDraftSession | null | undefined,
+): boolean {
+  return Boolean(draft?.examNumber) || draft?.mode === "edit";
 }
 
 const DRAFT_ID = "exam-create";
@@ -115,9 +123,68 @@ export async function loadExamDraftAsync(): Promise<ExamDraftSession | null> {
   return legacy;
 }
 
+export function saveCreateExamDraft(
+  session: Omit<ExamDraftSession, "examNumber" | "mode">,
+): void {
+  saveExamDraft({
+    ...session,
+    selectedQuestions: session.selectedQuestions ?? [],
+    mode: "create",
+    examNumber: undefined,
+  });
+}
+
+export function saveEditExamDraft(
+  examNumber: string,
+  session: Omit<ExamDraftSession, "examNumber" | "mode">,
+): void {
+  saveExamDraft({
+    ...session,
+    selectedQuestions: session.selectedQuestions ?? [],
+    examNumber,
+    mode: "edit",
+  });
+}
+
+export function loadCreateExamDraft(): ExamDraftSession | null {
+  const draft = loadExamDraft();
+  if (!draft || isEditExamDraft(draft)) return null;
+  return draft;
+}
+
+export async function loadCreateExamDraftAsync(): Promise<ExamDraftSession | null> {
+  const draft = await loadExamDraftAsync();
+  if (!draft || isEditExamDraft(draft)) {
+    return null;
+  }
+  return draft;
+}
+
 export function updateSelectedQuestions(questions: ExamQuestion[]): void {
+  const draft = loadCreateExamDraft() ?? loadExamDraft() ?? { selectedQuestions: [] };
+  if (isEditExamDraft(draft) && draft.examNumber) {
+    saveEditExamDraft(draft.examNumber, {
+      ...draft,
+      selectedQuestions: questions,
+    });
+    return;
+  }
+  saveCreateExamDraft({ ...draft, selectedQuestions: questions });
+}
+
+export function updateSelectedQuestionsForCreate(
+  questions: ExamQuestion[],
+): void {
+  const draft = loadCreateExamDraft() ?? { selectedQuestions: [] };
+  saveCreateExamDraft({ ...draft, selectedQuestions: questions });
+}
+
+export function updateSelectedQuestionsForEdit(
+  examNumber: string,
+  questions: ExamQuestion[],
+): void {
   const draft = loadExamDraft() ?? { selectedQuestions: [] };
-  saveExamDraft({ ...draft, selectedQuestions: questions });
+  saveEditExamDraft(examNumber, { ...draft, selectedQuestions: questions });
 }
 
 export async function clearExamDraft(): Promise<void> {

@@ -14,8 +14,9 @@ import {
 } from "react-icons/fa";
 import { apiUrl } from "@/config/env";
 import {
-  saveExamDraft,
+  saveEditExamDraft,
   loadExamDraft,
+  clearExamDraft,
   type ExamQuestion,
 } from "@/lib/exam-draft-storage";
 import {
@@ -103,9 +104,8 @@ export default function UpdateExamClient() {
 
   const openQuestionSelector = () => {
     if (!examData || !examNumber) return;
-    saveExamDraft({
+    saveEditExamDraft(examNumber, {
       selectedQuestions,
-      examNumber,
       formData: {
         exam_name: examData.exam_name,
         exam_date_time: examData.exam_date_time,
@@ -146,6 +146,7 @@ export default function UpdateExamClient() {
       const json = await res.json();
 
       if (json.success) {
+        await clearExamDraft();
         notify.success("Updated Successfully!", "The exam has been updated.", {
           duration: 1500,
         });
@@ -281,10 +282,11 @@ export default function UpdateExamClient() {
                     onClick={() => {
                       const updated = selectedQuestions.filter((x) => x._id !== q._id);
                       setSelectedQuestions(updated);
-                      saveExamDraft({
-                        selectedQuestions: updated,
-                        examNumber: examNumber ?? undefined,
-                      });
+                      if (examNumber) {
+                        saveEditExamDraft(examNumber, {
+                          selectedQuestions: updated,
+                        });
+                      }
                     }}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                   >
