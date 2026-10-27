@@ -2,6 +2,10 @@
   "name": "edu_master_dashboard",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.22.1",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "postinstall": "node scripts/copy-mathlive-fonts.mjs",
     "dev": "next dev --turbopack",
@@ -63,7 +67,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/js-cookie": "^3.0.6",
     "@types/katex": "^0.16.8",
-    "@types/node": "^20",
+    "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-katex": "^3.0.4",
