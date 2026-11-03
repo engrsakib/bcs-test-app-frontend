@@ -1,7 +1,41 @@
 "use client";
 
-import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
+import katex from "katex";
+import {
+  compileExamMathFormula,
+  renderStoredMathFormulaHtml,
+} from "@/lib/exam-math-render";
+import type { HybridFlowItem } from "@mcq/exam-math-compile";
+
+function renderMixedFlowPreviewHtml(flow: HybridFlowItem[]): string {
+  return flow
+    .map((item) => {
+      if (item.kind === "text") {
+        return item.value.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+      }
+      try {
+        return katex.renderToString(item.value, {
+          displayMode: false,
+          throwOnError: false,
+          strict: "ignore",
+          trust: true,
+        });
+      } catch {
+        return item.value;
+      }
+    })
+    .join("");
+}
+
+function previewHtmlFromFormula(value: string): string {
+  const outcome = compileExamMathFormula(value, false);
+  if (outcome.kind === "single-html") return outcome.result.html;
+  if (outcome.kind === "mixed-flow") {
+    return renderMixedFlowPreviewHtml(outcome.flow);
+  }
+  return renderStoredMathFormulaHtml(value, false);
+}
 
 interface MathPreviewProps {
   value?: string;
@@ -23,9 +57,13 @@ export default function MathPreview({
     ? "overflow-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
     : "overflow-x-auto";
 
+  const html = previewHtmlFromFormula(value);
+
   return (
-    <div className={`${overflowClass} ${className}`.trim()}>
-      <BlockMath math={value} />
-    </div>
+    <div
+      className={`katex-preview ${overflowClass} ${className}`.trim()}
+      lang="bn"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }

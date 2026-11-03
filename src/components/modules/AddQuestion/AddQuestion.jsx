@@ -20,6 +20,14 @@ import {
   getLastStudyTopicId,
   setLastStudyTopicId,
 } from '@/lib/study-topic-preference';
+import {
+  getLastQuestionType,
+  setLastQuestionType,
+} from '@/lib/question-type-preference';
+import {
+  getLastAnswerType,
+  setLastAnswerType,
+} from '@/lib/answer-type-preference';
 
 const QUESTIONS_STORAGE_KEY = 'allQuestions';
 const API_URL = `${ENV.BASE_URL}/question/`;
@@ -70,9 +78,18 @@ export default function CreateQuestionForm() {
   const [loading, setLoading] = useState(false);
   
   const [title, setTitle] = useState('');
-  const [mark, setMark] = useState('1');
-  const [answerType, setAnswerType] = useState('mcq');
-  const [questionType, setQuestionType] = useState('general');
+  const [answerType, setAnswerType] = useState(() => {
+    if (typeof window === 'undefined') return 'mcq';
+    return getLastAnswerType() ?? 'mcq';
+  });
+  const [mark, setMark] = useState(() => {
+    if (typeof window === 'undefined') return '1';
+    return (getLastAnswerType() ?? 'mcq') === 'mcq' ? '1' : '';
+  });
+  const [questionType, setQuestionType] = useState(() => {
+    if (typeof window === 'undefined') return 'general';
+    return getLastQuestionType() ?? 'general';
+  });
   const [categoryId, setCategoryId] = useState('');
   const [topics, setTopics] = useState([]);
   const [topicsLoading, setTopicsLoading] = useState(true);
@@ -427,9 +444,8 @@ export default function CreateQuestionForm() {
 
     // Reset form
     setTitle("");
-    setMark("1");
-    setAnswerType("mcq");
-    setQuestionType("general");
+    const lastAnswerType = getLastAnswerType() ?? "mcq";
+    setMark(lastAnswerType === "mcq" ? "1" : "");
     const lastTopicId = getLastStudyTopicId();
     if (lastTopicId && topics.some((t) => t._id === lastTopicId)) {
       setCategoryId(lastTopicId);
@@ -494,6 +510,7 @@ export default function CreateQuestionForm() {
             onChange={(e) => {
               const nextType = e.target.value;
               setAnswerType(nextType);
+              setLastAnswerType(nextType);
               // MCQ defaults to 1 mark; written stays empty for manual entry
               setMark(nextType === 'mcq' ? '1' : '');
             }}
@@ -504,7 +521,11 @@ export default function CreateQuestionForm() {
           <Select
             label="Question Type"
             value={questionType}
-            onChange={(e) => setQuestionType(e.target.value)}
+            onChange={(e) => {
+              const nextType = e.target.value;
+              setQuestionType(nextType);
+              setLastQuestionType(nextType);
+            }}
           >
             <option value="general">General</option>
             <option value="math">Math</option>

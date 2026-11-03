@@ -1,4 +1,7 @@
-import katex from "katex";
+import {
+  renderKatexHtml,
+  stripOuterMathDelimiters,
+} from "@mcq/exam-math-compile";
 
 const LATEX_PATTERN =
   /\\(?:frac|sqrt|sum|int|lim|left|right|text|begin|end|[a-zA-Z]+)|\$\$[\s\S]+?\$\$|\$[^$\n]+\$|\\\(|\\\[|\\\)|\\\]/;
@@ -16,39 +19,18 @@ export function escapeHtml(value: string | number): string {
     .replace(/"/g, "&quot;");
 }
 
-function stripDelimiters(text: string): string {
-  const trimmed = text.trim();
-  if (trimmed.startsWith("$$") && trimmed.endsWith("$$")) {
-    return trimmed.slice(2, -2).trim();
-  }
-  if (trimmed.startsWith("$") && trimmed.endsWith("$")) {
-    return trimmed.slice(1, -1).trim();
-  }
-  if (trimmed.startsWith("\\(") && trimmed.endsWith("\\)")) {
-    return trimmed.slice(2, -2).trim();
-  }
-  if (trimmed.startsWith("\\[") && trimmed.endsWith("\\]")) {
-    return trimmed.slice(2, -2).trim();
-  }
-  return trimmed;
-}
-
 export function renderMathHtml(
   value: string,
   displayMode = true,
 ): string {
-  const input = stripDelimiters(value);
+  const input = stripOuterMathDelimiters(value);
   if (!input) return "";
 
-  try {
-    return katex.renderToString(input, {
-      throwOnError: false,
-      displayMode,
-      strict: "ignore",
-    });
-  } catch {
-    return escapeHtml(value);
-  }
+  const { html, ok } = renderKatexHtml(input, {
+    displayMode,
+    repair: false,
+  });
+  return ok ? html : escapeHtml(value);
 }
 
 /** Renders plain Bangla/English or LaTeX for PDF HTML. */

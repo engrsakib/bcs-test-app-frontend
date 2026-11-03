@@ -26,10 +26,15 @@ const UTF8_BOM = "\uFEFF";
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 const PAGE_WIDTH_PX = 794;
-/** First page includes exam title + summary; keep low so rows are not clipped in PDF. */
-const ROWS_FIRST_PAGE = 18;
-/** Continuation pages: table header + rows only. */
-const ROWS_PER_PAGE = 26;
+const PAGE_HEIGHT_PX = Math.round(PAGE_WIDTH_PX * (297 / 210));
+const PRIMARY = "#16a34a";
+const PRIMARY_DARK = "#15803d";
+const PRIMARY_SOFT = "#f0fdf4";
+const MUTED = "#6b7280";
+const TEXT = "#1f2937";
+
+/** Uniform row count on every page (logo header + watermark on each). */
+const ROWS_PER_PAGE = 25;
 
 function escapeCsvValue(value: string | number): string {
   const str = String(value);
@@ -56,6 +61,59 @@ function triggerDownload(blob: Blob, filename: string) {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+function stripNearBlackBackground(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+        const max = Math.max(r, g, b);
+        if (max <= 25) {
+          pixels[i + 3] = 0;
+        } else if (max <= 40) {
+          const fade = (max - 25) / 15;
+          pixels[i + 3] = Math.round(pixels[i + 3] * fade);
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+async function loadLogoDataUrl(): Promise<string> {
+  try {
+    const response = await fetch("/logo.png");
+    if (!response.ok) return "";
+    const blob = await response.blob();
+    const rawDataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+    if (!rawDataUrl) return "";
+    return await stripNearBlackBackground(rawDataUrl);
+  } catch {
+    return "";
+  }
 }
 
 function buildHeaders(includePhone: boolean): string[] {
@@ -112,7 +170,7 @@ function buildTableHeadHtml(includePhone: boolean): string {
   return `<thead><tr>${headers
     .map(
       (header) =>
-        `<th style="padding:10px 8px;background:#16a34a;color:#fff;font-weight:700;text-align:center;border:1px solid #15803d;">${escapeHtml(header)}</th>`,
+        `<th style="padding:6px 7px;background:${PRIMARY};color:#fff;font-weight:700;text-align:center;border:1px solid ${PRIMARY_DARK};font-size:11px;">${escapeHtml(header)}</th>`,
     )
     .join("")}</tr></thead>`;
 }
@@ -127,9 +185,8 @@ function buildTableBodyHtml(
       const bg = (startIndex + index) % 2 === 0 ? "#ffffff" : "#f8fafc";
       const cells = buildRowValues(row, includePhone)
         .map((value, cellIndex) => {
-          const align =
-            cellIndex === 1 ? "left" : "center";
-          return `<td style="padding:9px 8px;border:1px solid #e5e7eb;text-align:${align};background:${bg};word-break:break-word;">${escapeHtml(value)}</td>`;
+          const align = cellIndex === 1 ? "left" : "center";
+          return `<td style="padding:6px 7px;border:1px solid #e5e7eb;text-align:${align};background:${bg};word-break:break-word;font-size:11px;line-height:1.3;">${escapeHtml(value)}</td>`;
         })
         .join("");
       return `<tr>${cells}</tr>`;
@@ -137,24 +194,77 @@ function buildTableBodyHtml(
     .join("")}</tbody>`;
 }
 
-function buildSummaryHtml(options: MeritExportOptions): string {
-  const summaryItems = [
-    ["Exam Date", formatExamDate(options.examDateTime)],
-    ["Exam Time", formatExamTime(options.examDateTime)],
-    ["Total Participants", String(options.totalParticipants)],
-    ["Merit Range", `Rank ${options.from} – ${options.to}`],
-  ];
+function buildCompactSummaryHtml(options: MeritExportOptions): string {
+  const date = formatExamDate(options.examDateTime);
+  const time = formatExamTime(options.examDateTime);
+  const participants = String(options.totalParticipants);
+  const range = `Rank ${options.from} – ${options.to}`;
 
-  return `<div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:16px 18px;margin:18px 0 20px;">
-    ${summaryItems
-      .map(
-        ([label, value]) =>
-          `<div style="display:flex;gap:12px;margin-bottom:8px;font-size:14px;line-height:1.5;">
-            <span style="min-width:140px;font-weight:700;color:#1f2937;">${escapeHtml(label)}:</span>
-            <span style="color:#6b7280;flex:1;">${escapeHtml(value)}</span>
-          </div>`,
-      )
-      .join("")}
+  return `<div style="background:${PRIMARY_SOFT};border:1px solid #bbf7d0;border-left:3px solid ${PRIMARY};border-radius:6px;padding:6px 10px;margin:4px 0 8px;">
+    <table style="width:100%;border-collapse:collapse;font-size:10px;line-height:1.35;">
+      <tr>
+        <td style="padding:2px 6px 2px 0;font-weight:700;color:${TEXT};width:24%;">Exam Date</td>
+        <td style="padding:2px 6px 2px 0;color:${MUTED};">${escapeHtml(date)}</td>
+        <td style="padding:2px 6px 2px 0;font-weight:700;color:${TEXT};width:24%;">Exam Time</td>
+        <td style="padding:2px 0;color:${MUTED};">${escapeHtml(time)}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px 6px 2px 0;font-weight:700;color:${TEXT};">Participants</td>
+        <td style="padding:2px 6px 2px 0;color:${MUTED};">${escapeHtml(participants)}</td>
+        <td style="padding:2px 6px 2px 0;font-weight:700;color:${TEXT};">Merit Range</td>
+        <td style="padding:2px 0;color:${MUTED};">${escapeHtml(range)}</td>
+      </tr>
+    </table>
+  </div>`;
+}
+
+function buildCompactExamTitleHtml(examName: string, continued: boolean): string {
+  const continuedLine = continued
+    ? `<div style="font-size:9px;color:${MUTED};margin-top:2px;">Merit List · Continued</div>`
+    : "";
+  return `<div style="margin:2px 0 6px;text-align:center;">
+    <div style="font-size:16px;font-weight:700;line-height:1.35;color:${TEXT};word-break:break-word;">${escapeHtml(examName)}</div>
+    ${continuedLine}
+  </div>`;
+}
+
+function buildLogoRowHtml(logoDataUrl: string): string {
+  const logoImg = logoDataUrl
+    ? `<div style="background:#fff;display:inline-block;line-height:0;"><img src="${logoDataUrl}" alt="MCQ Analysis" style="height:40px;width:auto;max-width:150px;object-fit:contain;display:block;" /></div>`
+    : `<div style="font-size:17px;font-weight:800;color:${PRIMARY};letter-spacing:0.02em;">MCQ Analysis</div>`;
+
+  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;padding-bottom:8px;border-bottom:3px solid ${PRIMARY};">
+    ${logoImg}
+    <div style="text-align:right;flex-shrink:0;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:${PRIMARY};text-transform:uppercase;">Merit List Report</div>
+      <div style="font-size:9px;color:${PRIMARY_DARK};margin-top:2px;font-weight:600;">সব পরীক্ষার সহজ প্রস্তুতি</div>
+    </div>
+  </div>`;
+}
+
+function buildPageHeaderHtml(
+  options: MeritExportOptions,
+  pageIndex: number,
+  logoDataUrl: string,
+): string {
+  const { examName } = options;
+  const logoRow = buildLogoRowHtml(logoDataUrl);
+  if (pageIndex === 0) {
+    return `${logoRow}
+      ${buildCompactExamTitleHtml(examName, false)}
+      ${buildCompactSummaryHtml(options)}`;
+  }
+  return `${logoRow}${buildCompactExamTitleHtml(examName, true)}`;
+}
+
+function buildWatermarkHtml(logoDataUrl: string): string {
+  if (logoDataUrl) {
+    return `<div class="merit-watermark" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;">
+      <img src="${logoDataUrl}" alt="" style="width:480px;max-width:85%;opacity:0.07;object-fit:contain;" />
+    </div>`;
+  }
+  return `<div class="merit-watermark" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;">
+    <div style="font-size:44px;font-weight:800;color:${PRIMARY};opacity:0.06;letter-spacing:0.04em;">MCQ Analysis</div>
   </div>`;
 }
 
@@ -164,26 +274,23 @@ function buildPageHtml(
   pageIndex: number,
   totalPages: number,
   rowOffset: number,
+  logoDataUrl: string,
 ): string {
-  const { examName, includePhone } = options;
-  const showFullHeader = pageIndex === 0;
+  const { includePhone } = options;
+  const headerHtml = buildPageHeaderHtml(options, pageIndex, logoDataUrl);
 
-  const headerHtml = showFullHeader
-    ? `<div style="height:4px;background:#16a34a;border-radius:999px;margin-bottom:18px;"></div>
-       <div style="text-align:center;margin-bottom:8px;font-size:12px;color:#6b7280;">Merit List Report</div>
-       <h1 style="margin:0 0 18px;text-align:center;font-size:24px;line-height:1.45;font-weight:700;color:#1f2937;word-break:break-word;">${escapeHtml(examName)}</h1>
-       <div style="height:1px;background:#e5e7eb;margin-bottom:4px;"></div>
-       ${buildSummaryHtml(options)}
-       <div style="height:1px;background:#e5e7eb;margin-bottom:16px;"></div>`
-    : "";
-
-  return `<div class="merit-pdf-page" style="width:${PAGE_WIDTH_PX}px;padding:36px 44px 48px;box-sizing:border-box;font-family:'${PDF_FONT_FAMILY}',sans-serif;background:#fff;color:#1f2937;">
-    ${headerHtml}
-    <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;">
-      ${buildTableHeadHtml(includePhone)}
-      ${buildTableBodyHtml(pageRows, includePhone, rowOffset)}
-    </table>
-    <div style="margin-top:18px;text-align:center;font-size:12px;color:#6b7280;">Page ${pageIndex + 1} of ${totalPages}</div>
+  return `<div class="merit-pdf-page" style="position:relative;width:${PAGE_WIDTH_PX}px;height:${PAGE_HEIGHT_PX}px;padding:24px 36px 20px;box-sizing:border-box;font-family:'${PDF_FONT_FAMILY}',sans-serif;background:#fff;color:${TEXT};overflow:hidden;">
+    ${buildWatermarkHtml(logoDataUrl)}
+    <div style="position:relative;z-index:1;display:flex;flex-direction:column;height:100%;box-sizing:border-box;">
+      <div style="flex-shrink:0;">${headerHtml}</div>
+      <div style="flex:1;min-height:0;overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+          ${buildTableHeadHtml(includePhone)}
+          ${buildTableBodyHtml(pageRows, includePhone, rowOffset)}
+        </table>
+      </div>
+      <div style="flex-shrink:0;margin-top:8px;text-align:center;font-size:10px;color:${MUTED};">Page ${pageIndex + 1} of ${totalPages}</div>
+    </div>
   </div>`;
 }
 
@@ -196,14 +303,13 @@ async function createIsolatedRenderFrame(
   iframe.style.left = "-10000px";
   iframe.style.top = "0";
   iframe.style.width = `${PAGE_WIDTH_PX}px`;
-  iframe.style.height = "2400px";
+  iframe.style.height = `${PAGE_HEIGHT_PX}px`;
   iframe.style.border = "none";
   document.body.appendChild(iframe);
 
   const frameDoc = iframe.contentDocument;
-  const frameWindow = iframe.contentWindow;
 
-  if (!frameDoc || !frameWindow) {
+  if (!frameDoc) {
     document.body.removeChild(iframe);
     throw new Error("Failed to create isolated PDF render frame.");
   }
@@ -224,7 +330,7 @@ html, body {
   margin: 0;
   padding: 0;
   background: #ffffff;
-  color: #1f2937;
+  color: ${TEXT};
   font-family: "${PDF_FONT_FAMILY}", sans-serif;
 }
 *, *::before, *::after {
@@ -248,31 +354,6 @@ html, body {
   return { iframe, pageElement };
 }
 
-/** Splits a tall canvas image across multiple A4 pages so bottom rows are never clipped. */
-function addImageAcrossA4Pages(
-  doc: jsPDF,
-  imgData: string,
-  imgHeightMm: number,
-): void {
-  if (imgHeightMm <= A4_HEIGHT_MM) {
-    doc.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, imgHeightMm);
-    return;
-  }
-
-  let heightLeft = imgHeightMm;
-  let position = 0;
-
-  doc.addImage(imgData, "JPEG", 0, position, A4_WIDTH_MM, imgHeightMm);
-  heightLeft -= A4_HEIGHT_MM;
-
-  while (heightLeft > 0) {
-    position = heightLeft - imgHeightMm;
-    doc.addPage();
-    doc.addImage(imgData, "JPEG", 0, position, A4_WIDTH_MM, imgHeightMm);
-    heightLeft -= A4_HEIGHT_MM;
-  }
-}
-
 async function renderPageToPdf(
   doc: jsPDF,
   html: string,
@@ -287,17 +368,18 @@ async function renderPageToPdf(
       logging: false,
       backgroundColor: "#ffffff",
       width: PAGE_WIDTH_PX,
+      height: PAGE_HEIGHT_PX,
       windowWidth: PAGE_WIDTH_PX,
+      windowHeight: PAGE_HEIGHT_PX,
     });
 
     const imgData = canvas.toDataURL("image/jpeg", 0.92);
-    const imgHeightMm = (canvas.height * A4_WIDTH_MM) / canvas.width;
 
     if (pageIndex > 0) {
       doc.addPage();
     }
 
-    addImageAcrossA4Pages(doc, imgData, imgHeightMm);
+    doc.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
   } finally {
     document.body.removeChild(iframe);
   }
@@ -334,7 +416,8 @@ export async function exportMeritListPdf(options: MeritExportOptions) {
     );
   }
 
-  const rowChunks = chunkRows(rows, ROWS_FIRST_PAGE, ROWS_PER_PAGE);
+  const logoDataUrl = await loadLogoDataUrl();
+  const rowChunks = chunkRows(rows, ROWS_PER_PAGE, ROWS_PER_PAGE);
   const totalPages = rowChunks.length;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
@@ -348,6 +431,7 @@ export async function exportMeritListPdf(options: MeritExportOptions) {
       pageIndex,
       totalPages,
       rowOffset,
+      logoDataUrl,
     );
 
     await renderPageToPdf(doc, html, pageIndex);

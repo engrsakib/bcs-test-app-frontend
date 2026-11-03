@@ -18,10 +18,13 @@ import {
   clearExamDraft,
 } from "@/lib/exam-draft-storage";
 import { parseDateTimeLocalToISO } from "@/lib/exam-datetime";
+import { EXAM_SUBJECTS } from "@/lib/exam-subjects";
 import {
-  DEFAULT_EXAM_SUBJECT,
-  EXAM_SUBJECTS,
-} from "@/lib/exam-subjects";
+  getDefaultCreateExamNegativeMark,
+  getDefaultCreateExamSubject,
+  setLastExamNegativeMark,
+  setLastExamSubject,
+} from "@/lib/exam-create-preferences";
 
 const negativeMarkOptions = [
   { label: "0.25", value: 0.25 },
@@ -57,13 +60,13 @@ const Input = ({ label, id, icon, ...props }) => {
 export default function CreateExamForm() {
   const router = useRouter();
   const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     exam_name: "",
     exam_date_time: "",
     duration_minutes: "",
-    negative_mark: 0.25,
-    subject: DEFAULT_EXAM_SUBJECT,
-  });
+    negative_mark: getDefaultCreateExamNegativeMark(),
+    subject: getDefaultCreateExamSubject(),
+  }));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
 
@@ -88,9 +91,13 @@ export default function CreateExamForm() {
   );
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "subject") {
+      setLastExamSubject(value);
+    }
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
   };
 
@@ -163,8 +170,8 @@ export default function CreateExamForm() {
           exam_name: "",
           exam_date_time: "",
           duration_minutes: "",
-          negative_mark: 0.25,
-          subject: DEFAULT_EXAM_SUBJECT,
+          negative_mark: getDefaultCreateExamNegativeMark(),
+          subject: getDefaultCreateExamSubject(),
         });
         router.push("/dashboard/exam/view-exam");
         setSelectedQuestions([]);
@@ -279,12 +286,14 @@ export default function CreateExamForm() {
               id="negative_mark"
               name="negative_mark"
               value={formData.negative_mark}
-              onChange={(e) =>
+              onChange={(e) => {
+                const negative_mark = Number(e.target.value);
+                setLastExamNegativeMark(negative_mark);
                 setFormData({
                   ...formData,
-                  negative_mark: Number(e.target.value),
-                })
-              }
+                  negative_mark,
+                });
+              }}
               className="block w-full px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             >
               {negativeMarkOptions.map((opt) => (
