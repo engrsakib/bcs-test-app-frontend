@@ -73,6 +73,12 @@ const links = [
     ],
   },
   {
+    name: "Study Rooms",
+    icon: MessageSquare,
+    basePath: "/dashboard/study-rooms",
+    subLinks: [{ name: "Manage Study Rooms", href: "/dashboard/study-rooms" }],
+  },
+  {
     name: "Announcements",
     icon: Megaphone,
     basePath: "/dashboard/announcements",
