@@ -15,7 +15,7 @@
     "test:count-words": "node scripts/test-count-words.mjs"
   },
   "dependencies": {
-    "@mcq/exam-math-compile": "file:../../shared/exam-math-compile",
+    "@mcq/exam-math-compile": "file:./packages/exam-math-compile",
     "@hookform/resolvers": "^5.2.2",
     "@serwist/next": "^9.5.12",
     "@tiptap/extension-placeholder": "^3.18.0",

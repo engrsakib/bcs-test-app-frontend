@@ -1,0 +1,17 @@
+{
+  "name": "@mcq/exam-math-compile",
+  "version": "1.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./prepare-latex-content": "./src/prepare-latex-content.ts",
+    "./math-latex-repairs": "./src/math-latex-repairs.ts"
+  },
+  "peerDependencies": {
+    "katex": ">=0.16.0"
+  },
+  "devDependencies": {
+    "katex": "^0.18.10"
+  }
+}

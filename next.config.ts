@@ -6,25 +6,25 @@ import { withSerwist } from "@serwist/turbopack";
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 const examMathCompileAliases: Record<string, string> = {
-  "@mcq/exam-math-compile": "../../shared/exam-math-compile/src/index.ts",
+  "@mcq/exam-math-compile": "./packages/exam-math-compile/src/index.ts",
   "@mcq/exam-math-compile/prepare-latex-content":
-    "../../shared/exam-math-compile/src/prepare-latex-content.ts",
+    "./packages/exam-math-compile/src/prepare-latex-content.ts",
   "@mcq/exam-math-compile/math-latex-repairs":
-    "../../shared/exam-math-compile/src/math-latex-repairs.ts",
+    "./packages/exam-math-compile/src/math-latex-repairs.ts",
 };
 
 const examMathCompileAliasesAbsolute: Record<string, string> = {
   "@mcq/exam-math-compile": path.join(
     rootDir,
-    "../../shared/exam-math-compile/src/index.ts",
+    "packages/exam-math-compile/src/index.ts",
   ),
   "@mcq/exam-math-compile/prepare-latex-content": path.join(
     rootDir,
-    "../../shared/exam-math-compile/src/prepare-latex-content.ts",
+    "packages/exam-math-compile/src/prepare-latex-content.ts",
   ),
   "@mcq/exam-math-compile/math-latex-repairs": path.join(
     rootDir,
-    "../../shared/exam-math-compile/src/math-latex-repairs.ts",
+    "packages/exam-math-compile/src/math-latex-repairs.ts",
   ),
 };
 
